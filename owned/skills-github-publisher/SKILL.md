@@ -90,6 +90,7 @@ What it may do:
    - The incremental sync helper should refuse `internal/`, `.system/`, and `danger-*` skill roots by default, and it should exclude publish-blocking junk such as `__pycache__/`, `node_modules/`, `.env*`, cookies, sessions, and raw key material unless the operator explicitly overrides that review-required boundary.
    - Explicit CLI overrides such as `--publish-repo` or `--owned-root` should win over local config defaults so an incremental sync cannot drift into the wrong working copy.
    - The incremental sync helper should also strip nested `internal/`, `.system/`, and `danger-*` subtrees from otherwise allowed skill roots so a mixed local skill tree cannot reintroduce blocked content through rsync.
+   - If a source skill root already lives under a clear ownership boundary such as `third-party/`, the incremental sync helper should preserve that boundary by default instead of silently restaging the skill into `owned/`.
 
 1. Inventory the candidate roots.
    - List the requested roots before changing anything.

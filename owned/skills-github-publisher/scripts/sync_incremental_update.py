@@ -47,6 +47,7 @@ RSYNC_EXCLUDES = (
 )
 
 REVIEW_REQUIRED_BOUNDARIES = {"internal", ".system"}
+GROUP_BOUNDARIES = {"owned", "third-party"}
 NESTED_REVIEW_REQUIRED_EXCLUDES = (
     "--filter=- internal/***",
     "--filter=- .system/***",
@@ -99,28 +100,47 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def resolve_destination_root(args: argparse.Namespace, config: dict) -> Path:
+def infer_group_from_source_root(src_root: Path) -> str | None:
+    if src_root.name.startswith("danger-"):
+        return None
+    for parent in src_root.parents:
+        if parent.name in GROUP_BOUNDARIES:
+            return parent.name
+    return None
+
+
+def resolve_destination_root(args: argparse.Namespace, config: dict, src_roots: list[Path]) -> Path:
+    inferred_groups = {group for src_root in src_roots if (group := infer_group_from_source_root(src_root))}
+    if len(inferred_groups) > 1:
+        raise SystemExit(f"skill roots resolve to multiple ownership groups; sync them separately: {sorted(inferred_groups)}")
+    inferred_group = next(iter(inferred_groups), None)
+
     if args.owned_root:
         return Path(args.owned_root).expanduser().resolve()
 
     if args.publish_repo:
-        return Path(args.publish_repo).expanduser().resolve() / args.group
+        effective_group = inferred_group or args.group
+        return Path(args.publish_repo).expanduser().resolve() / effective_group
 
-    if args.group == "owned" and isinstance(config.get("default_owned_root"), str):
+    if (inferred_group or args.group) == "owned" and inferred_group is None and isinstance(config.get("default_owned_root"), str):
         return Path(config["default_owned_root"]).expanduser().resolve()
 
     publish_repo = args.publish_repo or config.get("default_publish_repo")
     if not isinstance(publish_repo, str) or not publish_repo:
         raise SystemExit("publish repo is not configured; pass --publish-repo or set default_publish_repo in local config")
 
-    return (Path(publish_repo).expanduser().resolve() / args.group)
+    effective_group = inferred_group or args.group
+    return (Path(publish_repo).expanduser().resolve() / effective_group)
 
 
 def is_review_required_root(src_root: Path) -> bool:
     if src_root.name.startswith("danger-"):
         return True
 
-    return any(parent.name in REVIEW_REQUIRED_BOUNDARIES for parent in src_root.parents)
+    for parent in src_root.parents:
+        if parent.name in REVIEW_REQUIRED_BOUNDARIES or parent.name.startswith("danger-"):
+            return True
+    return False
 
 
 def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool, allow_review_required: bool) -> None:
@@ -162,11 +182,12 @@ def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool, allow_review_
 def main() -> None:
     args = parse_args()
     config = load_local_config()
-    dest_group_root = resolve_destination_root(args, config)
+    src_roots = [Path(raw_path).expanduser().resolve() for raw_path in args.skill_root]
+    dest_group_root = resolve_destination_root(args, config, src_roots)
 
-    for raw_path in args.skill_root:
+    for src_root in src_roots:
         sync_one(
-            Path(raw_path).expanduser().resolve(),
+            src_root,
             dest_group_root,
             args.dry_run,
             args.allow_review_required,
