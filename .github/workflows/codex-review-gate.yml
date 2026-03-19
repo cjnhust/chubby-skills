@@ -109,6 +109,12 @@ jobs:
               return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
             }
 
+            function commentLooksLikeReviewOutcome(body) {
+              return bodyLooksClean(body) ||
+                /useful\?\s+react with/i.test(body || "") ||
+                /###\s+💡\s+Codex Review/i.test(body || "");
+            }
+
             function isCodexActor(login) {
               return codexActors.has(login || "");
             }
@@ -255,6 +261,9 @@ jobs:
               const latestCodexComment = latestBy(
                 comments.filter((comment) => {
                   if (!isCodexActor(comment.user?.login) || parseDate(comment.created_at) < cutoff) {
+                    return false;
+                  }
+                  if (!commentLooksLikeReviewOutcome(comment.body || "")) {
                     return false;
                   }
                   if (comment.id === codexCommentId) {

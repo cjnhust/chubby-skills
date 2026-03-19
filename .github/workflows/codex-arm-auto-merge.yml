@@ -31,6 +31,10 @@ jobs:
             const gateContext = "codex-review-gate";
             const trustCache = new Map();
 
+            function parseDate(value) {
+              return value ? Date.parse(value) || 0 : 0;
+            }
+
             async function enableWithRetry(pr) {
               for (let attempt = 1; attempt <= 6; attempt += 1) {
                 try {
@@ -117,17 +121,25 @@ jobs:
                 per_page: 100,
               });
               const gateStatus = response.data.find((status) => status.context === gateContext);
-              return (gateStatus?.state || "pending").toLowerCase();
+              return gateStatus || null;
             }
 
-            async function waitForGreenGate(pr) {
+            async function waitForGreenGate(pr, notBefore) {
               for (let attempt = 1; attempt <= 12; attempt += 1) {
-                const state = await gateStateForSha(pr.head.sha);
-                if (state === "success") {
+                const gateStatus = await gateStateForSha(pr.head.sha);
+                const state = (gateStatus?.state || "pending").toLowerCase();
+                const statusUpdatedAt = Math.max(
+                  parseDate(gateStatus?.updated_at),
+                  parseDate(gateStatus?.created_at),
+                );
+                if (gateStatus && statusUpdatedAt < notBefore) {
+                  core.info(
+                    `Gate ${gateContext} on PR #${pr.number} predates this event; waiting for a fresh update.`,
+                  );
+                } else if (state === "success") {
                   core.info(`Gate ${gateContext}=success for PR #${pr.number}`);
                   return true;
-                }
-                if (state === "failure") {
+                } else if (state === "failure") {
                   core.info(`Gate ${gateContext}=failure for PR #${pr.number}; not arming auto-merge.`);
                   return false;
                 }
@@ -141,6 +153,7 @@ jobs:
             }
 
             let pr = null;
+            let triggerTime = 0;
             if (context.eventName === "issue_comment") {
               const issue = context.payload.issue;
               const comment = context.payload.comment;
@@ -148,6 +161,7 @@ jobs:
                 core.info("Ignoring non-PR comment or non-Codex actor.");
                 return;
               }
+              triggerTime = parseDate(comment.created_at);
               pr = await fetchPullRequest(issue.number);
             } else if (context.eventName === "pull_request_review") {
               const review = context.payload.review;
@@ -158,6 +172,7 @@ jobs:
                 core.info("Ignoring unrelated review.");
                 return;
               }
+              triggerTime = parseDate(review.submitted_at);
               pr = incomingPr;
             }
 
@@ -166,7 +181,7 @@ jobs:
               return;
             }
 
-            if (!(await waitForGreenGate(pr))) {
+            if (!(await waitForGreenGate(pr, triggerTime))) {
               return;
             }
             await enableWithRetry(pr);
