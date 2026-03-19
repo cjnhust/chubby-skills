@@ -39,6 +39,8 @@ For this skill, Codex GitHub integration is only a post-publication option.
 If the repository is already intentionally public and stable:
 
 - prefer Codex review on pull requests first
+- if the repo later installs Codex hard-gate auto-merge, limit direct auto-merge to trusted-maintainer-only submissions and require a current-head approval from the repository owner or another configured admin for anything else
+- if Codex leaves findings, let a trusted maintainer manually decide whether to comment `@codex address that feedback`; do not auto-wire recurring self-fix loops from workflows
 - then consider `@codex` or a Codex GitHub Action for follow-up maintenance
 
 This order keeps the first GitHub-side use narrower and easier to audit.

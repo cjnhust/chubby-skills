@@ -20,8 +20,10 @@ Prepare everything locally so the maintainer only needs to do the account-side G
   - the remaining manual account-side steps
   - the security posture for repository-scoped authorization
   - the first smoke-test procedure
+  - the trusted-maintainer rule for any Codex hard-gate auto-merge path
 - If a smoke test is planned, make it a small docs-only pull request.
 - If browser-side troubleshooting is later needed, reuse the existing isolated-profile CDP pattern instead of touching the default browser profile.
+- If Codex leaves findings during the smoke test, keep any `@codex address that feedback` follow-up manual; do not configure an automatic fix loop.
 
 ## Manual Steps The User Must Still Perform
 

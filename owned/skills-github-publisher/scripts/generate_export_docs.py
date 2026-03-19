@@ -798,6 +798,8 @@ def build_codex_setup(root: Path) -> str:
     else:
         lines.append("- If this export repo later adopts the optional `codex-review-gate` workflow, wait for that gate before merging.")
     lines.append("- Trigger Codex review through the currently supported GitHub flow for your account.")
+    lines.append("- If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback`.")
+    lines.append("- Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.")
     lines.append("- Keep the review focus narrow:")
     lines.append("  - secret leakage or local-path regressions")
     lines.append("  - accidental inclusion of internal-only content")

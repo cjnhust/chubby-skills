@@ -37,6 +37,8 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 - Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.
 - If you are introducing the hard-gate workflows for the first time, the bootstrap PR that lands them may need a one-time manual exception.
 - Trigger Codex review through the currently supported GitHub flow for your account.
+- If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback`.
+- Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.
 - Keep the review focus narrow:
   - secret leakage or local-path regressions
   - accidental inclusion of internal-only content
