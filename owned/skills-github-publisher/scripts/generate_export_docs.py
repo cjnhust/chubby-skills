@@ -739,7 +739,16 @@ def build_release_checklist(root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def build_codex_setup() -> str:
+def has_codex_hard_gate(root: Path) -> bool:
+    workflows_dir = root / ".github" / "workflows"
+    return (
+        (workflows_dir / "codex-review-gate.yml").exists()
+        and (workflows_dir / "codex-arm-auto-merge.yml").exists()
+    )
+
+
+def build_codex_setup(root: Path) -> str:
+    hard_gate_enabled = has_codex_hard_gate(root)
     lines: list[str] = []
     lines.append("# Codex Setup")
     lines.append("")
@@ -774,9 +783,12 @@ def build_codex_setup() -> str:
     lines.append("## First Smoke Test")
     lines.append("")
     lines.append("- Use a small docs-only pull request.")
-    lines.append("- Keep the `codex-review-gate` workflow green; that is the hard merge gate.")
-    lines.append("- Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.")
-    lines.append("- The bootstrap PR that introduced the gate is the only expected manual exception.")
+    if hard_gate_enabled:
+        lines.append("- Keep the `codex-review-gate` workflow green; that is the hard merge gate.")
+        lines.append("- Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.")
+        lines.append("- The bootstrap PR that introduced the gate is the only expected manual exception.")
+    else:
+        lines.append("- If this export repo later adopts the optional Codex hard-gate workflows, wait for that gate before merging.")
     lines.append("- Trigger Codex review through the currently supported GitHub flow for your account.")
     lines.append("- Keep the review focus narrow:")
     lines.append("  - secret leakage or local-path regressions")
@@ -842,7 +854,7 @@ def main() -> int:
     (root / "THIRD_PARTY_ACKNOWLEDGEMENTS.md").write_text(build_acknowledgements(entries, vendors, evidence), encoding="utf-8")
     (root / "SECURITY.md").write_text(build_security_policy(), encoding="utf-8")
     (root / "RELEASE_CHECKLIST.md").write_text(build_release_checklist(root), encoding="utf-8")
-    (root / "CODEX_SETUP.md").write_text(build_codex_setup(), encoding="utf-8")
+    (root / "CODEX_SETUP.md").write_text(build_codex_setup(root), encoding="utf-8")
     (root / "LICENSE_DECISION.md").write_text(build_license_decision(root), encoding="utf-8")
     third_party_dir = root / "third-party"
     third_party_dir.mkdir(parents=True, exist_ok=True)
