@@ -17,7 +17,7 @@ on:
 permissions:
   contents: read
   issues: read
-  pull-requests: read
+  pull-requests: write
   statuses: write
 
 jobs:
@@ -40,6 +40,8 @@ jobs:
               /did not find any major issues/i,
               /\bbreezy\b/i,
             ];
+            const pollAttempts = 40;
+            const pollIntervalMs = 15000;
 
             async function setStatus(sha, state, description, targetUrl) {
               await github.rest.repos.createCommitStatus({
@@ -53,12 +55,212 @@ jobs:
               });
             }
 
+            async function enableAutoMerge(pr) {
+              if (pr.draft || pr.base?.ref !== "main" || !isSameRepoPullRequest(pr)) {
+                core.info("Skipping auto-merge for draft, external, or non-main PR.");
+                return;
+              }
+              for (let attempt = 1; attempt <= 6; attempt += 1) {
+                try {
+                  await github.graphql(
+                    `
+                      mutation EnableAutoMerge($pullRequestId: ID!) {
+                        enablePullRequestAutoMerge(
+                          input: {
+                            pullRequestId: $pullRequestId
+                            mergeMethod: SQUASH
+                          }
+                        ) {
+                          pullRequest {
+                            number
+                            autoMergeRequest {
+                              enabledAt
+                            }
+                          }
+                        }
+                      }
+                    `,
+                    { pullRequestId: pr.node_id },
+                  );
+                  core.info(`Enabled auto-merge for PR #${pr.number}`);
+                  return;
+                } catch (error) {
+                  const message = String(error.message || error);
+                  if (message.includes("is already enabled for auto-merge")) {
+                    core.info(`Auto-merge already enabled for PR #${pr.number}`);
+                    return;
+                  }
+                  if (message.includes("unstable status") && attempt < 6) {
+                    core.info(`PR #${pr.number} still unstable; retrying in 5s (attempt ${attempt}/6)`);
+                    await new Promise((resolve) => setTimeout(resolve, 5000));
+                    continue;
+                  }
+                  throw error;
+                }
+              }
+            }
+
             function isSameRepoPullRequest(pr) {
               return pr?.head?.repo?.full_name === repoFullName;
             }
 
             function bodyLooksClean(body) {
               return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
+            }
+
+            function isCodexActor(login) {
+              return codexActors.has(login || "");
+            }
+
+            function isReviewRequestComment(comment) {
+              return !isCodexActor(comment.user?.login) && /@codex\s+review\b/i.test(comment.body || "");
+            }
+
+            function parseDate(value) {
+              return value ? Date.parse(value) || 0 : 0;
+            }
+
+            function latestBy(items, field) {
+              return [...items].sort((left, right) => parseDate(left[field]) - parseDate(right[field])).at(-1) || null;
+            }
+
+            async function fetchPullRequest(pullNumber) {
+              const response = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pullNumber,
+              });
+              return response.data;
+            }
+
+            async function listIssueComments(issueNumber) {
+              return github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: issueNumber,
+                per_page: 100,
+              });
+            }
+
+            async function listReviews(pullNumber) {
+              return github.paginate(github.rest.pulls.listReviews, {
+                owner,
+                repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              });
+            }
+
+            async function listReactions(commentId) {
+              return github.paginate("GET /repos/{owner}/{repo}/issues/comments/{comment_id}/reactions", {
+                owner,
+                repo,
+                comment_id: commentId,
+                per_page: 100,
+              });
+            }
+
+            async function detectOutcome(pr) {
+              const reviews = await listReviews(pr.number);
+              const latestReview = latestBy(
+                reviews.filter((review) => isCodexActor(review.user?.login) && review.commit_id === pr.head.sha),
+                "submitted_at",
+              );
+              if (latestReview) {
+                const reviewState = (latestReview.state || "").toUpperCase();
+                const clean =
+                  reviewState === "APPROVED" ||
+                  (reviewState === "COMMENTED" && bodyLooksClean(latestReview.body || ""));
+                return {
+                  kind: clean ? "success" : "failure",
+                  description: clean
+                    ? "Codex review finished without major issues"
+                    : "Codex review requires follow-up",
+                  targetUrl: latestReview.html_url || pr.html_url,
+                };
+              }
+
+              const comments = await listIssueComments(pr.number);
+              const latestTrigger = latestBy(comments.filter(isReviewRequestComment), "created_at");
+              const cutoff = parseDate(latestTrigger?.created_at);
+              const latestCodexComment = latestBy(
+                comments.filter(
+                  (comment) => isCodexActor(comment.user?.login) && parseDate(comment.created_at) >= cutoff,
+                ),
+                "created_at",
+              );
+              if (latestCodexComment) {
+                const clean = bodyLooksClean(latestCodexComment.body || "");
+                return {
+                  kind: clean ? "success" : "failure",
+                  description: clean
+                    ? "Codex review finished without major issues"
+                    : "Codex reported findings; inspect PR comments",
+                  targetUrl: latestCodexComment.html_url || pr.html_url,
+                };
+              }
+
+              if (latestTrigger) {
+                const reactions = await listReactions(latestTrigger.id);
+                const codexThumbsUp = reactions.some(
+                  (reaction) => isCodexActor(reaction.user?.login) && reaction.content === "+1",
+                );
+                if (codexThumbsUp) {
+                  return {
+                    kind: "success",
+                    description: "Codex acknowledged the latest review request without findings",
+                    targetUrl: latestTrigger.html_url || pr.html_url,
+                  };
+                }
+              }
+
+              return {
+                kind: "waiting",
+                description: "Waiting for Codex review to finish",
+                targetUrl: pr.html_url,
+              };
+            }
+
+            async function settleGate(pr) {
+              const outcome = await detectOutcome(pr);
+              if (outcome.kind === "waiting") {
+                return false;
+              }
+              await setStatus(
+                pr.head.sha,
+                outcome.kind === "success" ? "success" : "failure",
+                outcome.description,
+                outcome.targetUrl,
+              );
+              if (outcome.kind === "success") {
+                await enableAutoMerge(pr);
+              }
+              core.info(`Set ${gateContext}=${outcome.kind} on ${pr.head.sha}`);
+              return true;
+            }
+
+            async function pollUntilSettled(pr, targetUrl) {
+              for (let attempt = 1; attempt <= pollAttempts; attempt += 1) {
+                const latestPr = await fetchPullRequest(pr.number);
+                if (latestPr.head.sha !== pr.head.sha) {
+                  core.info("PR head changed while polling; letting the next run own the gate.");
+                  return;
+                }
+                const settled = await settleGate(latestPr);
+                if (settled) {
+                  return;
+                }
+                if (attempt < pollAttempts) {
+                  await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+                }
+              }
+              await setStatus(
+                pr.head.sha,
+                "failure",
+                "Codex review did not complete; retrigger @codex review",
+                targetUrl,
+              );
+              core.info(`Set ${gateContext}=failure on ${pr.head.sha} after polling timeout`);
             }
 
             if (context.eventName === "pull_request") {
@@ -74,56 +276,47 @@ jobs:
                 pr.html_url,
               );
               core.info(`Set ${gateContext}=pending on ${pr.head.sha}`);
+              await pollUntilSettled(pr, pr.html_url);
               return;
             }
 
             if (context.eventName === "issue_comment") {
               const issue = context.payload.issue;
               const comment = context.payload.comment;
-              if (!issue?.pull_request || !comment || !codexActors.has(comment.user?.login || "")) {
-                core.info("Ignoring non-PR comment or non-Codex actor.");
+              if (!issue?.pull_request || !comment) {
+                core.info("Ignoring non-PR comment event.");
                 return;
               }
-              const pr = await github.rest.pulls.get({
-                owner,
-                repo,
-                pull_number: issue.number,
-              });
-              if (!isSameRepoPullRequest(pr.data)) {
+              const pr = await fetchPullRequest(issue.number);
+              if (!isSameRepoPullRequest(pr)) {
                 core.info("Ignoring external PR comment event.");
                 return;
               }
-              const clean = bodyLooksClean(comment.body || "");
+              if (isCodexActor(comment.user?.login)) {
+                await settleGate(pr);
+                return;
+              }
+              if (!isReviewRequestComment(comment)) {
+                core.info("Ignoring non-Codex, non-trigger comment.");
+                return;
+              }
               await setStatus(
-                pr.data.head.sha,
-                clean ? "success" : "failure",
-                clean
-                  ? "Codex review finished without major issues"
-                  : "Codex reported findings; inspect PR comments",
+                pr.head.sha,
+                "pending",
+                "Waiting for Codex review to finish",
                 comment.html_url,
               );
-              core.info(`Set ${gateContext}=${clean ? "success" : "failure"} on ${pr.data.head.sha}`);
+              core.info(`Set ${gateContext}=pending on ${pr.head.sha}`);
+              await pollUntilSettled(pr, comment.html_url);
               return;
             }
 
             if (context.eventName === "pull_request_review") {
               const review = context.payload.review;
               const pr = context.payload.pull_request;
-              if (!review || !pr || !codexActors.has(review.user?.login || "") || !isSameRepoPullRequest(pr)) {
+              if (!review || !pr || !isCodexActor(review.user?.login) || !isSameRepoPullRequest(pr)) {
                 core.info("Ignoring non-Codex review event.");
                 return;
               }
-              const state = (review.state || "").toUpperCase();
-              const clean =
-                state === "APPROVED" ||
-                (state === "COMMENTED" && bodyLooksClean(review.body || ""));
-              await setStatus(
-                pr.head.sha,
-                clean ? "success" : "failure",
-                clean
-                  ? "Codex review finished without major issues"
-                  : "Codex review requires follow-up",
-                review.html_url || pr.html_url,
-              );
-              core.info(`Set ${gateContext}=${clean ? "success" : "failure"} on ${pr.head.sha}`);
+              await settleGate(pr);
             }
