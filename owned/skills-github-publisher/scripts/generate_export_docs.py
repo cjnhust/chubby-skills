@@ -3,11 +3,14 @@
 
 from __future__ import annotations
 
+import sys
 import argparse
 import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+
+sys.dont_write_bytecode = True
 
 
 FRONTMATTER_LINE = re.compile(r"^(?P<key>[A-Za-z0-9_.-]+):\s*(?P<value>.+?)\s*$")
@@ -330,6 +333,7 @@ def build_readme(root: Path, entries: list[SkillEntry], vendors: list[VendorUnit
     lines.append("- `THIRD_PARTY_ACKNOWLEDGEMENTS.md`: attribution and thanks for imported third-party skills.")
     lines.append("- `SECURITY.md`: publishing-time security rules and disclosure guidance.")
     lines.append("- `RELEASE_CHECKLIST.md`: final checks before creating the public GitHub repo or pushing.")
+    lines.append("- `CODEX_SETUP.md`: post-publish Codex connection steps and a review-first smoke test.")
     lines.append("- `LICENSE_DECISION.md`: maintainer note for selecting the root repository license for `owned/` content.")
     lines.append("")
     lines.append("## Status")
@@ -735,6 +739,53 @@ def build_release_checklist(root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
+def build_codex_setup() -> str:
+    lines: list[str] = []
+    lines.append("# Codex Setup")
+    lines.append("")
+    lines.append("Use this note after the repository is already public and sanitized.")
+    lines.append("The goal is to keep the first Codex-on-GitHub use limited to review on public pull requests.")
+    lines.append("")
+    lines.append("## Already Prepared In This Repo")
+    lines.append("")
+    lines.append("- `AGENTS.md` keeps Codex in review-first mode and restates the public-boundary rules.")
+    lines.append("- `.github/pull_request_template.md` keeps publication checks explicit for every PR.")
+    lines.append("- `SECURITY.md` and `RELEASE_CHECKLIST.md` keep local policy files, internal-only content, and runtime credentials out of the repo.")
+    lines.append("")
+    lines.append("## Manual Steps You Still Need To Do")
+    lines.append("")
+    lines.append("1. In ChatGPT or Codex, connect GitHub and authorize only this public repository or the smallest possible repository subset.")
+    lines.append("2. If the UI exposes Codex review settings, enable review first and leave broader cloud editing disabled.")
+    lines.append("3. If repository indexing is delayed, retry after a short wait and use the current GitHub import or refresh flow exposed by the product.")
+    lines.append("4. Confirm any account-level privacy or training settings that matter for your plan before you rely on the integration.")
+    lines.append("")
+    lines.append("## First Smoke Test")
+    lines.append("")
+    lines.append("- Use a small docs-only pull request.")
+    lines.append("- Trigger Codex review through the currently supported GitHub flow for your account.")
+    lines.append("- Keep the review focus narrow:")
+    lines.append("  - secret leakage or local-path regressions")
+    lines.append("  - accidental inclusion of internal-only content")
+    lines.append("  - ownership-boundary mistakes between `owned/` and `third-party/`")
+    lines.append("  - provenance or attribution regressions")
+    lines.append("")
+    lines.append("Suggested review request:")
+    lines.append("")
+    lines.append("```text")
+    lines.append("@codex review")
+    lines.append("")
+    lines.append("Focus on secret leakage, local path regressions, internal-only content, and ownership boundary mistakes between owned/ and third-party/.")
+    lines.append("```")
+    lines.append("")
+    lines.append("## Stop Conditions")
+    lines.append("")
+    lines.append("- Do not use Codex GitHub flows on unpublished branches that still carry local-only policy values.")
+    lines.append("- Do not authorize internal repositories from this public-repo setup path.")
+    lines.append("- If the first review asks for local private files or ignores the public boundary, disable the GitHub-side flow and keep Codex local-only.")
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
 def build_license_decision(root: Path) -> str:
     root_license_present = has_root_license(root)
     lines: list[str] = []
@@ -776,6 +827,7 @@ def main() -> int:
     (root / "THIRD_PARTY_ACKNOWLEDGEMENTS.md").write_text(build_acknowledgements(entries, vendors, evidence), encoding="utf-8")
     (root / "SECURITY.md").write_text(build_security_policy(), encoding="utf-8")
     (root / "RELEASE_CHECKLIST.md").write_text(build_release_checklist(root), encoding="utf-8")
+    (root / "CODEX_SETUP.md").write_text(build_codex_setup(), encoding="utf-8")
     (root / "LICENSE_DECISION.md").write_text(build_license_decision(root), encoding="utf-8")
     third_party_dir = root / "third-party"
     third_party_dir.mkdir(parents=True, exist_ok=True)

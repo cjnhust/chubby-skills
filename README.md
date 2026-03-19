@@ -12,6 +12,7 @@ It keeps user-owned skills and third-party skills under separate top-level bound
 - `THIRD_PARTY_ACKNOWLEDGEMENTS.md`: attribution and thanks for imported third-party skills.
 - `SECURITY.md`: publishing-time security rules and disclosure guidance.
 - `RELEASE_CHECKLIST.md`: final checks before creating the public GitHub repo or pushing.
+- `CODEX_SETUP.md`: post-publish Codex connection steps and a review-first smoke test.
 - `LICENSE_DECISION.md`: maintainer note for selecting the root repository license for `owned/` content.
 
 ## Status

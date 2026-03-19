@@ -6,7 +6,10 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
+import sys
 from pathlib import Path
+
+sys.dont_write_bytecode = True
 
 from preflight_scan import (
     FORBID_LITERALS_FILE_ENV,

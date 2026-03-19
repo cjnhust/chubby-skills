@@ -12,6 +12,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Iterable
 
+sys.dont_write_bytecode = True
+
 
 IGNORE_DIRS = {
     ".git",

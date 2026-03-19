@@ -1,0 +1,51 @@
+# Codex GitHub Smoke Test
+
+Use this note after a repository is already public, sanitized, and intentionally shareable.
+
+## Goal
+
+Prepare everything locally so the maintainer only needs to do the account-side GitHub authorization and one final human confirmation before the first Codex review.
+
+## Keep The First Use Narrow
+
+- Start with GitHub-side review on public pull requests.
+- Do not start with cloud-side code generation or broad write permissions.
+- Do not authorize internal repositories, mixed public/private trees, or repos that still depend on local private policy files.
+
+## Prepare In The Repo Before The User Clicks Anything
+
+- Keep `AGENTS.md` explicit about public-boundary rules and review-first behavior.
+- Keep the pull-request template explicit about publication checks and the intended Codex review focus.
+- Generate a root `CODEX_SETUP.md` with:
+  - the remaining manual account-side steps
+  - the security posture for repository-scoped authorization
+  - the first smoke-test procedure
+- If a smoke test is planned, make it a small docs-only pull request.
+
+## Manual Steps The User Must Still Perform
+
+- Connect GitHub from ChatGPT or Codex.
+- Authorize only the intended public repository or a minimal repository subset.
+- If the UI exposes a Codex review toggle, enable review first and leave broader cloud editing disabled.
+- Confirm any privacy or training settings that matter for the user's account tier before proceeding.
+
+## Smoke Test
+
+Use a small public pull request and keep the prompt narrow. Preferred checks:
+
+- secret leakage or local-path regressions
+- accidental inclusion of internal-only content
+- ownership-boundary mistakes between `owned/` and `third-party/`
+- provenance or attribution regressions
+
+Do not use the first smoke test to request architecture rewrites, bulk content changes, or edits on unpublished branches.
+
+## Verification
+
+After the user completes the account-side authorization:
+
+- open a small pull request
+- trigger Codex review through the current supported GitHub workflow
+- verify the review stays within the expected public repository boundary
+- if the review output looks safe and relevant, keep the integration for future PR review
+- if the review ignores the boundary or requests sensitive local context, stop and keep Codex local-only
