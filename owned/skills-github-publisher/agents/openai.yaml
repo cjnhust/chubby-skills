@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skills GitHub Publisher"
+  short_description: "Safely publish Codex skills to GitHub"
+  default_prompt: "Use $skills-github-publisher to audit and prepare these local skills for a safe GitHub publish."

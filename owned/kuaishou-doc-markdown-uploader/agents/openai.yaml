@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kuaishou Docs Upload"
+  short_description: "Safely upload Markdown to Kuaishou Docs"
+  default_prompt: "Use $kuaishou-doc-markdown-uploader to upload this local Markdown file and its local images to docs.corp.kuaishou.com without reading any cookies or API keys."

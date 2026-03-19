@@ -1,0 +1,4 @@
+interface:
+  display_name: "Baoyu Style Bridge"
+  short_description: "Read or recommend a visual profile and patch baoyu artifacts to match it"
+  default_prompt: "Use $baoyu-style-bridge to read or recommend a visual profile from this article, then rewrite the baoyu prompt files and workspace config into that style."

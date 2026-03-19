@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engineering Practice Writer"
+  short_description: "Rewrite Chinese technical prose with engineering judgment"
+  default_prompt: "Use $engineering-practice-writer to rewrite this Chinese technical draft in a mature engineering-practice style."

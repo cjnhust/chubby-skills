@@ -1,0 +1,63 @@
+{
+  "groups": [
+    {
+      "id": "baoyu-public-repo-skills",
+      "name": "Baoyu public repo skills",
+      "origin_status": "confirmed",
+      "license_status": "confirmed",
+      "source_url": "https://github.com/JimLiu/baoyu-skills",
+      "source_evidence": "Imported SKILL.md files include homepage metadata pointing to sections inside the public JimLiu/baoyu-skills repository.",
+      "license_name": "MIT",
+      "license_evidence": "Observed in the public repository README License section on GitHub.",
+      "notes": "Operator confirmed that this export uses the GitHub repository as the source basis, so repo-level license handling is used here instead of ClawHub registry release terms.",
+      "skill_slugs": [
+        "baoyu-article-illustrator",
+        "baoyu-comic",
+        "baoyu-compress-image",
+        "baoyu-cover-image",
+        "baoyu-format-markdown",
+        "baoyu-image-gen",
+        "baoyu-infographic",
+        "baoyu-markdown-to-html",
+        "baoyu-slide-deck",
+        "baoyu-translate",
+        "baoyu-url-to-markdown",
+        "baoyu-xhs-images"
+      ],
+      "unit_paths": []
+    },
+    {
+      "id": "baoyu-inferred-family-extensions",
+      "name": "Baoyu inferred family extensions",
+      "origin_status": "confirmed",
+      "license_status": "confirmed",
+      "source_url": "https://github.com/JimLiu/baoyu-skills",
+      "source_evidence": "These skills share the baoyu family naming and are referenced by neighboring imported baoyu skills, but the current staged copy does not include direct homepage metadata for them.",
+      "license_name": "MIT",
+      "license_evidence": "Candidate repo-level license evidence comes from the public JimLiu/baoyu-skills README License section.",
+      "notes": "Operator confirmed that these imported skills were sourced from the same GitHub repository at repo level, even though the staged copy does not carry direct per-skill homepage metadata.",
+      "skill_slugs": [
+        "baoyu-content-pipeline",
+        "baoyu-style-bridge",
+        "baoyu-visual-pipeline"
+      ],
+      "unit_paths": []
+    },
+    {
+      "id": "baoyu-public-repo-packages",
+      "name": "Baoyu public repo packages",
+      "origin_status": "confirmed",
+      "license_status": "confirmed",
+      "source_url": "https://github.com/JimLiu/baoyu-skills/tree/main/packages",
+      "source_evidence": "The public JimLiu/baoyu-skills repository has a packages/ directory listing baoyu-md and baoyu-chrome-cdp as package folders.",
+      "license_name": "MIT",
+      "license_evidence": "Only repo-level MIT evidence is currently confirmed; the vendored local package.json files do not carry their own license fields.",
+      "notes": "Operator confirmed that these vendored units are accepted under the same GitHub repo-level source and license basis for this export.",
+      "skill_slugs": [],
+      "unit_paths": [
+        "third-party/baoyu-markdown-to-html/scripts/vendor/baoyu-md",
+        "third-party/baoyu-url-to-markdown/scripts/vendor/baoyu-chrome-cdp"
+      ]
+    }
+  ]
+}

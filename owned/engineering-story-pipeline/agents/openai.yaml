@@ -1,0 +1,4 @@
+interface:
+  display_name: "Engineering Story Pipeline"
+  short_description: "Run technical writing through one workspace-backed article-visual-deck flow"
+  default_prompt: "Use $engineering-story-pipeline to turn these technical notes into a workspace-backed Chinese article, aligned visuals, and a slide deck outline."

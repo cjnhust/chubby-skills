@@ -1,0 +1,4 @@
+interface:
+  display_name: "Writing Theme Bridge"
+  short_description: "Read or recommend the right writing posture for a technical draft"
+  default_prompt: "Use $writing-theme-bridge to read or recommend the right writing posture for this technical draft and route the drafting approach."
