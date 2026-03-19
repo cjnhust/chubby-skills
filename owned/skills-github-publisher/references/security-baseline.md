@@ -32,6 +32,7 @@ This skill uses a shift-left security posture:
 - block personal identifiers that the maintainer explicitly marks as non-public, such as usernames, private aliases, emails, or other operator-specific literals
 - block internal-only hostnames, enterprise registries, and corp-network endpoints from public exports
 - block inclusion of internal-only skill families such as company-branded or intranet-only integrations
+- block built-in `.system/` trees and `danger-*` skills from publish-ready exports unless a separate explicit review path says otherwise
 - keep sensitive scan inputs themselves local-only, for example in a private policy file outside the publish repo, rather than hardcoding them in shared commands or committed docs
 - when local policy is needed, allow it to carry exact literals, regexes, and extra secret or internal-host detection rules without publishing those values
 - for publication work, treat cloud delegation as a later step, not part of the initial sanitization path

@@ -107,10 +107,9 @@ What it may do:
      - internal-only hosts or corp-network endpoints
      - junk, generated, or runtime credential artifacts
      - hardcoded auth headers, JWT-like literals, webhook secrets, or credential-bearing URIs
-   - Review three caution classes:
-     - `.system/`
-     - `danger-*`
-     - `third-party`
+   - Review the default review-required classes:
+     - `.system/` and `danger-*` are publish-blocking by default in strict publication checks
+     - `third-party` stays allowed only when the intended ownership boundary is explicit and provenance review is complete
    - Review the provenance gate:
      - `third_party_provenance_gaps`
      - treat this as publish-blocking when the run is checking final public distribution readiness

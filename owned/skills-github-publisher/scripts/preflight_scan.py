@@ -434,6 +434,10 @@ def find_forbidden_literal(line: str, forbidden_literals: list[str]) -> str | No
     return None
 
 
+def is_scanner_pattern_definition_line(path: Path, line: str) -> bool:
+    return path.name == "preflight_scan.py" and "re.compile(" in line
+
+
 def walk_files(root: Path) -> Iterable[Path]:
     for current_root, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
@@ -624,12 +628,6 @@ def collect_line_findings(
     internal_host_findings: list[LineFinding] = []
 
     for path in walk_files(root):
-        if (
-            path.name == "preflight_scan.py"
-            and path.parent.name == "scripts"
-            and (path.parent.parent.name == "skills-github-publisher" or root.name == "skills-github-publisher")
-        ):
-            continue
         if not should_scan_text(path):
             continue
 
@@ -640,6 +638,7 @@ def collect_line_findings(
 
         rel = str(path.relative_to(root))
         for line_no, line in enumerate(content.splitlines(), start=1):
+            scanner_pattern_line = is_scanner_pattern_definition_line(path, line)
             personal_match_found = False
             forbidden_literal = find_forbidden_literal(line, forbidden_literals)
             if forbidden_literal:
@@ -669,68 +668,54 @@ def collect_line_findings(
                         break
 
             line_secret_matched = False
-            for pattern in HARD_SECRET_PATTERNS:
-                match = pattern.search(line)
-                if match:
-                    secret_findings.append(
-                        LineFinding(
-                            path=rel,
-                            line=line_no,
-                            reason="hard_secret_pattern",
-                            excerpt=redact_excerpt(line, match.group(0)),
-                        )
-                    )
-                    line_secret_matched = True
-                    break
-            else:
-                for pattern in HEADER_SECRET_PATTERNS:
+            if not scanner_pattern_line:
+                for pattern in HARD_SECRET_PATTERNS:
                     match = pattern.search(line)
                     if match:
                         secret_findings.append(
                             LineFinding(
                                 path=rel,
                                 line=line_no,
-                                reason="hardcoded_auth_header",
+                                reason="hard_secret_pattern",
                                 excerpt=redact_excerpt(line, match.group(0)),
                             )
                         )
                         line_secret_matched = True
                         break
                 else:
-                    uri_match = URI_CREDENTIAL_PATTERN.search(line)
-                    if uri_match:
-                        match_text = uri_match.group(0)
-                        if not is_placeholder_uri_credential(match_text):
+                    for pattern in HEADER_SECRET_PATTERNS:
+                        match = pattern.search(line)
+                        if match:
                             secret_findings.append(
                                 LineFinding(
                                     path=rel,
                                     line=line_no,
-                                    reason="credential_in_uri",
-                                    excerpt=redact_excerpt(line, match_text),
+                                    reason="hardcoded_auth_header",
+                                    excerpt=redact_excerpt(line, match.group(0)),
                                 )
                             )
                             line_secret_matched = True
-                        continue
-                    match = ASSIGNMENT_PATTERN.search(line)
-                    if match:
-                        key = match.group("key")
-                        value = match.group("value")
-                        if is_sensitive_key(key) and not is_placeholder_value(value):
-                            secret_findings.append(
-                                LineFinding(
-                                    path=rel,
-                                    line=line_no,
-                                    reason="secret_like_assignment",
-                                    excerpt=redact_excerpt(line, value),
-                                )
-                            )
-                            line_secret_matched = True
+                            break
                     else:
-                        match = UNQUOTED_ASSIGNMENT_PATTERN.search(line)
+                        uri_match = URI_CREDENTIAL_PATTERN.search(line)
+                        if uri_match:
+                            match_text = uri_match.group(0)
+                            if not is_placeholder_uri_credential(match_text):
+                                secret_findings.append(
+                                    LineFinding(
+                                        path=rel,
+                                        line=line_no,
+                                        reason="credential_in_uri",
+                                        excerpt=redact_excerpt(line, match_text),
+                                    )
+                                )
+                                line_secret_matched = True
+                            continue
+                        match = ASSIGNMENT_PATTERN.search(line)
                         if match:
                             key = match.group("key")
                             value = match.group("value")
-                            if is_sensitive_key(key) and looks_like_unquoted_secret_literal(value):
+                            if is_sensitive_key(key) and not is_placeholder_value(value):
                                 secret_findings.append(
                                     LineFinding(
                                         path=rel,
@@ -740,6 +725,21 @@ def collect_line_findings(
                                     )
                                 )
                                 line_secret_matched = True
+                        else:
+                            match = UNQUOTED_ASSIGNMENT_PATTERN.search(line)
+                            if match:
+                                key = match.group("key")
+                                value = match.group("value")
+                                if is_sensitive_key(key) and looks_like_unquoted_secret_literal(value):
+                                    secret_findings.append(
+                                        LineFinding(
+                                            path=rel,
+                                            line=line_no,
+                                            reason="secret_like_assignment",
+                                            excerpt=redact_excerpt(line, value),
+                                        )
+                                    )
+                                    line_secret_matched = True
 
             if not line_secret_matched:
                 for pattern in extra_secret_patterns:
@@ -931,7 +931,9 @@ def main() -> int:
             + len(absolute_path_findings)
             + len(internal_host_findings)
             + len(junk_paths)
+            + len(review_dirs["built_in_system_tree"])
             + len(review_dirs["internal_only_paths"])
+            + len(review_dirs["danger_skills"])
         )
         blocker_total += blocker_count
         provenance_gap_total += len(provenance_gaps)
