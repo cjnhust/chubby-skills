@@ -739,16 +739,19 @@ def build_release_checklist(root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def has_codex_hard_gate(root: Path) -> bool:
+def has_codex_review_gate(root: Path) -> bool:
     workflows_dir = root / ".github" / "workflows"
-    return (
-        (workflows_dir / "codex-review-gate.yml").exists()
-        and (workflows_dir / "codex-arm-auto-merge.yml").exists()
-    )
+    return (workflows_dir / "codex-review-gate.yml").exists()
+
+
+def has_codex_auto_merge(root: Path) -> bool:
+    workflows_dir = root / ".github" / "workflows"
+    return (workflows_dir / "codex-arm-auto-merge.yml").exists()
 
 
 def build_codex_setup(root: Path) -> str:
-    hard_gate_enabled = has_codex_hard_gate(root)
+    review_gate_enabled = has_codex_review_gate(root)
+    auto_merge_enabled = has_codex_auto_merge(root)
     lines: list[str] = []
     lines.append("# Codex Setup")
     lines.append("")
@@ -783,12 +786,15 @@ def build_codex_setup(root: Path) -> str:
     lines.append("## First Smoke Test")
     lines.append("")
     lines.append("- Use a small docs-only pull request.")
-    if hard_gate_enabled:
+    if review_gate_enabled:
         lines.append("- Keep the `codex-review-gate` workflow green; that is the hard merge gate.")
-        lines.append("- Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.")
-        lines.append("- The bootstrap PR that introduced the gate is the only expected manual exception.")
+        if auto_merge_enabled:
+            lines.append("- Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.")
+        else:
+            lines.append("- Merge manually after the gate succeeds if this repo does not install the optional auto-merge workflow.")
+        lines.append("- If you are introducing the hard-gate workflows for the first time, the bootstrap PR that lands them may need a one-time manual exception.")
     else:
-        lines.append("- If this export repo later adopts the optional Codex hard-gate workflows, wait for that gate before merging.")
+        lines.append("- If this export repo later adopts the optional `codex-review-gate` workflow, wait for that gate before merging.")
     lines.append("- Trigger Codex review through the currently supported GitHub flow for your account.")
     lines.append("- Keep the review focus narrow:")
     lines.append("  - secret leakage or local-path regressions")
