@@ -648,6 +648,7 @@ This repository publishes Codex skills and helper scripts. It is prepared for so
 
 - Keep credentials in environment variables or a local secret manager.
 - Keep third-party material inside `third-party/` with explicit origin and license review.
+- Keep maintainer-specific sensitive scan inputs in a local private policy file such as `$CODEX_HOME/private/publish-policy.json`, not in committed docs or shared shell snippets.
 - Prefer redacted examples such as `your_token_here` instead of live values.
 
 ## Reporting
@@ -663,7 +664,7 @@ If you find a leaked secret or sensitive local path:
 Run the staged export scan before public release:
 
 ```bash
-python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance
+python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file "$CODEX_HOME/private/publish-policy.json"
 ```
 
 After creating the GitHub repository, enable Secret Scanning and Push Protection before the first public push.
@@ -686,14 +687,19 @@ def build_release_checklist(root: Path) -> str:
     lines.append("- Review `README.md`, `THIRD_PARTY_ACKNOWLEDGEMENTS.md`, `third-party/ORIGIN.md`, and `third-party/LICENSES.md` together.")
     lines.append("- Keep `owned/` and `third-party/` boundaries explicit; do not fold imported skills into `owned/`.")
     lines.append("- Re-run the strict preflight scan from the repository root.")
+    lines.append("- Keep maintainer-specific sensitive scan inputs only in a local private policy file, not in committed commands or repo docs.")
+    lines.append("- Review `git status --short` and make sure ignored junk such as `node_modules/` is not part of the final handoff.")
     lines.append("- Verify `.system/` and `danger-*` skills are still excluded unless you intentionally reviewed them for publication.")
     lines.append("")
     lines.append("## Commands")
     lines.append("")
     lines.append("```bash")
-    lines.append("python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance")
+    lines.append("python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file \"$CODEX_HOME/private/publish-policy.json\"")
+    lines.append("git status --short")
     lines.append("git init -b main")
     lines.append("git add .")
+    lines.append("git commit -m \"Prepare public skills export\"")
+    lines.append("git show --stat --name-status --oneline -1")
     lines.append("git status --short")
     lines.append("```")
     lines.append("")

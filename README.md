@@ -18,7 +18,7 @@ It keeps user-owned skills and third-party skills under separate top-level bound
 
 - Secret, absolute-path, and junk-artifact checks pass on this staged export.
 - Third-party provenance and license review are confirmed at repo level for this staged export.
-- The root repository license for `owned/` content is intentionally left for maintainer choice; see `LICENSE_DECISION.md` before public release.
+- A root repository license file is present for this export.
 - Built-in `.system/` skills and `danger-*` skills are intentionally excluded from this export.
 
 ## Source Families
@@ -31,7 +31,6 @@ It keeps user-owned skills and third-party skills under separate top-level bound
 
 - `engineering-practice-writer`: Rewrite or draft Chinese technical prose in a mature engineering-practice style.
 - `engineering-story-pipeline`: Chain Chinese technical writing, diagrams, and slide-deck work into one pipeline by combining engineering-practice-writer with baoyu skills such as baoyu-format-markdown, baoyu-...
-- `kuaishou-doc-markdown-uploader`: Safely publish a local Markdown file and its referenced local images to docs.corp.kuaishou.com cloud docs by staging a preview bundle, launching an isolated Chrome profile, requ...
 - `research-report-pipeline`: Orchestrate topic-based or URL-based Chinese technical research reports by confirming scope before expansion, collecting primary sources, building a source catalog and evidence...
 - `skills-github-publisher`: Orchestrate safe publication of local Codex skills to GitHub.
 - `writing-theme-bridge`: Read or recommend a writing posture from article content, user context, and an optional selected theme, then route drafting through the appropriate writing behavior.

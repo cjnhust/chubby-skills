@@ -15,9 +15,9 @@ metadata:
 
 Fetches any URL via Chrome CDP, saves the rendered HTML snapshot, and converts it to clean markdown.
 
-Also read [../../owned/shared/references/family-orchestration-contract.md](../../owned/shared/references/family-orchestration-contract.md).
-Also read [../../owned/shared/references/extend-ownership-contract.md](../../owned/shared/references/extend-ownership-contract.md).
-Also read [../../owned/shared/references/transform-traceability-contract.md](../../owned/shared/references/transform-traceability-contract.md).
+Also read [../shared/references/family-orchestration-contract.md](../shared/references/family-orchestration-contract.md).
+Also read [../shared/references/extend-ownership-contract.md](../shared/references/extend-ownership-contract.md).
+Also read [../shared/references/transform-traceability-contract.md](../shared/references/transform-traceability-contract.md).
 
 This skill is a leaf capability in the content-transformation family. If the request also needs translation, formatting, staged markdown review, or final export, prefer `baoyu-content-pipeline` as the entrypoint.
 
@@ -79,7 +79,7 @@ if (Test-Path "$HOME/.baoyu-skills/baoyu-url-to-markdown/EXTEND.md") { "user" }
 
 ## Shared Working Artifact Contract
 
-If this run creates intermediate artifacts such as rendered HTML snapshots, extracted transcripts, review notes, or staged markdown outputs, also read [../../owned/shared/references/working-artifact-contract.md](../../owned/shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
+If this run creates intermediate artifacts such as rendered HTML snapshots, extracted transcripts, review notes, or staged markdown outputs, also read [../shared/references/working-artifact-contract.md](../shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
 
 ### First-Time Setup (BLOCKING)
 

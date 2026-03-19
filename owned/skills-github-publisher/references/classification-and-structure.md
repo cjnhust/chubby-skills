@@ -29,6 +29,21 @@ Default action:
 
 - keep it in the source repo, or publish it as a clearly repo-bound skill family
 
+### Internal-Only
+
+The skill is tied to one company, intranet, internal domain, or enterprise-only workflow and should not be part of a public export by default.
+
+Signals:
+
+- placed under a dedicated internal boundary such as `internal/`
+- references internal hosts such as `*.corp.*`, intranet endpoints, or enterprise-only registries
+- automates workflows that only make sense after internal login or inside one corporate network
+
+Default action:
+
+- keep it under a dedicated `internal/` boundary and exclude that path from public export
+- treat it as a separate internal/private family even if it is user-authored
+
 ### Private Or Review-Required
 
 The skill may be publishable later, but not by default.
@@ -108,6 +123,7 @@ Good fit:
 
 - one repo for public skills
 - one private repo or local-only tree for `danger-*`, experimental, or operational skills
+- one separate internal/private tree under `internal/` for enterprise-only integrations
 - optional separate handling for `third-party` material when attribution or redistribution needs a distinct review
 
 If a family is known to be external, such as a maintained `baoyu-*` family, treat that as `third-party` even when the current on-disk folder name does not say so.

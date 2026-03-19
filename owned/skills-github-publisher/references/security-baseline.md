@@ -29,6 +29,11 @@ This skill uses a shift-left security posture:
 - block quoted and unquoted secret-like assignments when they are not obvious placeholders or env-var references
 - block committed runtime credential artifacts such as cookies, sessions, browser profiles, `.env*`, `.npmrc`, `.pypirc`, `.netrc`, SSH keys, and local cloud credential directories
 - block user-specific absolute paths in committed docs and scripts
+- block personal identifiers that the maintainer explicitly marks as non-public, such as usernames, private aliases, emails, or other operator-specific literals
+- block internal-only hostnames, enterprise registries, and corp-network endpoints from public exports
+- block inclusion of internal-only skill families such as company-branded or intranet-only integrations
+- keep sensitive scan inputs themselves local-only, for example in a private policy file outside the publish repo, rather than hardcoding them in shared commands or committed docs
+- when local policy is needed, allow it to carry exact literals, regexes, and extra secret or internal-host detection rules without publishing those values
 - keep third-party ownership explicit and separate from `owned/` content
 - for publish-ready exports, require origin and license metadata for each intentionally included `third-party` or vendored unit
 - do not treat placeholder manifests, TODO checklists, or `pending` review stubs as satisfying provenance or license review

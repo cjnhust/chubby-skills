@@ -4,18 +4,23 @@ Use this checklist before creating the public GitHub repository or pushing from 
 
 ## Required Checks
 
-- Choose the root repository license for `owned/` content and add `LICENSE` before public release.
+- Verify the root repository license still matches the intended scope of `owned/` content.
 - Review `README.md`, `THIRD_PARTY_ACKNOWLEDGEMENTS.md`, `third-party/ORIGIN.md`, and `third-party/LICENSES.md` together.
 - Keep `owned/` and `third-party/` boundaries explicit; do not fold imported skills into `owned/`.
 - Re-run the strict preflight scan from the repository root.
+- Keep maintainer-specific sensitive scan inputs only in a local private policy file, not in committed commands or repo docs.
+- Review `git status --short` and make sure ignored junk such as `node_modules/` is not part of the final handoff.
 - Verify `.system/` and `danger-*` skills are still excluded unless you intentionally reviewed them for publication.
 
 ## Commands
 
 ```bash
-python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance
+python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file "$CODEX_HOME/private/publish-policy.json"
+git status --short
 git init -b main
 git add .
+git commit -m "Prepare public skills export"
+git show --stat --name-status --oneline -1
 git status --short
 ```
 

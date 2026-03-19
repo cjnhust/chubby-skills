@@ -61,6 +61,15 @@ TEXT_SUFFIXES = {
     ".sql",
 }
 
+LOCKFILE_NAMES = {
+    "bun.lock",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "Pipfile.lock",
+    "poetry.lock",
+}
+
 HARD_SECRET_PATTERNS = [
     re.compile(r"BEGIN PRIVATE KEY"),
     re.compile(r"BEGIN (?:RSA|OPENSSH|EC|DSA) PRIVATE KEY"),
@@ -123,6 +132,18 @@ ABSOLUTE_PATH_PATTERN = re.compile(
     )
     """
 )
+
+INTERNAL_HOST_PATTERNS = [
+    re.compile(r"""\bhttps?://[^\s"'`]*\.corp\.[^\s"'`]+\b""", re.IGNORECASE),
+    re.compile(r"""\b[a-z0-9.-]+\.corp\.[a-z0-9.-]+\b""", re.IGNORECASE),
+    re.compile(r"""\b[a-z0-9.-]+\.internal(?:\.[a-z0-9.-]+)+\b""", re.IGNORECASE),
+    re.compile(r"""\bnpm\.corp\.[a-z0-9.-]+\b""", re.IGNORECASE),
+]
+
+INTERNAL_BOUNDARY_DIR_NAMES = {
+    "internal",
+    ".internal",
+}
 
 PLACEHOLDER_MARKERS = (
     "example",
@@ -220,6 +241,10 @@ INCOMPLETE_METADATA_MARKERS = (
     "required before public release",
 )
 
+FORBID_LITERALS_ENV = "CODEX_PUBLISH_FORBID_LITERALS"
+FORBID_LITERALS_FILE_ENV = "CODEX_PUBLISH_FORBID_LITERALS_FILE"
+LOCAL_POLICY_FILE_ENV = "CODEX_PUBLISH_POLICY_FILE"
+
 
 @dataclass
 class LineFinding:
@@ -229,10 +254,18 @@ class LineFinding:
     excerpt: str
 
 
+@dataclass
+class LocalPolicy:
+    forbid_literals: list[str]
+    forbid_regexes: list[str]
+    extra_secret_regexes: list[str]
+    extra_internal_host_regexes: list[str]
+
+
 def should_scan_text(path: Path) -> bool:
     if path.suffix.lower() in TEXT_SUFFIXES:
         return True
-    return path.name in {"SKILL.md", "AGENTS.md", ".gitignore"}
+    return path.name in {"SKILL.md", "AGENTS.md", ".gitignore"} or path.name in LOCKFILE_NAMES
 
 
 def is_placeholder_value(value: str) -> bool:
@@ -310,6 +343,97 @@ def redact_excerpt(line: str, match_text: str) -> str:
     return clean
 
 
+def normalize_forbidden_literals(values: Iterable[str]) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        literal = value.strip().lower()
+        if literal and literal not in seen:
+            normalized.append(literal)
+            seen.add(literal)
+    return normalized
+
+
+def parse_forbidden_literals_env() -> list[str]:
+    raw = os.environ.get(FORBID_LITERALS_ENV, "")
+    if not raw.strip():
+        return []
+    pieces = re.split(r"[\n,]+", raw)
+    return normalize_forbidden_literals(pieces)
+
+
+def default_local_policy_path() -> Path | None:
+    codex_home = os.environ.get("CODEX_HOME", "").strip()
+    candidates: list[Path] = []
+    if codex_home:
+        candidates.append(Path(codex_home).expanduser() / "private" / "publish-policy.json")
+    candidates.append(Path.home() / ".codex" / "private" / "publish-policy.json")
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def read_forbidden_literals_file(path: Path) -> list[str]:
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        raise SystemExit(f"Unable to read forbid-literal file: {path}: {exc}") from exc
+    values: list[str] = []
+    for raw_line in content.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        values.append(line)
+    return normalize_forbidden_literals(values)
+
+
+def read_string_list(payload: dict[str, object], key: str, path: Path) -> list[str]:
+    value = payload.get(key, [])
+    if value is None:
+        return []
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+        raise SystemExit(f"`{key}` must be a list of strings in local policy file: {path}")
+    return [item for item in value if item.strip()]
+
+
+def read_local_policy_file(path: Path) -> LocalPolicy:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise SystemExit(f"Unable to read local policy file: {path}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"Invalid JSON in local policy file: {path}: {exc}") from exc
+
+    if not isinstance(payload, dict):
+        raise SystemExit(f"Local policy file must contain a JSON object: {path}")
+
+    return LocalPolicy(
+        forbid_literals=normalize_forbidden_literals(read_string_list(payload, "forbid_literals", path)),
+        forbid_regexes=read_string_list(payload, "forbid_regexes", path),
+        extra_secret_regexes=read_string_list(payload, "extra_secret_regexes", path),
+        extra_internal_host_regexes=read_string_list(payload, "extra_internal_host_regexes", path),
+    )
+
+
+def compile_regexes(patterns: Iterable[str], label: str) -> list[re.Pattern[str]]:
+    compiled: list[re.Pattern[str]] = []
+    for raw in patterns:
+        try:
+            compiled.append(re.compile(raw))
+        except re.error as exc:
+            raise SystemExit(f"Invalid regex in {label}: {raw!r}: {exc}") from exc
+    return compiled
+
+
+def find_forbidden_literal(line: str, forbidden_literals: list[str]) -> str | None:
+    lowered = line.lower()
+    for literal in forbidden_literals:
+        if literal in lowered:
+            return literal
+    return None
+
+
 def walk_files(root: Path) -> Iterable[Path]:
     for current_root, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
@@ -320,27 +444,37 @@ def walk_files(root: Path) -> Iterable[Path]:
 
 def collect_junk_paths(root: Path) -> list[str]:
     findings: list[str] = []
-    for path in walk_files(root):
-        rel = str(path.relative_to(root))
-        parts = set(path.parts)
-        if path.name in JUNK_NAMES:
-            findings.append(rel)
-            continue
-        if path.suffix.lower() in JUNK_SUFFIXES:
-            findings.append(rel)
-            continue
-        if parts & JUNK_PATH_PARTS:
-            findings.append(rel)
-            continue
-        if path.name.startswith(".env"):
-            findings.append(rel)
-            continue
+    for current_root, dirnames, filenames in os.walk(root):
+        current_path = Path(current_root)
+        for dirname in list(dirnames):
+            child = current_path / dirname
+            rel = str(child.relative_to(root))
+            if dirname in JUNK_PATH_PARTS:
+                findings.append(rel)
+        dirnames[:] = [d for d in dirnames if d not in IGNORE_DIRS]
+        for name in filenames:
+            path = current_path / name
+            rel = str(path.relative_to(root))
+            parts = set(path.parts)
+            if path.name in JUNK_NAMES:
+                findings.append(rel)
+                continue
+            if path.suffix.lower() in JUNK_SUFFIXES:
+                findings.append(rel)
+                continue
+            if parts & JUNK_PATH_PARTS:
+                findings.append(rel)
+                continue
+            if path.name.startswith(".env"):
+                findings.append(rel)
+                continue
     return sorted(set(findings))
 
 
 def collect_review_dirs(root: Path) -> dict[str, list[str]]:
     findings = {
         "built_in_system_tree": [],
+        "internal_only_paths": [],
         "third_party_content": [],
         "danger_skills": [],
     }
@@ -352,6 +486,8 @@ def collect_review_dirs(root: Path) -> dict[str, list[str]]:
             rel = str(child.relative_to(root))
             if dirname in REVIEW_DIR_NAMES:
                 findings[REVIEW_DIR_NAMES[dirname]].append(rel)
+            if dirname in INTERNAL_BOUNDARY_DIR_NAMES:
+                findings["internal_only_paths"].append(rel)
             if dirname.startswith("danger-") or "-danger-" in dirname:
                 findings["danger_skills"].append(rel)
     for key in findings:
@@ -475,9 +611,17 @@ def collect_third_party_provenance_gaps(root: Path) -> list[str]:
     return sorted(gaps)
 
 
-def collect_line_findings(root: Path) -> tuple[list[LineFinding], list[LineFinding]]:
+def collect_line_findings(
+    root: Path,
+    forbidden_literals: list[str],
+    forbidden_regexes: list[re.Pattern[str]],
+    extra_secret_patterns: list[re.Pattern[str]],
+    extra_internal_host_patterns: list[re.Pattern[str]],
+) -> tuple[list[LineFinding], list[LineFinding], list[LineFinding], list[LineFinding]]:
     secret_findings: list[LineFinding] = []
+    personal_info_findings: list[LineFinding] = []
     absolute_path_findings: list[LineFinding] = []
+    internal_host_findings: list[LineFinding] = []
 
     for path in walk_files(root):
         if (
@@ -496,6 +640,35 @@ def collect_line_findings(root: Path) -> tuple[list[LineFinding], list[LineFindi
 
         rel = str(path.relative_to(root))
         for line_no, line in enumerate(content.splitlines(), start=1):
+            personal_match_found = False
+            forbidden_literal = find_forbidden_literal(line, forbidden_literals)
+            if forbidden_literal:
+                personal_info_findings.append(
+                    LineFinding(
+                        path=rel,
+                        line=line_no,
+                        reason="forbidden_literal",
+                        excerpt=redact_excerpt(line, forbidden_literal),
+                    )
+                )
+                personal_match_found = True
+
+            if not personal_match_found:
+                for pattern in forbidden_regexes:
+                    match = pattern.search(line)
+                    if match:
+                        personal_info_findings.append(
+                            LineFinding(
+                                path=rel,
+                                line=line_no,
+                                reason="forbidden_regex",
+                                excerpt=redact_excerpt(line, match.group(0)),
+                            )
+                        )
+                        personal_match_found = True
+                        break
+
+            line_secret_matched = False
             for pattern in HARD_SECRET_PATTERNS:
                 match = pattern.search(line)
                 if match:
@@ -507,6 +680,7 @@ def collect_line_findings(root: Path) -> tuple[list[LineFinding], list[LineFindi
                             excerpt=redact_excerpt(line, match.group(0)),
                         )
                     )
+                    line_secret_matched = True
                     break
             else:
                 for pattern in HEADER_SECRET_PATTERNS:
@@ -520,6 +694,7 @@ def collect_line_findings(root: Path) -> tuple[list[LineFinding], list[LineFindi
                                 excerpt=redact_excerpt(line, match.group(0)),
                             )
                         )
+                        line_secret_matched = True
                         break
                 else:
                     uri_match = URI_CREDENTIAL_PATTERN.search(line)
@@ -534,6 +709,7 @@ def collect_line_findings(root: Path) -> tuple[list[LineFinding], list[LineFindi
                                     excerpt=redact_excerpt(line, match_text),
                                 )
                             )
+                            line_secret_matched = True
                         continue
                     match = ASSIGNMENT_PATTERN.search(line)
                     if match:
@@ -548,6 +724,7 @@ def collect_line_findings(root: Path) -> tuple[list[LineFinding], list[LineFindi
                                     excerpt=redact_excerpt(line, value),
                                 )
                             )
+                            line_secret_matched = True
                     else:
                         match = UNQUOTED_ASSIGNMENT_PATTERN.search(line)
                         if match:
@@ -562,6 +739,21 @@ def collect_line_findings(root: Path) -> tuple[list[LineFinding], list[LineFindi
                                         excerpt=redact_excerpt(line, value),
                                     )
                                 )
+                                line_secret_matched = True
+
+            if not line_secret_matched:
+                for pattern in extra_secret_patterns:
+                    match = pattern.search(line)
+                    if match:
+                        secret_findings.append(
+                            LineFinding(
+                                path=rel,
+                                line=line_no,
+                                reason="local_policy_secret_regex",
+                                excerpt=redact_excerpt(line, match.group(0)),
+                            )
+                        )
+                        break
 
             path_match = ABSOLUTE_PATH_PATTERN.search(line)
             if path_match:
@@ -579,7 +771,20 @@ def collect_line_findings(root: Path) -> tuple[list[LineFinding], list[LineFindi
                     )
                 )
 
-    return secret_findings, absolute_path_findings
+            for pattern in [*INTERNAL_HOST_PATTERNS, *extra_internal_host_patterns]:
+                match = pattern.search(line)
+                if match:
+                    internal_host_findings.append(
+                        LineFinding(
+                            path=rel,
+                            line=line_no,
+                            reason="internal_host_reference",
+                            excerpt=redact_excerpt(line, match.group(0)),
+                        )
+                    )
+                    break
+
+    return secret_findings, personal_info_findings, absolute_path_findings, internal_host_findings
 
 
 def to_serializable(findings: list[LineFinding]) -> list[dict[str, object]]:
@@ -646,6 +851,20 @@ def parse_args() -> argparse.Namespace:
         default=20,
         help="Maximum matches to print per section.",
     )
+    parser.add_argument(
+        "--forbid-literal",
+        action="append",
+        default=[],
+        help="Case-insensitive literal that must not appear in a public export. Repeat for multiple values.",
+    )
+    parser.add_argument(
+        "--forbid-literal-file",
+        help="Path to a local private file containing one forbidden literal per line. Keep it outside the publish repo.",
+    )
+    parser.add_argument(
+        "--local-policy-file",
+        help="Path to a local private JSON policy file. Supported keys: forbid_literals. Keep it outside the publish repo.",
+    )
     return parser.parse_args()
 
 
@@ -654,6 +873,37 @@ def main() -> int:
     all_results: dict[str, object] = {"roots": []}
     blocker_total = 0
     provenance_gap_total = 0
+    forbidden_literal_values: list[str] = []
+    forbidden_regex_texts: list[str] = []
+    extra_secret_regex_texts: list[str] = []
+    extra_internal_host_regex_texts: list[str] = []
+    forbidden_literal_values.extend(args.forbid_literal)
+    forbidden_literal_values.extend(parse_forbidden_literals_env())
+
+    local_policy_file = args.local_policy_file or os.environ.get(LOCAL_POLICY_FILE_ENV, "").strip()
+    if local_policy_file:
+        local_policy = read_local_policy_file(Path(local_policy_file).expanduser())
+        forbidden_literal_values.extend(local_policy.forbid_literals)
+        forbidden_regex_texts.extend(local_policy.forbid_regexes)
+        extra_secret_regex_texts.extend(local_policy.extra_secret_regexes)
+        extra_internal_host_regex_texts.extend(local_policy.extra_internal_host_regexes)
+    else:
+        default_policy = default_local_policy_path()
+        if default_policy is not None:
+            local_policy = read_local_policy_file(default_policy)
+            forbidden_literal_values.extend(local_policy.forbid_literals)
+            forbidden_regex_texts.extend(local_policy.forbid_regexes)
+            extra_secret_regex_texts.extend(local_policy.extra_secret_regexes)
+            extra_internal_host_regex_texts.extend(local_policy.extra_internal_host_regexes)
+
+    forbid_literal_file = args.forbid_literal_file or os.environ.get(FORBID_LITERALS_FILE_ENV, "")
+    if forbid_literal_file.strip():
+        forbidden_literal_values.extend(read_forbidden_literals_file(Path(forbid_literal_file).expanduser()))
+
+    forbidden_literals = normalize_forbidden_literals(forbidden_literal_values)
+    forbidden_regexes = compile_regexes(forbidden_regex_texts, "forbid_regexes")
+    extra_secret_patterns = compile_regexes(extra_secret_regex_texts, "extra_secret_regexes")
+    extra_internal_host_patterns = compile_regexes(extra_internal_host_regex_texts, "extra_internal_host_regexes")
 
     for root_arg in args.root:
         root = Path(root_arg).expanduser().resolve()
@@ -664,20 +914,36 @@ def main() -> int:
             print(f"[ERROR] Root is not a directory: {root}", file=sys.stderr)
             return 2
 
-        secret_findings, absolute_path_findings = collect_line_findings(root)
+        secret_findings, personal_info_findings, absolute_path_findings, internal_host_findings = collect_line_findings(
+            root,
+            forbidden_literals,
+            forbidden_regexes,
+            extra_secret_patterns,
+            extra_internal_host_patterns,
+        )
         junk_paths = collect_junk_paths(root)
         review_dirs = collect_review_dirs(root)
         provenance_gaps = collect_third_party_provenance_gaps(root)
 
-        blocker_count = len(secret_findings) + len(absolute_path_findings) + len(junk_paths)
+        blocker_count = (
+            len(secret_findings)
+            + len(personal_info_findings)
+            + len(absolute_path_findings)
+            + len(internal_host_findings)
+            + len(junk_paths)
+            + len(review_dirs["internal_only_paths"])
+        )
         blocker_total += blocker_count
         provenance_gap_total += len(provenance_gaps)
 
         print(f"\n=== {root} ===")
         print_line_findings("secret_like_matches", secret_findings, args.max_matches)
+        print_line_findings("personal_info_matches", personal_info_findings, args.max_matches)
         print_line_findings("absolute_path_matches", absolute_path_findings, args.max_matches)
+        print_line_findings("internal_host_matches", internal_host_findings, args.max_matches)
         print_path_findings("junk_paths", junk_paths, args.max_matches)
         print_path_findings("built_in_system_tree", review_dirs["built_in_system_tree"], args.max_matches)
+        print_path_findings("internal_only_paths", review_dirs["internal_only_paths"], args.max_matches)
         print_path_findings("third_party_content", review_dirs["third_party_content"], args.max_matches)
         print_path_findings("third_party_provenance_gaps", provenance_gaps, args.max_matches)
         print_path_findings("danger_skills", review_dirs["danger_skills"], args.max_matches)
@@ -688,7 +954,9 @@ def main() -> int:
                 "blocker_count": blocker_count,
                 "provenance_gap_count": len(provenance_gaps),
                 "secret_like_matches": to_serializable(secret_findings),
+                "personal_info_matches": to_serializable(personal_info_findings),
                 "absolute_path_matches": to_serializable(absolute_path_findings),
+                "internal_host_matches": to_serializable(internal_host_findings),
                 "junk_paths": junk_paths,
                 "review_dirs": review_dirs,
                 "third_party_provenance_gaps": provenance_gaps,

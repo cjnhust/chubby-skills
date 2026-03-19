@@ -21,6 +21,7 @@ This skill is the orchestrator for one publication run. It owns:
 
 - choosing the candidate skill roots
 - classifying what is public, private, repo-local, built-in, third-party, or review-required
+- classifying what is internal-only and therefore excluded from a public export by default
 - running a local preflight scan for secrets, local paths, and junk artifacts
 - deciding structure changes before export
 - normalizing publishable paths and references
@@ -82,6 +83,7 @@ What it may do:
    - Separate repo-local skill families from global skill families.
    - Treat `.system/` as excluded by default unless the user explicitly wants it and the license situation is understood.
    - Treat `danger-*` skills as review-required, not as default public candidates.
+   - Treat any skill placed under a dedicated internal boundary such as `internal/` as internal-only and exclude that path from a public export by default.
 
 2. Choose the publish boundary.
    - Prefer a clean export repo over pushing directly from `~/.codex/skills`.
@@ -96,10 +98,13 @@ What it may do:
    - Run `python3 scripts/preflight_scan.py --root <path> [--root <path> ...]`.
    - Add `--strict` when the scan should fail on blockers.
    - Add `--strict-provenance` when publish-ready means third-party content must already carry origin and license metadata.
+   - Prefer `--local-policy-file <private-json>` or a local default such as `$CODEX_HOME/private/publish-policy.json` for sensitive blocklist inputs like personal identifiers, local-only regexes, or extra secret/internal-host detection rules. Do not put those values in the public repo, README, or shared command examples.
    - Add `--json-out <file>` when the run needs a saved machine-readable report.
    - Review three blocker classes:
      - secret-like literals
+     - maintainer-marked personal identifiers
      - local absolute path leaks
+     - internal-only hosts or corp-network endpoints
      - junk, generated, or runtime credential artifacts
      - hardcoded auth headers, JWT-like literals, webhook secrets, or credential-bearing URIs
    - Review three caution classes:
@@ -116,6 +121,7 @@ What it may do:
 4. Reshape the tree before content edits.
    - Remove or ignore `.DS_Store`, `__pycache__/`, `*.pyc`, `node_modules/`, `.env*`, cookie/session files, local browser profiles, local databases, and raw key material.
    - Do not treat third-party or built-in content as publishable just because it is present.
+   - Do not treat internal-only skills as public candidates just because they are user-authored.
    - If the user approves inclusion of third-party material, keep it under an explicit `third-party` boundary in the export plan and preserve origin and license context.
    - If the user wants a single public repo, keep the family structure explicit so cross-skill references remain stable after export.
    - In `apply-on-confirm` mode, apply these changes only to the staged export unless the user explicitly authorizes source edits.
@@ -126,6 +132,14 @@ What it may do:
    - Prefer relative paths when the referenced file stays inside the exported bundle.
    - Prefer `$CODEX_HOME/skills/<skill>/...` when the target is an installed sibling skill and the reference should remain installation-relative.
    - Do not rewrite runtime storage code that intentionally uses `os.homedir()`, `APPDATA`, `XDG_DATA_HOME`, or explicit env overrides unless the user asked to change runtime behavior. That is runtime configuration, not a publish leak by itself.
+   - If the user wants to avoid repeat remediation, sync generic security fixes back to the original skills as source of truth:
+     - absolute path rewrites
+     - personal-info redaction
+     - removal of committed internal-host or corp-registry artifacts
+   - Do not sync pure export-boundary decisions back to source unless the user asked:
+     - excluding an internal-only skill from a public repo
+     - moving a copied family under `third-party/`
+     - splitting public and private exports
 
 6. Prepare the export repo.
    - Ensure the export repo contains only publishable source-of-truth files.
@@ -154,12 +168,22 @@ What it may do:
    - Do not call the tree publish-ready if secret-like literals, absolute user paths, or runtime artifacts remain.
    - If a real secret is found, stop, rotate or revoke it, remove it from the export tree, and only then continue.
 
+8. Finalize the local Git history in the export repo.
+   - Review `git status --short` before staging anything.
+   - Do not stage ignored junk or generated dependency trees just because they are present in the working directory.
+   - If ignored working-tree junk such as `node_modules/` still exists inside the export repo, clean or quarantine it before the final handoff.
+   - Use `git add -A` only after the tree matches the intended publish boundary.
+   - Write a factual commit message that describes the export change, boundary update, or security cleanup.
+   - Verify the commit with `git show --stat --name-status --oneline -1`.
+   - Keep this commit step inside the dedicated export repo or publish-repo working copy, not in the live source skills tree unless the user explicitly asked for that.
+
 ## Boundary Rules
 
 - Do not push directly from the live `~/.codex/skills` tree unless the user explicitly asks for that riskier path.
 - Do not treat plain env-var names as leaked secrets by themselves.
 - Do not print or preserve full suspected secret values in summaries; redact them.
 - Do not auto-include `.system/` in a public export.
+- Do not auto-include skills under a dedicated internal boundary such as `internal/` in a public export.
 - Do not silently fold third-party content into `owned/` skill ownership; keep a `third-party` marker in reports and export structure decisions.
 - If provenance is already known, prefer a physical `third-party/` directory boundary in the staged export instead of only tagging the report.
 - Do not "fix" runtime credential storage code when the real issue is only a doc path or a committed runtime artifact.

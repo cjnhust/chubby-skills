@@ -1,7 +1,7 @@
 # License Decision
 
-The root repository license for `owned/` content is intentionally not chosen automatically.
-Choose and add a root `LICENSE` file before public release.
+A root repository license file is already present in this export.
+Verify that it reflects the intended license for the `owned/` subtree before public release.
 
 ## Third-Party Context
 

@@ -7,15 +7,15 @@ description: Normalize a visual style brief or visual profile into explicit styl
 
 Use this skill between baoyu's content-structure generation and its final image generation whenever the default baoyu aesthetic is not the intended final style.
 
-Also read [../../owned/shared/references/family-orchestration-contract.md](../../owned/shared/references/family-orchestration-contract.md).
-Also read [../../owned/shared/references/extend-ownership-contract.md](../../owned/shared/references/extend-ownership-contract.md).
-Also read [../../owned/shared/references/visual-source-preservation-contract.md](../../owned/shared/references/visual-source-preservation-contract.md).
+Also read [../shared/references/family-orchestration-contract.md](../shared/references/family-orchestration-contract.md).
+Also read [../shared/references/extend-ownership-contract.md](../shared/references/extend-ownership-contract.md).
+Also read [../shared/references/visual-source-preservation-contract.md](../shared/references/visual-source-preservation-contract.md).
 
 ## Purpose
 
 This skill is the bridge layer for the visual family. It does not replace baoyu and it does not orchestrate document flow. It recommends or normalizes visual style, then writes explicit style artifacts that downstream skills can consume. Higher-level workflow ownership such as workspace creation, shared bundle persistence, and downstream routing belongs to orchestration skills such as `engineering-story-pipeline` or `baoyu-visual-pipeline`.
 
-If this bridge will persist artifacts for a multi-step flow, also read [../../owned/shared/references/working-artifact-contract.md](../../owned/shared/references/working-artifact-contract.md). The caller owns the root working location; this skill decides only the target artifact files it patches or creates for style execution.
+If this bridge will persist artifacts for a multi-step flow, also read [../shared/references/working-artifact-contract.md](../shared/references/working-artifact-contract.md). The caller owns the root working location; this skill decides only the target artifact files it patches or creates for style execution.
 
 ## Inputs
 

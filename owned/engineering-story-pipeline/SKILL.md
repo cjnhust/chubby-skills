@@ -133,6 +133,7 @@ For topic-based or URL-based research-report flows that need theme confirmation,
    - When accepted visuals are being integrated into the formal article:
      - remove review-only placeholder blocks and temporary review notes from the reader-facing version
      - keep the chosen image references in place near the approved section anchors
+     - use article-relative markdown image paths such as `../illustrations/01-framework.png` or `../cover-image/cover.jpg`, not absolute filesystem paths
      - do not discard the approved Mermaid or node-edge source; preserve it under `notes/diagram-structures.md` or an equivalent saved artifact before cleaning the article
 
 5. Run a source-fidelity check before visuals or formal export.
@@ -240,6 +241,7 @@ For topic-based or URL-based research-report flows that need theme confirmation,
    - Check that article, diagrams, cover, comic, infographic, and deck share the same palette, contrast model, emphasis rules, and typographic posture where appropriate.
    - Keep visuals flat, precise, and high-contrast unless the selected theme intentionally softens them.
    - If the article is becoming a formal deliverable, verify that no workspace-facing copy remains in the final reader-facing version.
+   - Before treating `exports/article-final.md` as done, run `scripts/validate-reader-facing-links.js --file <article-path>` and fix any absolute filesystem image links.
    - If the article moved from placeholder review into accepted-image integration:
      - preserve the canonical diagram source under `notes/diagram-structures.md`
      - ensure the reader-facing article keeps only the chosen image references, not the review placeholder blocks or Mermaid review aids
@@ -312,7 +314,7 @@ For topic-based or URL-based research-report flows that need theme confirmation,
 - Flow closure note: `references/flow-closure.md`
 - Source fidelity guard: `references/source-fidelity-check.md`
 - Theme profiles: `references/theme-profiles.md`
-- Writing posture bridge: `../writing-theme-bridge/SKILL.md`
+- Writing posture bridge: `$CODEX_HOME/skills/writing-theme-bridge/SKILL.md`
 - Shared visual language: `references/visual-system.md`
 - Diagram spec contract: `references/diagram-contract.md`
 - Slide outline contract: `references/deck-outline-contract.md`

@@ -52,6 +52,13 @@ For mature source documents, `notes/source-contract.md` records the original the
 
 `drafts/article.md` is the working source-of-truth draft. It may contain limited workflow-facing scaffolding while the article is still under review. Reader-facing delivery files should be cleaned and exported separately, for example as `exports/article-final.md`.
 
+When inserting accepted visuals into either `drafts/article.md` or `exports/article-final.md`, use markdown paths relative to the article file, for example:
+
+- `../illustrations/01-framework.png`
+- `../cover-image/cover.jpg`
+
+Do not write absolute filesystem paths into the article body.
+
 If a placeholder-bearing draft later becomes a formal article with accepted images, preserve the approved Mermaid blocks or other structural diagram sources under `notes/diagram-structures.md` before removing those review aids from the final article.
 
 ## Naming Rule
@@ -84,3 +91,8 @@ Before treating an article as a formal deliverable, remove or rewrite workspace-
 - references to `notes/selection-bundle.md` or `notes/visual-inventory.md`
 - "if later you want images or deck" process notes
 - internal review or export reminders that are not part of the article itself
+
+Also verify that markdown image links remain reader-facing:
+
+- use relative paths that survive normal local markdown preview
+- do not leak absolute workspace paths into the document body

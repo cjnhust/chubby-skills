@@ -48,7 +48,7 @@ Prompt cues:
 
 Primary reference:
 
-- `../../../owned/engineering-story-pipeline/references/visual-system.md`
+- `$CODEX_HOME/skills/engineering-story-pipeline/references/visual-system.md`
 
 ### `launch-keynote`
 

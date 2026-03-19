@@ -21,6 +21,14 @@ The staged export should also carry these repo-level helper docs:
 - `RELEASE_CHECKLIST.md` with the minimum checks before GitHub push
 - `LICENSE_DECISION.md` when the maintainer has not yet chosen the root license for `owned/` content
 
+The release flow should also cover the local commit step:
+
+- review `git status --short`
+- ensure ignored junk such as `node_modules/` is not part of the final handoff
+- stage the intended changes only
+- create a factual commit message
+- verify the commit with `git show --stat --name-status --oneline -1`
+
 ## Third-Party Attribution
 
 If the export intentionally includes third-party skills:

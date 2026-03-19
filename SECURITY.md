@@ -12,6 +12,7 @@ This repository publishes Codex skills and helper scripts. It is prepared for so
 
 - Keep credentials in environment variables or a local secret manager.
 - Keep third-party material inside `third-party/` with explicit origin and license review.
+- Keep maintainer-specific sensitive scan inputs in a local private policy file such as `$CODEX_HOME/private/publish-policy.json`, not in committed docs or shared shell snippets.
 - Prefer redacted examples such as `your_token_here` instead of live values.
 
 ## Reporting
@@ -27,7 +28,7 @@ If you find a leaked secret or sensitive local path:
 Run the staged export scan before public release:
 
 ```bash
-python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance
+python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file "$CODEX_HOME/private/publish-policy.json"
 ```
 
 After creating the GitHub repository, enable Secret Scanning and Push Protection before the first public push.
