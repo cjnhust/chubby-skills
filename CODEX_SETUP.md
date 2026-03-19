@@ -32,6 +32,8 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 
 - Use a small docs-only pull request.
 - Keep the `codex-review-gate` workflow green; that is the hard merge gate.
+- Only a trusted-maintainer-only submission can skip an extra human approval: the pull request must be opened by the repository owner or another configured admin profile, and every commit on the current head must resolve to that same trusted maintainer set.
+- If the PR is opened by someone else or includes any commit not attributed to that trusted maintainer set, keep the gate blocked until the repository owner or another configured admin approves the current head.
 - Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.
 - If you are introducing the hard-gate workflows for the first time, the bootstrap PR that lands them may need a one-time manual exception.
 - Trigger Codex review through the currently supported GitHub flow for your account.

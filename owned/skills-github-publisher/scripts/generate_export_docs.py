@@ -788,6 +788,8 @@ def build_codex_setup(root: Path) -> str:
     lines.append("- Use a small docs-only pull request.")
     if review_gate_enabled:
         lines.append("- Keep the `codex-review-gate` workflow green; that is the hard merge gate.")
+        lines.append("- Only a trusted-maintainer-only submission can skip an extra human approval: the pull request must be opened by the repository owner or another configured admin profile, and every commit on the current head must resolve to that same trusted maintainer set.")
+        lines.append("- If the PR is opened by someone else or includes any commit not attributed to that trusted maintainer set, keep the gate blocked until the repository owner or another configured admin approves the current head.")
         if auto_merge_enabled:
             lines.append("- Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.")
         else:

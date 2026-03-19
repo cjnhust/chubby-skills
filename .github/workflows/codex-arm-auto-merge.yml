@@ -12,6 +12,7 @@ permissions:
   contents: write
   issues: read
   pull-requests: write
+  statuses: read
 
 jobs:
   codex-arm-auto-merge-controller:
@@ -27,15 +28,8 @@ jobs:
               "chatgpt-codex-connector[bot]",
               "chatgpt-codex-connector",
             ]);
-            const cleanBodyPatterns = [
-              /didn't find any major issues/i,
-              /did not find any major issues/i,
-              /\bbreezy\b/i,
-            ];
-
-            function bodyLooksClean(body) {
-              return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
-            }
+            const gateContext = "codex-review-gate";
+            const trustCache = new Map();
 
             async function enableWithRetry(pr) {
               for (let attempt = 1; attempt <= 6; attempt += 1) {
@@ -78,6 +72,74 @@ jobs:
               }
             }
 
+            async function fetchPullRequest(pullNumber) {
+              const response = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pullNumber,
+              });
+              return response.data;
+            }
+
+            async function isTrustedMaintainer(login) {
+              if (!login) {
+                return false;
+              }
+              if (login === owner) {
+                return true;
+              }
+              if (trustCache.has(login)) {
+                return trustCache.get(login);
+              }
+              try {
+                const response = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner,
+                  repo,
+                  username: login,
+                });
+                const trusted = (response.data.permission || "").toLowerCase() === "admin";
+                trustCache.set(login, trusted);
+                return trusted;
+              } catch (error) {
+                if (error.status === 404) {
+                  trustCache.set(login, false);
+                  return false;
+                }
+                throw error;
+              }
+            }
+
+            async function gateStateForSha(sha) {
+              const response = await github.rest.repos.listCommitStatusesForRef({
+                owner,
+                repo,
+                ref: sha,
+                per_page: 100,
+              });
+              const gateStatus = response.data.find((status) => status.context === gateContext);
+              return (gateStatus?.state || "pending").toLowerCase();
+            }
+
+            async function waitForGreenGate(pr) {
+              for (let attempt = 1; attempt <= 12; attempt += 1) {
+                const state = await gateStateForSha(pr.head.sha);
+                if (state === "success") {
+                  core.info(`Gate ${gateContext}=success for PR #${pr.number}`);
+                  return true;
+                }
+                if (state === "failure") {
+                  core.info(`Gate ${gateContext}=failure for PR #${pr.number}; not arming auto-merge.`);
+                  return false;
+                }
+                if (attempt < 12) {
+                  core.info(`Gate ${gateContext} still pending for PR #${pr.number}; retrying in 5s (attempt ${attempt}/12)`);
+                  await new Promise((resolve) => setTimeout(resolve, 5000));
+                }
+              }
+              core.info(`Gate ${gateContext} did not turn green in time for PR #${pr.number}.`);
+              return false;
+            }
+
             let pr = null;
             if (context.eventName === "issue_comment") {
               const issue = context.payload.issue;
@@ -86,29 +148,14 @@ jobs:
                 core.info("Ignoring non-PR comment or non-Codex actor.");
                 return;
               }
-              if (!bodyLooksClean(comment.body || "")) {
-                core.info("Codex comment did not indicate a clean review; not arming auto-merge.");
-                return;
-              }
-              const response = await github.rest.pulls.get({
-                owner,
-                repo,
-                pull_number: issue.number,
-              });
-              pr = response.data;
+              pr = await fetchPullRequest(issue.number);
             } else if (context.eventName === "pull_request_review") {
               const review = context.payload.review;
               const incomingPr = context.payload.pull_request;
-              if (!review || !incomingPr || !codexActors.has(review.user?.login || "")) {
-                core.info("Ignoring non-Codex review.");
-                return;
-              }
-              const state = (review.state || "").toUpperCase();
-              const clean =
-                state === "APPROVED" ||
-                (state === "COMMENTED" && bodyLooksClean(review.body || ""));
-              if (!clean) {
-                core.info("Codex review was not clean; not arming auto-merge.");
+              const reviewLogin = review?.user?.login || "";
+              const trustedReviewer = await isTrustedMaintainer(reviewLogin);
+              if (!review || !incomingPr || (!codexActors.has(reviewLogin) && !trustedReviewer)) {
+                core.info("Ignoring unrelated review.");
                 return;
               }
               pr = incomingPr;
@@ -119,4 +166,7 @@ jobs:
               return;
             }
 
+            if (!(await waitForGreenGate(pr))) {
+              return;
+            }
             await enableWithRetry(pr);

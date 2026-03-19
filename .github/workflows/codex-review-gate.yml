@@ -42,6 +42,7 @@ jobs:
             ];
             const pollAttempts = 40;
             const pollIntervalMs = 15000;
+            const trustCache = new Map();
 
             async function setStatus(sha, state, description, targetUrl) {
               await github.rest.repos.createCommitStatus({
@@ -124,6 +125,34 @@ jobs:
               return [...items].sort((left, right) => parseDate(left[field]) - parseDate(right[field])).at(-1) || null;
             }
 
+            async function isTrustedMaintainer(login) {
+              if (!login) {
+                return false;
+              }
+              if (login === owner) {
+                return true;
+              }
+              if (trustCache.has(login)) {
+                return trustCache.get(login);
+              }
+              try {
+                const response = await github.rest.repos.getCollaboratorPermissionLevel({
+                  owner,
+                  repo,
+                  username: login,
+                });
+                const trusted = (response.data.permission || "").toLowerCase() === "admin";
+                trustCache.set(login, trusted);
+                return trusted;
+              } catch (error) {
+                if (error.status === 404) {
+                  trustCache.set(login, false);
+                  return false;
+                }
+                throw error;
+              }
+            }
+
             async function fetchPullRequest(pullNumber) {
               const response = await github.rest.pulls.get({
                 owner,
@@ -144,6 +173,15 @@ jobs:
 
             async function listReviews(pullNumber) {
               return github.paginate(github.rest.pulls.listReviews, {
+                owner,
+                repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              });
+            }
+
+            async function listPullRequestCommits(pullNumber) {
+              return github.paginate(github.rest.pulls.listCommits, {
                 owner,
                 repo,
                 pull_number: pullNumber,
@@ -221,10 +259,80 @@ jobs:
               };
             }
 
+            async function commitBelongsToTrustedMaintainer(commit) {
+              const authorLogin = commit.author?.login || "";
+              const committerLogin = commit.committer?.login || "";
+              return (await isTrustedMaintainer(authorLogin)) && (await isTrustedMaintainer(committerLogin));
+            }
+
+            async function approvalState(pr) {
+              const commits = await listPullRequestCommits(pr.number);
+              const trustedOpenedPr = await isTrustedMaintainer(pr.user?.login || "");
+              let trustedOnlyCommits = true;
+              for (const commit of commits) {
+                if (!(await commitBelongsToTrustedMaintainer(commit))) {
+                  trustedOnlyCommits = false;
+                  break;
+                }
+              }
+              if (trustedOpenedPr && trustedOnlyCommits) {
+                return {
+                  satisfied: true,
+                  state: "trusted-only",
+                  description: "Trusted-maintainer-only submission; no extra approval required",
+                };
+              }
+
+              const reviews = await listReviews(pr.number);
+              const trustedReviews = [];
+              for (const review of reviews) {
+                if (review.commit_id !== pr.head.sha) {
+                  continue;
+                }
+                if (await isTrustedMaintainer(review.user?.login || "")) {
+                  trustedReviews.push(review);
+                }
+              }
+              const latestTrustedReview = latestBy(trustedReviews, "submitted_at");
+              const reviewState = (latestTrustedReview?.state || "").toUpperCase();
+              if (reviewState === "APPROVED") {
+                return {
+                  satisfied: true,
+                  state: "approved",
+                  description: "A trusted maintainer approved the current head after a non-trusted submission",
+                };
+              }
+              if (reviewState === "CHANGES_REQUESTED") {
+                return {
+                  satisfied: false,
+                  state: "changes-requested",
+                  description: "A trusted maintainer requested changes on the current head",
+                };
+              }
+              return {
+                satisfied: false,
+                state: "waiting",
+                description: "Waiting for a trusted maintainer approval on the current head because this PR is not a trusted-maintainer-only submission",
+              };
+            }
+
             async function settleGate(pr) {
               const outcome = await detectOutcome(pr);
               if (outcome.kind === "waiting") {
                 return false;
+              }
+              if (outcome.kind === "success") {
+                const approval = await approvalState(pr);
+                if (!approval.satisfied) {
+                  await setStatus(
+                    pr.head.sha,
+                    approval.state === "changes-requested" ? "failure" : "pending",
+                    approval.description,
+                    outcome.targetUrl,
+                  );
+                  core.info(`Set ${gateContext}=${approval.state === "changes-requested" ? "failure" : "pending"} on ${pr.head.sha}`);
+                  return true;
+                }
               }
               await setStatus(
                 pr.head.sha,
@@ -314,8 +422,10 @@ jobs:
             if (context.eventName === "pull_request_review") {
               const review = context.payload.review;
               const pr = context.payload.pull_request;
-              if (!review || !pr || !isCodexActor(review.user?.login) || !isSameRepoPullRequest(pr)) {
-                core.info("Ignoring non-Codex review event.");
+              const reviewLogin = review?.user?.login || "";
+              const trustedReviewer = await isTrustedMaintainer(reviewLogin);
+              if (!review || !pr || !isSameRepoPullRequest(pr) || (!isCodexActor(reviewLogin) && !trustedReviewer)) {
+                core.info("Ignoring unrelated review event.");
                 return;
               }
               await settleGate(pr);
