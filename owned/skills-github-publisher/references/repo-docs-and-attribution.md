@@ -40,8 +40,10 @@ The same release flow should also cover the local publish handoff:
 - prefer an `https://github.com/...` remote, or an explicit GitHub-only SSH alias, when the machine also carries internal SSH identities
 - for HTTPS remotes, prefer `gh auth login` or another OS-keychain-backed credential flow instead of pasting PATs into terminal prompts
 - for updates to an existing public repo, create or reuse a PR branch such as `codex/<change-name>` before committing
+- prefer a helper such as `python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --root . --base main` to standardize the final local handoff
 - push that PR branch with `git push -u origin <branch>` only after local scans and provenance checks are clean
 - open a pull request into the protected default branch instead of treating direct `main` push as the normal update path
+- if `gh` is unavailable locally, print and use the manual compare / PR URL instead of silently dropping the PR step
 - verify the pushed branch with `git ls-remote --heads origin <branch>` or an equivalent remote check
 - keep real repository URLs, access tokens, and maintainer-specific sensitive scan inputs out of committed docs
 

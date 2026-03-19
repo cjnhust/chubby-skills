@@ -31,6 +31,7 @@ git status --short
 git remote -v
 gh auth login --hostname github.com --git-protocol https --web  # recommended for HTTPS remotes
 git remote add origin <your-github-repo-url>  # prefer https://github.com/... for public repos when internal SSH keys also exist
+python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --root . --base main  # inspect push/PR handoff first
 git push -u origin codex/<change-name>  # for updates to an existing public repo
 gh pr create --base main --head codex/<change-name>  # or open the PR in the GitHub UI
 git ls-remote --heads origin codex/<change-name>
@@ -43,6 +44,7 @@ git ls-remote --heads origin codex/<change-name>
 - Prefer GitHub CLI login or another OS-keychain-backed HTTPS credential flow over typing PATs into terminal prompts.
 - Enable Secret Scanning and Push Protection before the first public push.
 - For normal updates to an already public repo, push a PR branch and merge through pull request review rather than pushing directly to `main`.
+- If `gh` is not installed locally, use the helper script's printed compare URL and open the PR in the browser manually.
 - Push only after the license decision, third-party manifests, and security scan are all in the expected state.
 - If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.
 - If you later enable Codex on GitHub, start with PR review on the already public repository before allowing broader cloud-side edit flows.

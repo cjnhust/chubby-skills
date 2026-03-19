@@ -206,6 +206,11 @@ What it may do:
    - If no `origin` remote exists yet, create the GitHub repository outside this skill, then add `origin` deliberately in the export repo.
    - For public GitHub publication on machines that also use internal SSH identities, prefer an `https://github.com/...` remote or an explicit GitHub-only SSH host alias. Do not rely on the default SSH identity selection when internal and external keys differ.
    - When using an HTTPS remote, prefer GitHub CLI login such as `gh auth login --hostname github.com --git-protocol https --web` so credentials land in the OS keychain instead of being typed into terminal prompts for each push.
+   - Prefer `python3 scripts/push_pr_handoff.py --root <export-repo> --base <default-branch>` to standardize the final local handoff.
+     - use it without side-effect flags first to print the detected branch, push command, and PR handoff URL
+     - then use `--push` when the branch is ready to publish
+     - then use `--create-pr` only when `gh` is available and authenticated
+     - if `gh` is unavailable, fall back to the printed compare / PR URL and open the PR in the browser manually
    - For updates to an existing public repo, prefer:
      - `git push -u origin <pr-branch>`
      - open a pull request from `<pr-branch>` into the protected default branch
@@ -263,6 +268,7 @@ What it may do:
 
 - `scripts/resolve_local_publish_config.py`: resolve maintainer-local defaults such as the preferred publish repo and local private policy file without hardcoding them in the public skill
 - `scripts/sync_incremental_update.py`: sync one or more local skills into the configured publish repo working copy for incremental update flows
+- `scripts/push_pr_handoff.py`: validate the current branch, print or run the push command, and either create the PR via `gh` or print the manual compare URL
 - `scripts/check_git_identity.py`: verify repo-local git author metadata against local private policy before public commits
 - `scripts/preflight_scan.py`: local scan for secret-like literals, local-path leaks, and junk artifacts
 - `scripts/generate_export_docs.py`: generate staged `README.md`, acknowledgement docs, and prefilled third-party review manifests
