@@ -17,11 +17,15 @@ Use this checklist before creating the public GitHub repository or pushing from 
 ```bash
 python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file "$CODEX_HOME/private/publish-policy.json"
 git status --short
-git init -b main
+git init -b main  # only for a fresh local repo
 git add .
 git commit -m "Prepare public skills export"
 git show --stat --name-status --oneline -1
 git status --short
+git remote -v
+git remote add origin <your-github-repo-url>  # only if origin is not set yet
+git push -u origin main
+git ls-remote --heads origin main
 ```
 
 ## GitHub Setup
@@ -29,4 +33,5 @@ git status --short
 - Create the target GitHub repository with the intended visibility.
 - Enable Secret Scanning and Push Protection before the first public push.
 - Push only after the license decision, third-party manifests, and security scan are all in the expected state.
+- If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.
 

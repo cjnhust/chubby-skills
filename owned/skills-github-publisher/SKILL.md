@@ -177,6 +177,17 @@ What it may do:
    - Verify the commit with `git show --stat --name-status --oneline -1`.
    - Keep this commit step inside the dedicated export repo or publish-repo working copy, not in the live source skills tree unless the user explicitly asked for that.
 
+9. Execute the local publish handoff only after the export repo is clean.
+   - Review `git remote -v` before the first push.
+   - If no `origin` remote exists yet, create the GitHub repository outside this skill, then add `origin` deliberately in the export repo.
+   - Push with `git push -u origin main` only after:
+     - the strict preflight scan is clean
+     - provenance review is complete for intentionally included third-party units
+     - `git status --short` is empty after the release commit
+   - If GitHub push protection blocks the push, stop and treat it as a real blocker until the flagged content is removed or explained.
+   - After the first push, verify the published branch with `git ls-remote --heads origin main` or an equivalent remote check.
+   - Record the final local verification commands in `RELEASE_CHECKLIST.md` so the publish-repo is self-contained for the next run.
+
 ## Boundary Rules
 
 - Do not push directly from the live `~/.codex/skills` tree unless the user explicitly asks for that riskier path.
