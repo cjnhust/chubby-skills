@@ -1,7 +1,7 @@
 ---
 name: baoyu-markdown-to-html
 description: Converts Markdown to styled HTML with WeChat-compatible themes. Supports code highlighting, math, PlantUML, footnotes, alerts, infographics, and optional bottom citations for external links. Use when user asks for "markdown to html", "convert md to html", "md转html", "微信外链转底部引用", or needs styled HTML output from markdown.
-version: 1.56.1
+version: 1.56.2
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-markdown-to-html
@@ -23,7 +23,7 @@ This skill is a leaf capability in the content-transformation family. If HTML ex
 
 ## Script Directory
 
-**Agent Execution**: Determine this SKILL.md directory as `{baseDir}`. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; else suggest installing bun. Replace `{baseDir}` and `${BUN_X}` with actual values.
+**Agent Execution**: Determine this SKILL.md directory as `{baseDir}`. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; otherwise ask to install `bun`, install it, and continue. Do not silently replace this skill with ad hoc HTML conversion while still claiming the skill ran. Replace `{baseDir}` and `${BUN_X}` with actual values.
 
 | Script | Purpose |
 |--------|---------|
@@ -71,6 +71,12 @@ Treat these as this skill's direct defaults. If the current run needs a one-off 
 ## Shared Working Artifact Contract
 
 If this run creates intermediate artifacts such as normalized markdown, review notes, staged citations, or auxiliary export files, also read [../../owned/shared/references/working-artifact-contract.md](../../owned/shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
+
+## Mode Compatibility
+
+When this skill says `AskUserQuestion`, use it if that tool is available in the current mode.
+
+If it is not available, ask the same confirmation in one concise plain-text assistant message and wait for the user's reply before continuing.
 
 ## Workflow
 

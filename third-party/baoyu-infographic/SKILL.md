@@ -1,7 +1,7 @@
 ---
 name: baoyu-infographic
 description: Generates professional infographics with 21 layout types and 20 visual styles. Analyzes content, recommends layout×style combinations, and generates publication-ready infographics. Use when user asks to create "infographic", "信息图", "visual summary", "可视化", or "高密度信息大图".
-version: 1.56.1
+version: 1.56.2
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-infographic
@@ -39,6 +39,12 @@ This skill is a deliverable-specific leaf in the visual family. If the request i
 ## Shared Working Artifact Contract
 
 If this run creates intermediate artifacts such as structured content files, prompt files, review notes, or staged outputs, also read [../../owned/shared/references/working-artifact-contract.md](../../owned/shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
+
+## Mode Compatibility
+
+When this skill says `AskUserQuestion`, use it if that tool is available in the current mode.
+
+If it is not available, ask the same question set in one concise plain-text assistant message and wait for the user's reply before continuing.
 
 ## Layout Gallery
 

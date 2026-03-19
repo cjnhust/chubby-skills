@@ -94,7 +94,13 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - Treat a research report as an evidence-led technical evaluation document, not as a blog retrospective and not as an RFC.
 - Open by stating the research object, the scope boundary, the main question to answer, and the evidence boundary of the current run.
 - For project-specific research, start from the simplest reader questions first: `它是什么 / 它是干什么的 / 它主要解决什么问题`。 Do this before higher-order adoption framing.
+- For project-specific research, if one sentence can position the object clearly through `类别 + 主要作用 + 克制类比`, prefer that over a longer abstract definition. The analogy should only orient the reader; it must not replace the later evidence-led judgment.
+- If the object can be positioned cleanly in one sentence, that sentence should usually be the opening line. Do not start with scope management, evidence provenance, or research-process framing.
 - In that opening, defer low-level caveats such as hardware floor, path-specific maturity, or benchmark/performance boundaries unless they are part of the object's basic definition.
+- When stating scope for a named project, prefer positive scope wording such as “本次调研聚焦 X 项目本身” over defensive phrasing like “不扩展到更广泛的某某赛道”.
+- Do not overload the opening paragraph with scope, evidence sources, unvalidated items, and conclusion strength all at once. Open with object + core questions first, then add one shorter sentence for evidence boundary and report strength.
+- For single-project research, avoid process-introduction phrases like “这份调研围绕 X 展开” or “重点回答三个问题”. Prefer direct object definition plus the concrete judgment this report cares about.
+- For single-project research, a good opening order is usually: one-sentence object description -> current main judgment -> what the rest of the report will unpack -> one short evidence-boundary sentence.
 - Surface a bounded findings snapshot early. Readers should know the provisional answer before they enter the longer evidence sections.
 - In the findings snapshot, prefer this order when possible:
   - one reader-familiar problem statement
@@ -111,6 +117,7 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - Keep detailed validation sequencing out of the findings snapshot unless it is itself the main conclusion. Operational step ordering belongs later in the report.
 - Keep the section map natural. Do not split every evaluation dimension into its own visibly mechanical section if adjacent dimensions can be discussed more naturally together.
 - Do not over-compress the summary either. Avoid sentences that try to carry fit, weak fit, recommendation strength, evidence boundary, and remaining uncertainty all at once; split them into two or three cleaner judgments.
+- Once the object role and core problem are established in early sections, later sections should advance the evaluation rather than restating the same definition in slightly different words.
 - Avoid meta-report phrasing in the verdict, such as “如果先只回答一个问题”“更稳妥的说法是”“这轮调研还不打算下结论”. Prefer direct declarative judgment.
 - Avoid process-note phrasing in the verdict, such as “这轮能确认的是……”“还没有回答的是……”. Prefer reader-facing boundary statements.
 - Keep source evidence, synthesis, and recommendation distinct. Make it obvious which claims are directly supported, which are inferred, and which remain unverified.
@@ -126,10 +133,13 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - If the report is based on a narrow source set, say so through the writing itself. Do not let a narrow-source summary pretend to be a broad survey.
 - Prefer section openings that answer one research question or decision point at a time, rather than opening with essay-like abstractions.
 - Prefer self-contained section headings that make sense on their own. Avoid callback headings like “这个判断为什么成立” when an object-facing or question-facing title would be clearer.
-- For research-report SOP sections, prefer reader-question headings such as “如果要试一轮，最短路径是什么” or “怎么开始试” over analysis-labeled headings like “最小验证路径：先验证什么最有意义”.
+- For research-report SOP sections, prefer reader-question headings such as “怎么开始试一轮 X”, “先怎么试起来”, or “第一步先做什么” over analysis-labeled headings like “最小验证路径：先验证什么最有意义” or half-abstract headings like “如果要试一轮，最短路径是什么”.
 - For open-source or source-available project research, treat implementation reading as part of the evaluation. The report should not stop at documentation summary when implementation shape materially affects the judgment.
+- For tool / platform / service research, keep the body product-facing before it becomes implementation-facing. Readers should first understand how they would encounter or use the thing, what surfaces it exposes, and what observations matter in practice.
 - For project-specific research, reduce rhetorical contrast and metaphor. Prefer direct wording that clarifies scope, support boundary, fit, and uncertainty.
+- If a restrained analogy materially improves orientation for a concrete tool or platform, use it once and move on. Good analogies clarify the object's role in practice, such as a private service entry point or unified socket; bad analogies try to stand in for the whole evaluation.
 - Do not let an implementation-layer classification sentence stand alone as the whole verdict. Tie it back to user-facing adoption meaning immediately.
+- Do not let code structure, file paths, or config fields become the main narrative spine too early. Use them to support a claim the reader already understands at the product layer.
 
 ## Write RFC And Technical Documents
 
@@ -154,6 +164,7 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - For tech blogs and practice-sharing pieces, allow a slightly stronger narrative bridge such as “随着……”“在这个阶段”“相比之下”“可以看到”“接下来重点看……”, but keep the tone restrained.
 - In RFCs, keep paragraphs shorter, claims denser, and section openings more direct.
 - In research reports, let headings and opening lines attach to research questions, comparison dimensions, or decision points instead of essay-like abstractions.
+- In research reports for concrete tools or platforms, one restrained analogy is acceptable when it materially improves reader orientation, but it should never substitute for object definition, support boundary, or fit judgment.
 - In technical blogs, allow medium-to-long sentences as long as each sentence carries one clear explanatory step.
 - In serious engineering prose, keep wording precise and calm; avoid both blog-style self-reference and RFC-style over-templating unless the source explicitly demands one side.
 

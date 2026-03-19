@@ -50,6 +50,7 @@ If the request is already a finished draft that only needs rewriting, stay with 
 2. Build a research workspace.
    - Read `references/research-workspace.md`.
    - Prefer `scripts/init-workspace.js --topic <topic> --workspace <dir>` for deterministic workspace creation.
+   - Preflight the JS runtime before calling helper scripts. Do not trust the agent wrapper shell's `PATH` by itself. First check whether the command is available in the user's actual `zsh` environment; only after that should you conclude installation is required. Prefer `node`; if `node` is unavailable but `bun` is available, `bun` is an acceptable fallback for these local helper scripts.
    - Create one workspace per report.
    - Keep all source discovery, evidence notes, and drafts inside that workspace.
 
@@ -58,6 +59,7 @@ If the request is already a finished draft that only needs rewriting, stay with 
    - If the request includes one or more concrete URLs that will materially affect the report, capturing those URLs through `baoyu-url-to-markdown` or `baoyu-content-pipeline` is mandatory, not optional.
    - If the source starts from one or more plain URLs and the immediate need is to capture the page faithfully, reuse `baoyu-url-to-markdown` directly as the leaf capture skill.
    - If the URL source also needs translation, staged markdown cleanup, or a normalized publish-ready markdown before evidence extraction, then route through `baoyu-content-pipeline`.
+   - If the chosen content-family leaf is blocked only because a runtime or required binary is missing, bootstrap that dependency or ask the user for installation confirmation first. Do not silently substitute `curl`, search snippets, or another ad hoc capture path while still treating the leaf capture requirement as satisfied.
    - Do not rebuild a second webpage capture path inside this skill. Reuse the existing content-family leaves instead of duplicating their browser, fallback, or artifact logic.
    - Generic browsing or search snippets may help discovery, recency checks, and source expansion, but they do not replace content-family capture for evidence-bearing URLs.
    - Save source links and short role notes in `source/source-catalog.md`.
@@ -91,6 +93,8 @@ If the request is already a finished draft that only needs rewriting, stay with 
      - `what it is -> why it matters -> value -> hype -> boundary -> best practice`
      - `problem -> options -> evidence -> judgment -> SOP`
      - `claim -> mechanism -> risk -> recommendation`
+   - Express the `section_spine` in source-neutral language. Major sections should answer reader problems, decision dimensions, or operator concerns rather than echoing a memorable phrase from one source.
+   - If a phrase from one source survives cross-source validation, paraphrase it into neutral operator-facing wording before elevating it into the section spine. Keep the original slogan or rhetorical phrasing inside a bounded source-analysis subsection when needed.
    - Record explicit source roles in `source/source-catalog.md` using labels such as:
      - `seed`
      - `baseline`
@@ -165,9 +169,12 @@ If the request is already a finished draft that only needs rewriting, stay with 
      - writing posture
      - visual profile
      - visual strategy
+     - text-only evidence, when applicable
      - whether the report is source-bounded, comparative, or recommendation-led
    - For research reports, the default `visual_strategy` should be `auto-plan-and-review`.
    - Switch `visual_strategy` to `text-only-by-user` only when the user explicitly asks for a text-only deliverable.
+   - When `visual_strategy` is `text-only-by-user`, `notes/selection-bundle.md` must also record a non-null `text_only_evidence` field capturing the user's explicit request in quoted or paraphrased form.
+   - Absence of a request for visuals does not count as a text-only request. A plain request such as “出个调研报告”“写个分析” or a URL/topic-based report request still defaults to `auto-plan-and-review`.
 
 8. Draft the report.
    - Route drafting through `engineering-practice-writer`.
@@ -194,6 +201,8 @@ If the request is already a finished draft that only needs rewriting, stay with 
      - hype / false shortcuts
      - boundary conditions
      - recommended practice
+   - In multi-source reports, top-level and second-level headings should stay source-neutral. Do not use a slogan, quote, or memorable phrase from one source as a standalone section heading unless the report mode is `source-commentary` or the section is explicitly a bounded analysis of that source.
+   - For `enterprise-best-practice`, every major section should justify itself as a decision question, practice dimension, or operator concern. If a section can only be justified by naming one seed source or repeating its framing, it likely belongs in a bounded case-study subsection rather than the main spine.
    - For `source-commentary`, keep the commentary on the source bounded and still separate source claims from final judgment.
    - Ensure the report answers, in some form:
      - what this thing is
@@ -218,6 +227,8 @@ If the request is already a finished draft that only needs rewriting, stay with 
    - Keep evidence, synthesis, and recommendation distinguishable.
    - Keep operator-facing scope notes, source-boundary discussion, and pipeline reasoning in `source/` and `notes/`, not in the reader-facing report body.
    - Do not let the first verdict line rely only on implementation-layer vocabulary such as `control plane`, `orchestrator`, `mid-layer`, or `pipeline layer`. Ground the object in a reader-familiar product role first, then add the deeper mechanism reading.
+   - If the user says the report feels off in structure, framing, mainline, or organization, treat that as a thesis-and-outline problem first. Re-check `report_mode`, `single_sentence_thesis`, and `section_spine` before editing local prose.
+   - In that situation, revise `notes/report-thesis.md` and the section headings first. Do not patch body paragraphs alone while keeping a source-skewed outline.
    - If visuals are likely for this report, the review artifact should stay `drafts/report.md` until those draft visuals have gone through user review. Do not treat the first text-complete pass as a reader-facing final.
 
 9. Prepare visuals only after the report skeleton is accepted.
@@ -265,6 +276,7 @@ If the request is already a finished draft that only needs rewriting, stay with 
      - only after user confirmation, record the approved file path or approved Mermaid state back into `notes/visual-inventory.md`
      - integrate the approved image or approved Mermaid into the final report before export
    - Do not mark visuals as `skipped` merely because the current pass stopped at text drafting. `skipped` is only for explicit user choice, not for orchestration convenience.
+   - Do not switch `visual_strategy` to `text-only-by-user` merely to satisfy the final-export gate. That mode is allowed only when `text_only_evidence` exists in `notes/selection-bundle.md`.
    - Do not self-mark a generated Mermaid block or rendered image as approved just because it looks reasonable locally. The confirmation step belongs to the user-facing review gate.
    - The final report should include the approved diagrams or approved rendered visuals near the relevant sections. Do not stop at a text-only report if visuals were planned as part of the explanation.
 
@@ -299,6 +311,7 @@ If the request is already a finished draft that only needs rewriting, stay with 
 - Do not route a simple “capture one page and stop” action through `baoyu-content-pipeline`; keep the direct leaf route when there is no staged translation or normalization need.
 - Do not let a compound README slogan stand in for analysis. Break it into the concrete adoption axes it implies.
 - Do not let a seed article's headline, source order, or rhetorical tone become the structure of a multi-source report.
+- Do not let a source-specific slogan, quote, or memorable phrase become any top-level or second-level heading in a multi-source report unless it is clearly bounded as source commentary.
 - Do not produce a final multi-source report that reads like “article summary plus a few supporting links”; the final document must integrate claims across sources into one reader-facing judgment.
 - Do not mention the user, the current run, capture steps, or workspace process in the reader-facing report body unless the report is explicitly a methodology memo.
 - Do not write a docs-level claim as if it were code-confirmed unless this run actually inspected the relevant implementation anchors.
@@ -306,13 +319,14 @@ If the request is already a finished draft that only needs rewriting, stay with 
 - Do not turn “source available” into “must fully audit the repository”. Verification should stay selective and driven by adoption significance.
 - Do not stop at “docs say it supports X” when the report is clearly being driven by a differentiating open-source selling point. Add at least one layer of mechanism judgment if the repo makes that feasible.
 - Do not treat source reading as optional for an open-source or source-available project report. If the run never reached code-level verification, keep the output explicitly partial.
+- Do not respond to user feedback about structure, framing, or mainline by only editing local prose; repair the thesis and section spine first if the outline has drifted toward one source.
 - Do not confuse “implemented through backend composition and config” with “one hidden black-box capability”. If the implementation path matters, say so explicitly.
 - Do not start polished drafting before `source-catalog.md` and `evidence-matrix.md` exist.
 - Do not let unsupported or weakly supported capability claims survive into the final report.
 - Do not treat `drafts/report.md` as the final deliverable.
 - Do not jump straight from a text-complete draft to `exports/report-final.md` while visual review is still pending.
 - Do not self-upgrade `draft-inline-mermaid` or `draft-rendered` into an approved state without user confirmation.
-- Do not silently convert a likely-visual report into a text-only final by marking every planned visual as `skipped`; use `text-only-by-user` only when the user explicitly asked for that outcome.
+- Do not silently convert a likely-visual report into a text-only final by marking every planned visual as `skipped`; use `text-only-by-user` only when the user explicitly asked for that outcome, and record that evidence in `notes/selection-bundle.md`.
 - Do not leave report diagrams in a planned-only state if the report has already moved to final export.
 - Do not invoke another orchestration pipeline for report visuals; this pipeline should call only leaf visual skills.
 - Do not introduce a local Chrome / Mermaid-CLI rendering branch as the standard rendered-diagram path. If the user wants real rendered visuals, use the leaf visual skills and keep Mermaid only as structure source or review artifact unless the user explicitly asks for direct Mermaid export.

@@ -37,6 +37,24 @@ jobs:
               return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
             }
 
+            function extractReviewedCommit(body) {
+              const match = (body || "").match(/Reviewed commit:\s*`([0-9a-f]{7,40})`/i);
+              return match ? match[1].toLowerCase() : null;
+            }
+
+            function reviewedCommitMatchesHead(reviewedCommit, headSha) {
+              if (!reviewedCommit || !headSha) {
+                return false;
+              }
+              const normalizedReviewed = reviewedCommit.toLowerCase();
+              const normalizedHead = headSha.toLowerCase();
+              return (
+                normalizedReviewed === normalizedHead ||
+                normalizedHead.startsWith(normalizedReviewed) ||
+                normalizedReviewed.startsWith(normalizedHead)
+              );
+            }
+
             async function enableWithRetry(pr) {
               for (let attempt = 1; attempt <= 6; attempt += 1) {
                 try {
@@ -96,11 +114,24 @@ jobs:
                 pull_number: issue.number,
               });
               pr = response.data;
+              const reviewedCommit = extractReviewedCommit(comment.body || "");
+              if (!reviewedCommitMatchesHead(reviewedCommit, pr.head?.sha || "")) {
+                core.info(
+                  `Ignoring Codex comment for reviewed commit ${reviewedCommit || "<missing>"} because current head is ${pr.head?.sha || "<missing>"}`,
+                );
+                return;
+              }
             } else if (context.eventName === "pull_request_review") {
               const review = context.payload.review;
               const incomingPr = context.payload.pull_request;
               if (!review || !incomingPr || !codexActors.has(review.user?.login || "")) {
                 core.info("Ignoring non-Codex review.");
+                return;
+              }
+              if (!reviewedCommitMatchesHead(review.commit_id || "", incomingPr.head?.sha || "")) {
+                core.info(
+                  `Ignoring Codex review for commit ${review.commit_id || "<missing>"} because current head is ${incomingPr.head?.sha || "<missing>"}`,
+                );
                 return;
               }
               const state = (review.state || "").toUpperCase();

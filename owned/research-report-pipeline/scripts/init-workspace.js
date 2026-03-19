@@ -167,6 +167,7 @@ function selectionBundleTemplate() {
     "- writing_posture: research-report",
     "- visual_profile: serious-engineering",
     "- visual_strategy: auto-plan-and-review",
+    "- text_only_evidence: null",
     "- visual_style_override: null",
     "- confirmed: false",
     "",

@@ -1,7 +1,7 @@
 ---
 name: baoyu-article-illustrator
 description: Analyzes article structure, identifies positions requiring visual aids, generates illustrations with Type × Style two-dimension approach. Use when user asks to "illustrate article", "add images", "generate images for article", or "为文章配图".
-version: 1.56.1
+version: 1.56.2
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-article-illustrator
@@ -46,6 +46,12 @@ See [references/styles.md](references/styles.md) for Core Styles, full gallery, 
 ## Shared Working Artifact Contract
 
 If this run creates intermediate artifacts such as `outline.md`, prompt files, review notes, or staged images, also read [../../owned/shared/references/working-artifact-contract.md](../../owned/shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
+
+## Mode Compatibility
+
+When this skill says `AskUserQuestion`, use it if that tool is available in the current mode.
+
+If it is not available, ask the same question set in one concise plain-text assistant message and wait for the user's reply before continuing.
 
 ## Workflow
 

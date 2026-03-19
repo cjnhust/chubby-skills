@@ -1,7 +1,7 @@
 ---
 name: baoyu-comic
 description: Knowledge comic creator supporting multiple art styles and tones. Creates original educational comics with detailed panel layouts and sequential image generation. Use when user asks to create "知识漫画", "教育漫画", "biography comic", "tutorial comic", or "Logicomix-style comic".
-version: 1.56.1
+version: 1.56.2
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-comic
@@ -20,6 +20,10 @@ Also read [../../owned/shared/references/extend-ownership-contract.md](../../own
 Also read [../../owned/shared/references/visual-source-preservation-contract.md](../../owned/shared/references/visual-source-preservation-contract.md).
 
 This skill is a deliverable-specific leaf in the visual family. If the request includes routing, style-bridge preparation, references, multiple variants, or first-pass review, prefer `baoyu-visual-pipeline` as the entrypoint.
+
+## Runtime Compatibility
+
+If this skill invokes Bun-based helper scripts, resolve `${BUN_X}` as `bun` when available, otherwise `npx -y bun`. If neither exists, ask to install `bun`, install it, and continue instead of silently abandoning the scripted path.
 
 ## Usage
 
@@ -125,7 +129,7 @@ Details: [references/auto-selection.md](references/auto-selection.md)
 1. Determine this SKILL.md file's directory path as `{baseDir}`
 2. Script path = `{baseDir}/scripts/<script-name>.ts`
 3. Replace all `{baseDir}` in this document with the actual path
-4. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; else suggest installing bun
+4. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; otherwise ask to install `bun`, install it, and continue
 
 **Script Reference**:
 | Script | Purpose |

@@ -41,6 +41,10 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 - If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback` or an explicit `@codex fix ... update this existing PR branch` request.
 - For writeback requests, prefer explicit wording such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.`
 - Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.
+- Treat the latest PR head SHA as the only proof that a Codex fix landed; do not trust a task summary that claims it committed a change unless the PR head actually moved on GitHub.
+- If Codex follow-up tasks expose a manual `Update branch` action, treat that as a required maintainer confirmation step rather than as automatic branch writeback.
+- If a finding is already fixed on the latest head but the old review thread stays open, resolve that thread manually and rerun `@codex review` on the latest head.
+- If a review run fails with a missing PR ref such as `refs/pull/<n>/head`, push a fresh branch head and recheck the PR ref before changing repository policy or the merge gate.
 - Keep the review focus narrow:
   - secret leakage or local-path regressions
   - accidental inclusion of internal-only content
@@ -60,4 +64,3 @@ Focus on secret leakage, local path regressions, internal-only content, and owne
 - Do not use Codex GitHub flows on unpublished branches that still carry local-only policy values.
 - Do not authorize internal repositories from this public-repo setup path.
 - If the first review asks for local private files or ignores the public boundary, disable the GitHub-side flow and keep Codex local-only.
-

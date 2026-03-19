@@ -1,7 +1,7 @@
 ---
 name: baoyu-translate
 description: Translates articles and documents between languages with three modes - quick (direct), normal (analyze then translate), and refined (analyze, translate, review, polish). Supports custom glossaries and terminology consistency via EXTEND.md. Use when user asks to "translate", "翻译", "精翻", "translate article", "translate to Chinese/English", "改成中文", "改成英文", "convert to Chinese", "localize", "本地化", or needs any document translation. Also triggers for "refined translation", "精细翻译", "proofread translation", "快速翻译", "快翻", "这篇文章翻译一下", or when a URL or file is provided with translation intent.
-version: 1.56.1
+version: 1.56.2
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-translate
@@ -23,7 +23,7 @@ This skill is a leaf capability in the content-transformation family. If transla
 
 ## Script Directory
 
-Scripts in `scripts/` subdirectory. `{baseDir}` = this SKILL.md's directory path. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; else suggest installing bun. Replace `{baseDir}` and `${BUN_X}` with actual values.
+Scripts in `scripts/` subdirectory. `{baseDir}` = this SKILL.md's directory path. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; otherwise ask to install `bun`, install it, and continue. Do not silently replace this skill with ad hoc translation commands while still claiming the skill ran. Replace `{baseDir}` and `${BUN_X}` with actual values.
 
 | Script | Purpose |
 |--------|---------|
@@ -65,13 +65,19 @@ Schema: [references/config/extend-schema.md](references/config/extend-schema.md)
 
 Treat these as this skill's direct defaults. If the current run needs one-off glossary merges, a temporary audience override, or other request-scoped translation intent shared across several stages, keep that explicit in the current run artifacts or caller inputs unless the orchestrator deliberately materializes a local default layer.
 
+## Mode Compatibility
+
+When this skill says `AskUserQuestion`, use it if that tool is available in the current mode.
+
+If it is not available, ask the same questions in one concise plain-text assistant message and wait for the user's reply before continuing.
+
 ### First-Time Setup (BLOCKING)
 
 **CRITICAL**: When EXTEND.md is not found, you **MUST** run the first-time setup before ANY translation. This is a **BLOCKING** operation.
 
 Full reference: [references/config/first-time-setup.md](references/config/first-time-setup.md)
 
-Use `AskUserQuestion` with all questions (target language, mode, audience, style, save location) in ONE call. After user answers, create EXTEND.md at the chosen location, confirm "Preferences saved to [path]", then continue.
+Use `AskUserQuestion` with all questions (target language, mode, audience, style, save location) in ONE call. If `AskUserQuestion` is unavailable, ask the same set in one concise plain-text assistant message. After user answers, create EXTEND.md at the chosen location, confirm "Preferences saved to [path]", then continue.
 
 ## Shared Working Artifact Contract
 

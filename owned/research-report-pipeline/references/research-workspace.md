@@ -97,6 +97,7 @@ Use one workspace per research report.
   - writing posture, usually `research-report`
   - visual profile
   - visual strategy, usually `auto-plan-and-review` unless the user explicitly wants text-only output
+  - `text_only_evidence`, required when `visual_strategy: text-only-by-user`
 
 - `drafts/report.md`
   - the current working draft with any placeholders or draft visuals awaiting review
@@ -176,4 +177,5 @@ Use one workspace per research report.
 - Final export should happen only after `notes/fact-check.md` has been updated from `pending` to a passing state.
 - Final export should happen only after every planned visual in `notes/visual-inventory.md` is either `approved-inline-mermaid`, `approved-rendered`, or `skipped`.
 - If `notes/selection-bundle.md` keeps `visual_strategy: auto-plan-and-review`, final export should not close with every planned visual marked `skipped`; either at least one visual must be approved or the bundle must be changed to `text-only-by-user`.
+- If `notes/selection-bundle.md` uses `visual_strategy: text-only-by-user`, it must also contain a non-null `text_only_evidence` entry showing the user's explicit text-only request. Silence about visuals is not sufficient.
 - If visuals are already inserted into `drafts/report.md` but still waiting for confirmation, keep the pass in a review state rather than producing `exports/report-final.md`.

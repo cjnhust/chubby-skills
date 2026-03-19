@@ -164,6 +164,20 @@ function main() {
     const skippedOnly = statuses.length > 0 && approvedCount === 0 && statuses.every((status) => status === "skipped");
     const selectionBundle = fs.existsSync(selectionBundlePath) ? readText(selectionBundlePath) : "";
     const textOnlyByUser = /^- visual_strategy:\s*text-only-by-user$/m.test(selectionBundle);
+    const textOnlyEvidenceMatch = selectionBundle.match(/^- text_only_evidence:\s*(.+)$/m);
+    const textOnlyEvidence = textOnlyEvidenceMatch ? textOnlyEvidenceMatch[1].trim() : "";
+    const hasTextOnlyEvidence =
+      textOnlyEvidence.length > 0 &&
+      textOnlyEvidence !== "null" &&
+      textOnlyEvidence !== "TODO" &&
+      textOnlyEvidence !== '""' &&
+      textOnlyEvidence !== "''";
+
+    if (textOnlyByUser && !hasTextOnlyEvidence) {
+      throw new Error(
+        "selection bundle uses text-only-by-user without text_only_evidence; record the user's explicit text-only request before finalizing"
+      );
+    }
     if (skippedOnly && !textOnlyByUser) {
       throw new Error(
         "all planned visuals are marked skipped while visual strategy is not text-only-by-user; keep at least one approved visual or explicitly switch the bundle to text-only-by-user"

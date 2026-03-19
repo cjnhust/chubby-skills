@@ -1,7 +1,7 @@
 ---
 name: baoyu-xhs-images
 description: Generates Xiaohongshu (Little Red Book) infographic series with 11 visual styles and 8 layouts. Breaks content into 1-10 cartoon-style images optimized for XHS engagement. Use when user mentions "小红书图片", "XHS images", "RedNote infographics", "小红书种草", or wants social media infographics for Chinese platforms.
-version: 1.56.1
+version: 1.56.2
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-xhs-images
@@ -58,6 +58,12 @@ This skill is a deliverable-specific leaf in the visual family. If the request i
 ## Shared Working Artifact Contract
 
 If this run creates intermediate artifacts such as prompt files, review notes, or staged card outputs, also read [../../owned/shared/references/working-artifact-contract.md](../../owned/shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
+
+## Mode Compatibility
+
+When this skill says `AskUserQuestion`, use it if that tool is available in the current mode.
+
+If it is not available, ask the same question set in one concise plain-text assistant message and wait for the user's reply before continuing.
 
 `--style`, `--layout`, and `--preset` remain this skill's native XHS style system. If a caller provides an explicit external style authority, map it onto saved `outline.md` or `prompts/*.md` artifacts without discarding the chosen XHS-native style intent.
 

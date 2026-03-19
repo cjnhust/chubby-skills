@@ -1,7 +1,7 @@
 ---
 name: baoyu-slide-deck
 description: Generates professional slide deck images from content. Creates outlines with style instructions, then generates individual slide images. Use when user asks to "create slides", "make a presentation", "generate deck", "slide deck", or "PPT".
-version: 1.56.1
+version: 1.56.2
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-slide-deck
@@ -38,7 +38,7 @@ This skill is a deliverable-specific leaf in the visual family. If the request i
 **Agent Execution Instructions**:
 1. Determine this SKILL.md file's directory path as `{baseDir}`
 2. Script path = `{baseDir}/scripts/<script-name>.ts`
-3. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; else suggest installing bun
+3. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; otherwise ask to install `bun`, install it, and continue
 
 | Script | Purpose |
 |--------|---------|
@@ -48,6 +48,12 @@ This skill is a deliverable-specific leaf in the visual family. If the request i
 ## Shared Working Artifact Contract
 
 If this run creates intermediate artifacts such as `outline.md`, slide prompt files, review notes, or staged slide assets, also read [../../owned/shared/references/working-artifact-contract.md](../../owned/shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
+
+## Mode Compatibility
+
+When this skill says `AskUserQuestion`, use it if that tool is available in the current mode.
+
+If it is not available, ask the same question set in one concise plain-text assistant message and wait for the user's reply before continuing.
 
 ## Options
 

@@ -1,7 +1,7 @@
 ---
 name: baoyu-image-gen
 description: AI image generation with OpenAI, Google, OpenRouter, DashScope, Jimeng, Seedream and Replicate APIs. Supports text-to-image, reference images, aspect ratios, and batch generation from saved prompt files. Sequential by default; use batch parallel generation when the user already has multiple prompts or wants stable multi-image throughput. Use for direct rendering when the request is already a final-prompt or leaf image task, or when a higher-level visual orchestration skill has already prepared the saved prompt artifacts.
-version: 1.56.2
+version: 1.56.3
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-image-gen
@@ -24,11 +24,17 @@ Also read [../../owned/shared/references/visual-source-preservation-contract.md]
 **Agent Execution**:
 1. `{baseDir}` = this SKILL.md file's directory
 2. Script path = `{baseDir}/scripts/main.ts`
-3. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; else suggest installing bun
+3. Resolve `${BUN_X}` runtime:
+   - if `bun` installed → `bun`
+   - else if `npx` available → `npx -y bun`
+   - else ask to install `bun`, install it, and continue
+4. Do not silently replace this skill with ad hoc image-generation commands while still claiming the skill ran
 
 ## Step 0: Load Preferences ⛔ BLOCKING
 
 **CRITICAL**: This step MUST complete BEFORE any image generation. Do NOT skip or defer.
+
+When this skill says `AskUserQuestion`, use it if that tool is available in the current mode. If it is not available, ask the same setup question set in one concise plain-text assistant message and wait for the user's reply before continuing.
 
 Check EXTEND.md existence (priority: project → user):
 
@@ -52,7 +58,7 @@ if (Test-Path "$HOME/.baoyu-skills/baoyu-image-gen/EXTEND.md") { "user" }
 | Found | Load, parse, apply settings. If `default_model.[provider]` is null → ask model only (Flow 2) |
 | Not found | ⛔ Run first-time setup ([references/config/first-time-setup.md](references/config/first-time-setup.md)) → Save EXTEND.md → Then continue |
 
-**CRITICAL**: If not found, complete the full setup (provider + model + quality + save location) using AskUserQuestion BEFORE generating any images. Generation is BLOCKED until EXTEND.md is created.
+**CRITICAL**: If not found, complete the full setup (provider + model + quality + save location) using AskUserQuestion BEFORE generating any images. If `AskUserQuestion` is unavailable, ask the same setup questions in plain text. Generation is BLOCKED until EXTEND.md is created.
 
 | Path | Location |
 |------|----------|

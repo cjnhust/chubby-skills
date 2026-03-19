@@ -1,7 +1,7 @@
 ---
 name: baoyu-url-to-markdown
 description: Fetch any URL and convert to markdown using Chrome CDP. Saves the rendered HTML snapshot alongside the markdown, uses an upgraded Defuddle pipeline with better web-component handling and YouTube transcript extraction, and automatically falls back to the pre-Defuddle HTML-to-Markdown pipeline when needed. If local browser capture fails entirely, it can fall back to the hosted defuddle.md API. Supports two modes - auto-capture on page load, or wait for user signal (for pages requiring login). Use when user wants to save a webpage as markdown.
-version: 1.58.1
+version: 1.58.2
 metadata:
   openclaw:
     homepage: https://github.com/JimLiu/baoyu-skills#baoyu-url-to-markdown
@@ -15,9 +15,9 @@ metadata:
 
 Fetches any URL via Chrome CDP, saves the rendered HTML snapshot, and converts it to clean markdown.
 
-Also read [../shared/references/family-orchestration-contract.md](../shared/references/family-orchestration-contract.md).
-Also read [../shared/references/extend-ownership-contract.md](../shared/references/extend-ownership-contract.md).
-Also read [../shared/references/transform-traceability-contract.md](../shared/references/transform-traceability-contract.md).
+Also read [../../owned/shared/references/family-orchestration-contract.md](../../owned/shared/references/family-orchestration-contract.md).
+Also read [../../owned/shared/references/extend-ownership-contract.md](../../owned/shared/references/extend-ownership-contract.md).
+Also read [../../owned/shared/references/transform-traceability-contract.md](../../owned/shared/references/transform-traceability-contract.md).
 
 This skill is a leaf capability in the content-transformation family. If the request also needs translation, formatting, staged markdown review, or final export, prefer `baoyu-content-pipeline` as the entrypoint.
 
@@ -28,8 +28,21 @@ This skill is a leaf capability in the content-transformation family. If the req
 **Agent Execution Instructions**:
 1. Determine this SKILL.md file's directory path as `{baseDir}`
 2. Script path = `{baseDir}/scripts/<script-name>.ts`
-3. Resolve `${BUN_X}` runtime: if `bun` installed → `bun`; if `npx` available → `npx -y bun`; else suggest installing bun
-4. Replace all `{baseDir}` and `${BUN_X}` in this document with actual values
+3. Preflight runtime before doing any capture work with `../../owned/shared/scripts/resolve-user-shell-command.sh bun npx`
+4. Treat the helper output as the source of truth:
+   - if `recommended_command=bun` and `recommended_mode=current` → use `bun`
+   - if `recommended_command=npx` and `recommended_mode=current` → use `npx -y bun`
+   - if `recommended_mode=login_noninteractive` → run the final capture command through `zsh -lc`
+   - if `recommended_mode=login_interactive` → run the final capture command through `zsh -lic`
+5. Only if the helper returns `status=missing` should you consider installation or a blocked state
+6. If `status=missing`:
+   - do **not** silently switch to `curl`, raw HTML scraping, or another ad hoc capture path while still claiming this skill ran
+   - if the current thread mode does not provide structured user-question tools, ask one concise plain-text confirmation such as `需要安装 bun 才能继续抓取，是否现在安装？`
+   - after confirmation, install `bun`, re-run the runtime check, and continue with this skill
+   - if the user declines or installation fails, stop and report the skill as blocked instead of pretending capture succeeded
+7. Replace all `{baseDir}` and `${BUN_X}` in this document with actual values
+
+**Important nuance**: `not found` in the current agent wrapper shell does **not** prove the machine lacks that runtime. The wrapper shell may have a narrower `PATH` than the user's normal `zsh`. Always run the helper before concluding installation is required.
 
 **Script Reference**:
 | Script | Purpose |
@@ -79,11 +92,13 @@ if (Test-Path "$HOME/.baoyu-skills/baoyu-url-to-markdown/EXTEND.md") { "user" }
 
 ## Shared Working Artifact Contract
 
-If this run creates intermediate artifacts such as rendered HTML snapshots, extracted transcripts, review notes, or staged markdown outputs, also read [../shared/references/working-artifact-contract.md](../shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
+If this run creates intermediate artifacts such as rendered HTML snapshots, extracted transcripts, review notes, or staged markdown outputs, also read [../../owned/shared/references/working-artifact-contract.md](../../owned/shared/references/working-artifact-contract.md). This skill may choose its own internal layout under the working location, but any artifact handed to another skill must have an explicit saved path.
 
 ### First-Time Setup (BLOCKING)
 
-**CRITICAL**: When EXTEND.md is not found, you **MUST use `AskUserQuestion`** to ask the user for their preferences before creating EXTEND.md. **NEVER** create EXTEND.md with defaults without asking. This is a **BLOCKING** operation — do NOT proceed with any conversion until setup is complete.
+**CRITICAL**: When EXTEND.md is not found, you **MUST ask the user for their preferences before creating EXTEND.md**. **NEVER** create EXTEND.md with defaults without asking. This is a **BLOCKING** operation — do NOT proceed with any conversion until setup is complete.
+
+Use `AskUserQuestion` when that tool is available in the current mode. If it is not available, ask the same questions in one concise plain-text assistant message and wait for the user's reply before continuing.
 
 Use `AskUserQuestion` with ALL questions in ONE call:
 
@@ -238,11 +253,19 @@ Based on `download_media` setting in EXTEND.md:
 1. Run script **without** `--download-media` → markdown saved
 2. Check saved markdown for remote media URLs (`https://` in image/video links)
 3. **If no remote media found** → done, no prompt needed
-4. **If remote media found** → use `AskUserQuestion`:
-   - header: "Media", question: "Download N images/videos to local files?"
-   - "Yes" — Download to local directories
-   - "No" — Keep remote URLs
+4. **If remote media found** → ask the user whether to localize media:
+   - prefer `AskUserQuestion` when available
+   - otherwise ask one concise plain-text question such as `检测到 N 个远程图片/视频，是否下载到本地并重写链接？`
+   - choices stay the same:
+     - "Yes" — Download to local directories
+     - "No" — Keep remote URLs
 5. If user confirms → run script **again** with `--download-media` (overwrites markdown with localized links)
+
+## Failure Semantics
+
+- A missing runtime is a bootstrap problem, not automatic permission to bypass this skill.
+- If browser capture or conversion fails after the runtime is available, follow the documented converter and hosted fallback chain inside this skill.
+- If the runtime cannot be installed or the user declines installation, report the skill as blocked and let the caller choose the next step.
 
 ## Environment Variables
 
