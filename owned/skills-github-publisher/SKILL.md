@@ -173,6 +173,7 @@ What it may do:
      - run `python3 scripts/check_git_identity.py --root <export-repo> --strict`
      - if the effective `user.name` or `user.email` is private, set a repo-local public identity before committing
      - prefer a public display name plus a GitHub no-reply address or another intentionally public email
+   - When syntax-checking Python helper scripts inside the export repo, prefer `python3 scripts/safe_py_compile.py <files...>` over raw `python3 -m py_compile`; the raw command leaves `__pycache__` in-tree and will trip the strict preflight scan.
    - Review `git status --short` before staging anything.
    - Do not stage ignored junk or generated dependency trees just because they are present in the working directory.
    - If ignored working-tree junk such as `node_modules/` still exists inside the export repo, clean or quarantine it before the final handoff.
@@ -238,6 +239,7 @@ What it may do:
 - `scripts/check_git_identity.py`: verify repo-local git author metadata against local private policy before public commits
 - `scripts/preflight_scan.py`: local scan for secret-like literals, local-path leaks, and junk artifacts
 - `scripts/generate_export_docs.py`: generate staged `README.md`, acknowledgement docs, and prefilled third-party review manifests
+- `scripts/safe_py_compile.py`: syntax-check Python helpers without leaving `__pycache__` in the repo tree
 - `references/classification-and-structure.md`: repo-shaping rules for public/private and repo-local/global splits
 - `references/codex-github-browser-troubleshooting.md`: safe local browser/CDP pattern for helping with public Codex-on-GitHub setup after explicit user approval
 - `references/codex-github-maintenance.md`: conservative recommendation for when Codex GitHub integration is appropriate after publication

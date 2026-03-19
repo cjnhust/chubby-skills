@@ -97,6 +97,18 @@ For maintainer-specific sensitive blocklists:
 - do not commit that file
 - do not put the raw sensitive values into shared shell history, README examples, or public skill docs
 
+## Python Syntax Checks
+
+When validating Python helper scripts inside a staged export or publish repo:
+
+- prefer `python3 scripts/safe_py_compile.py <files...>`
+- do not use raw `python3 -m py_compile` inside the repo tree during publication work
+
+Reason:
+
+- raw `py_compile` creates in-tree `__pycache__/` artifacts
+- those artifacts are correctly treated as junk by the strict preflight scan
+
 ## Security Change Policy
 
 Default order:
