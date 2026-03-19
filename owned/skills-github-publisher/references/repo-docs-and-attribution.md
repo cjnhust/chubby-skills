@@ -34,6 +34,7 @@ The same release flow should also cover the local publish handoff:
 - review `git remote -v`
 - add `origin` only after the target GitHub repository exists
 - prefer an `https://github.com/...` remote, or an explicit GitHub-only SSH alias, when the machine also carries internal SSH identities
+- for HTTPS remotes, prefer `gh auth login` or another OS-keychain-backed credential flow instead of pasting PATs into terminal prompts
 - push with `git push -u origin main` only after local scans and provenance checks are clean
 - verify the pushed branch with `git ls-remote --heads origin main` or an equivalent remote check
 - keep real repository URLs, access tokens, and maintainer-specific sensitive scan inputs out of committed docs

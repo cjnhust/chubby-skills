@@ -180,6 +180,7 @@ What it may do:
    - Review `git remote -v` before the first push.
    - If no `origin` remote exists yet, create the GitHub repository outside this skill, then add `origin` deliberately in the export repo.
    - For public GitHub publication on machines that also use internal SSH identities, prefer an `https://github.com/...` remote or an explicit GitHub-only SSH host alias. Do not rely on the default SSH identity selection when internal and external keys differ.
+   - When using an HTTPS remote, prefer GitHub CLI login such as `gh auth login --hostname github.com --git-protocol https --web` so credentials land in the OS keychain instead of being typed into terminal prompts for each push.
    - Push with `git push -u origin main` only after:
      - the strict preflight scan is clean
      - provenance review is complete for intentionally included third-party units
