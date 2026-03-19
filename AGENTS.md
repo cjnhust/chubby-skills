@@ -34,6 +34,8 @@ python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --stric
 
 - Default to review-only usage on GitHub for this repository.
 - Prefer `@codex review` on public pull requests rather than cloud-side code generation by default.
+- Treat `codex-review-gate` as the hard merge gate when the workflow is present.
+- Keep `main` in PR-only mode and let GitHub auto-merge after the gate succeeds.
 - Review focus should stay on:
   - secret leakage or local-path regressions
   - ownership-boundary mistakes between `owned/` and `third-party/`
