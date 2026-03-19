@@ -741,14 +741,27 @@ def build_release_checklist(root: Path) -> str:
     return "\n".join(lines) + "\n"
 
 
-def has_codex_review_gate(root: Path) -> bool:
+def _workflow_texts(root: Path) -> list[str]:
     workflows_dir = root / ".github" / "workflows"
-    return (workflows_dir / "codex-review-gate.yml").exists()
+    if not workflows_dir.exists():
+        return []
+    texts: list[str] = []
+    for pattern in ("*.yml", "*.yaml"):
+        for workflow_path in sorted(workflows_dir.glob(pattern)):
+            if workflow_path.is_file():
+                texts.append(workflow_path.read_text(encoding="utf-8"))
+    return texts
+
+
+def has_codex_review_gate(root: Path) -> bool:
+    return any("codex-review-gate" in text for text in _workflow_texts(root))
 
 
 def has_codex_auto_merge(root: Path) -> bool:
-    workflows_dir = root / ".github" / "workflows"
-    return (workflows_dir / "codex-arm-auto-merge.yml").exists()
+    return any(
+        "enablePullRequestAutoMerge" in text or "codex-arm-auto-merge" in text
+        for text in _workflow_texts(root)
+    )
 
 
 def build_codex_setup(root: Path) -> str:

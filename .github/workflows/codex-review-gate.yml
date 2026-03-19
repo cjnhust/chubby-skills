@@ -15,7 +15,7 @@ on:
       - submitted
 
 permissions:
-  contents: read
+  contents: write
   issues: read
   pull-requests: write
   statuses: write
@@ -113,8 +113,14 @@ jobs:
               return codexActors.has(login || "");
             }
 
-            function isReviewRequestComment(comment) {
-              return !isCodexActor(comment.user?.login) && /@codex\s+review\b/i.test(comment.body || "");
+            function reviewRequestCommentBodyMatches(comment) {
+              return /@codex\s+review\b/i.test(comment.body || "");
+            }
+
+            async function isReviewRequestComment(comment) {
+              return !isCodexActor(comment.user?.login) &&
+                reviewRequestCommentBodyMatches(comment) &&
+                await isTrustedMaintainer(comment.user?.login || "");
             }
 
             function parseDate(value) {
@@ -198,7 +204,32 @@ jobs:
               });
             }
 
-            async function detectOutcome(pr) {
+            function extractReviewedCommitFromBody(body) {
+              const match = String(body || "").match(/Reviewed commit:\s*`([0-9a-f]{7,40})`/i);
+              return match ? match[1].toLowerCase() : "";
+            }
+
+            function commentMatchesHeadSha(comment, headSha) {
+              const reviewedCommit = extractReviewedCommitFromBody(comment.body || "");
+              if (!reviewedCommit) {
+                return false;
+              }
+              const normalizedHeadSha = String(headSha || "").toLowerCase();
+              return normalizedHeadSha === reviewedCommit || normalizedHeadSha.startsWith(reviewedCommit);
+            }
+
+            async function latestTrustedReviewRequestComment(comments) {
+              const matches = [];
+              for (const comment of comments) {
+                if (await isReviewRequestComment(comment)) {
+                  matches.push(comment);
+                }
+              }
+              return latestBy(matches, "created_at");
+            }
+
+            async function detectOutcome(pr, options = {}) {
+              const { codexCommentId = null } = options;
               const reviews = await listReviews(pr.number);
               const latestReview = latestBy(
                 reviews.filter((review) => isCodexActor(review.user?.login) && review.commit_id === pr.head.sha),
@@ -219,12 +250,18 @@ jobs:
               }
 
               const comments = await listIssueComments(pr.number);
-              const latestTrigger = latestBy(comments.filter(isReviewRequestComment), "created_at");
+              const latestTrigger = await latestTrustedReviewRequestComment(comments);
               const cutoff = parseDate(latestTrigger?.created_at);
               const latestCodexComment = latestBy(
-                comments.filter(
-                  (comment) => isCodexActor(comment.user?.login) && parseDate(comment.created_at) >= cutoff,
-                ),
+                comments.filter((comment) => {
+                  if (!isCodexActor(comment.user?.login) || parseDate(comment.created_at) < cutoff) {
+                    return false;
+                  }
+                  if (comment.id === codexCommentId) {
+                    return true;
+                  }
+                  return commentMatchesHeadSha(comment, pr.head.sha);
+                }),
                 "created_at",
               );
               if (latestCodexComment) {
@@ -275,13 +312,6 @@ jobs:
                   break;
                 }
               }
-              if (trustedOpenedPr && trustedOnlyCommits) {
-                return {
-                  satisfied: true,
-                  state: "trusted-only",
-                  description: "Trusted-maintainer-only submission; no extra approval required",
-                };
-              }
 
               const reviews = await listReviews(pr.number);
               const trustedReviews = [];
@@ -293,20 +323,33 @@ jobs:
                   trustedReviews.push(review);
                 }
               }
-              const latestTrustedReview = latestBy(trustedReviews, "submitted_at");
-              const reviewState = (latestTrustedReview?.state || "").toUpperCase();
-              if (reviewState === "APPROVED") {
-                return {
-                  satisfied: true,
-                  state: "approved",
-                  description: "A trusted maintainer approved the current head after a non-trusted submission",
-                };
-              }
+              const latestDecisiveTrustedReview = latestBy(
+                trustedReviews.filter((review) => {
+                  const reviewState = (review.state || "").toUpperCase();
+                  return reviewState === "APPROVED" || reviewState === "CHANGES_REQUESTED";
+                }),
+                "submitted_at",
+              );
+              const reviewState = (latestDecisiveTrustedReview?.state || "").toUpperCase();
               if (reviewState === "CHANGES_REQUESTED") {
                 return {
                   satisfied: false,
                   state: "changes-requested",
                   description: "A trusted maintainer requested changes on the current head",
+                };
+              }
+              if (trustedOpenedPr && trustedOnlyCommits) {
+                return {
+                  satisfied: true,
+                  state: "trusted-only",
+                  description: "Trusted-maintainer-only submission; no extra approval required",
+                };
+              }
+              if (reviewState === "APPROVED") {
+                return {
+                  satisfied: true,
+                  state: "approved",
+                  description: "A trusted maintainer approved the current head after a non-trusted submission",
                 };
               }
               return {
@@ -316,8 +359,8 @@ jobs:
               };
             }
 
-            async function settleGate(pr) {
-              const outcome = await detectOutcome(pr);
+            async function settleGate(pr, options = {}) {
+              const outcome = await detectOutcome(pr, options);
               if (outcome.kind === "waiting") {
                 return false;
               }
@@ -401,10 +444,10 @@ jobs:
                 return;
               }
               if (isCodexActor(comment.user?.login)) {
-                await settleGate(pr);
+                await settleGate(pr, { codexCommentId: comment.id });
                 return;
               }
-              if (!isReviewRequestComment(comment)) {
+              if (!(await isReviewRequestComment(comment))) {
                 core.info("Ignoring non-Codex, non-trigger comment.");
                 return;
               }
