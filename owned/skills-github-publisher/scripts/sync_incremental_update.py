@@ -6,11 +6,32 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+
+
+RSYNC_EXCLUDES = (
+    ".DS_Store",
+    "__pycache__/",
+    "*.pyc",
+    "node_modules/",
+    ".env",
+    ".env.*",
+    "cookies.json",
+    "consent.json",
+    "sessions/",
+    "chrome-profile/",
+    "*.db",
+    "*.sqlite",
+    "*.pem",
+    "*.key",
+    "*.p12",
+    "*.pfx",
+)
 
 
 def candidate_config_paths() -> list[Path]:
@@ -49,6 +70,11 @@ def parse_args() -> argparse.Namespace:
         default="owned",
         help="Destination group when owned-root is not provided.",
     )
+    parser.add_argument(
+        "--allow-review-required",
+        action="store_true",
+        help="Allow explicit sync of internal/, .system/, or danger-* skill roots.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Print rsync commands without executing them.")
     return parser.parse_args()
 
@@ -56,6 +82,9 @@ def parse_args() -> argparse.Namespace:
 def resolve_destination_root(args: argparse.Namespace, config: dict) -> Path:
     if args.owned_root:
         return Path(args.owned_root).expanduser().resolve()
+
+    if args.publish_repo:
+        return Path(args.publish_repo).expanduser().resolve() / args.group
 
     if args.group == "owned" and isinstance(config.get("default_owned_root"), str):
         return Path(config["default_owned_root"]).expanduser().resolve()
@@ -67,9 +96,18 @@ def resolve_destination_root(args: argparse.Namespace, config: dict) -> Path:
     return (Path(publish_repo).expanduser().resolve() / args.group)
 
 
-def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool) -> None:
+def is_review_required_root(src_root: Path) -> bool:
+    return src_root.name.startswith("danger-") or src_root.parent.name in {"internal", ".system"}
+
+
+def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool, allow_review_required: bool) -> None:
     if not (src_root / "SKILL.md").exists():
         raise SystemExit(f"not a skill root: {src_root}")
+    if is_review_required_root(src_root) and not allow_review_required:
+        raise SystemExit(
+            f"refusing to sync review-required skill root by default: {src_root} "
+            "(pass --allow-review-required only after an explicit publication decision)"
+        )
 
     dest_root = dest_group_root / src_root.name
     dest_root.parent.mkdir(parents=True, exist_ok=True)
@@ -78,12 +116,19 @@ def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool) -> None:
         "rsync",
         "-a",
         "--delete",
+        "--delete-excluded",
+    ]
+    for pattern in RSYNC_EXCLUDES:
+        cmd.extend(["--exclude", pattern])
+    cmd.extend(
+        [
         f"{src_root}/",
         f"{dest_root}/",
-    ]
+        ]
+    )
 
     if dry_run:
-        print(" ".join(cmd))
+        print(shlex.join(cmd))
         return
 
     subprocess.run(cmd, check=True)
@@ -96,7 +141,12 @@ def main() -> None:
     dest_group_root = resolve_destination_root(args, config)
 
     for raw_path in args.skill_root:
-        sync_one(Path(raw_path).expanduser().resolve(), dest_group_root, args.dry_run)
+        sync_one(
+            Path(raw_path).expanduser().resolve(),
+            dest_group_root,
+            args.dry_run,
+            args.allow_review_required,
+        )
 
 
 if __name__ == "__main__":

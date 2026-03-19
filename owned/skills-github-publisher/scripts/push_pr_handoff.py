@@ -25,14 +25,28 @@ def normalize_origin_url(remote: str) -> str | None:
     remote = remote.strip()
     if remote.startswith("https://github.com/"):
         return remote.removesuffix(".git")
-    if remote.startswith("git@github.com:"):
-        slug = remote[len("git@github.com:") :].removesuffix(".git")
+    if remote.startswith("git@") and ":" in remote:
+        _, slug = remote.split(":", 1)
+        slug = slug.removesuffix(".git")
+        return f"https://github.com/{slug}"
+    if remote.startswith("ssh://git@"):
+        slug = remote.split("/", 3)[-1].removesuffix(".git")
         return f"https://github.com/{slug}"
     return None
 
 
 def compare_url(origin_url: str, base: str, branch: str) -> str:
     return f"{origin_url}/compare/{quote(base, safe='')}...{quote(branch, safe='')}?expand=1"
+
+
+def remote_branch_exists(repo: Path, branch: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(repo), "ls-remote", "--exit-code", "--heads", "origin", branch],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
 
 
 def resolve_gh() -> str | None:
@@ -96,6 +110,10 @@ def main() -> int:
         gh = resolve_gh()
         if gh is None:
             raise SystemExit("gh is not installed; use the printed compare_url to open the PR manually")
+        if not args.push and not remote_branch_exists(repo, branch):
+            raise SystemExit(
+                f"branch '{branch}' is not published on origin; push it first or rerun with --push before --create-pr"
+            )
 
         cmd = [gh, "pr", "create", "--base", args.base, "--head", branch]
         if args.title:

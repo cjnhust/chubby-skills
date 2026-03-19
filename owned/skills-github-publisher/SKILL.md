@@ -87,6 +87,8 @@ What it may do:
      - `default_local_policy_file`
    - If the local config resolves a publish repo and the user asks for an incremental update, diff and sync against that repo boundary instead of inventing a new staging path.
    - For deterministic incremental updates into a local publish git working copy, prefer `python3 scripts/sync_incremental_update.py --skill-root <path> [...]` and let it resolve the default publish repo / owned root from the local config when possible.
+   - The incremental sync helper should refuse `internal/`, `.system/`, and `danger-*` skill roots by default, and it should exclude publish-blocking junk such as `__pycache__/`, `node_modules/`, `.env*`, cookies, sessions, and raw key material unless the operator explicitly overrides that review-required boundary.
+   - Explicit CLI overrides such as `--publish-repo` or `--owned-root` should win over local config defaults so an incremental sync cannot drift into the wrong working copy.
 
 1. Inventory the candidate roots.
    - List the requested roots before changing anything.
@@ -210,7 +212,9 @@ What it may do:
      - use it without side-effect flags first to print the detected branch, push command, and PR handoff URL
      - then use `--push` when the branch is ready to publish
      - then use `--create-pr` only when `gh` is available and authenticated
+     - if the branch has not been pushed yet, require `--push` before `--create-pr` instead of relying on a failing `gh pr create`
      - when no explicit PR title/body is provided, the helper should fall back to `gh pr create --fill-first` instead of failing in non-interactive mode
+     - the helper should still print a compare URL for GitHub-only SSH host aliases, not only for plain `github.com` remotes
      - if `gh` is unavailable, fall back to the printed compare / PR URL and open the PR in the browser manually
    - For updates to an existing public repo, prefer:
      - `git push -u origin <pr-branch>`
@@ -268,8 +272,8 @@ What it may do:
 ## Resources
 
 - `scripts/resolve_local_publish_config.py`: resolve maintainer-local defaults such as the preferred publish repo and local private policy file without hardcoding them in the public skill
-- `scripts/sync_incremental_update.py`: sync one or more local skills into the configured publish repo working copy for incremental update flows
-- `scripts/push_pr_handoff.py`: validate the current branch, print or run the push command, and either create the PR via `gh` or print the manual compare URL
+- `scripts/sync_incremental_update.py`: sync one or more local skills into the configured publish repo working copy for incremental update flows while keeping review-required roots and junk/runtime artifacts out by default
+- `scripts/push_pr_handoff.py`: validate the current branch, print or run the push command, support GitHub-only SSH aliases, and either create the PR via `gh` or print the manual compare URL
 - `scripts/check_git_identity.py`: verify repo-local git author metadata against local private policy before public commits
 - `scripts/preflight_scan.py`: local scan for secret-like literals, local-path leaks, and junk artifacts
 - `scripts/generate_export_docs.py`: generate staged `README.md`, acknowledgement docs, and prefilled third-party review manifests

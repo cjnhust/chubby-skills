@@ -192,6 +192,7 @@ function visualInventoryTemplate() {
     "## Status Rules",
     "",
     "- `pending`: not prepared yet",
+    "- `draft-placeholder`: placeholder block inserted into `drafts/report.md`, waiting for structure review",
     "- `draft-inline-mermaid`: inserted into `drafts/report.md`, waiting for user confirmation",
     "- `draft-rendered`: rendered first pass exists, waiting for user confirmation",
     "- `approved-inline-mermaid`: user accepted the Mermaid diagram",
