@@ -1,4 +1,4 @@
-name: Codex Review Gate
+name: Codex Review Gate Controller
 
 on:
   pull_request:
@@ -21,7 +21,7 @@ permissions:
   statuses: write
 
 jobs:
-  codex-review-gate:
+  codex-review-gate-controller:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v7

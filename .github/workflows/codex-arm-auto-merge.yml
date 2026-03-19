@@ -1,4 +1,4 @@
-name: Codex Arm Auto Merge
+name: Codex Auto Merge Controller
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  codex-arm-auto-merge:
+  codex-arm-auto-merge-controller:
     if: ${{ !github.event.pull_request.draft && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     steps:
