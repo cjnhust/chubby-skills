@@ -29,3 +29,14 @@ python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --stric
 - Prefer small, reviewable changes.
 - Keep initial sanitization and sensitive cleanup local-first.
 - If using Codex on GitHub, prefer PR review before broader cloud-side edit flows.
+
+## Codex Review Mode
+
+- Default to review-only usage on GitHub for this repository.
+- Prefer `@codex review` on public pull requests rather than cloud-side code generation by default.
+- Review focus should stay on:
+  - secret leakage or local-path regressions
+  - ownership-boundary mistakes between `owned/` and `third-party/`
+  - accidental inclusion of `.system/`, `internal/`, `danger-*`, or runtime credential artifacts
+  - provenance or attribution regressions in third-party material
+- Do not request Codex cloud work on unpublished branches that contain local-only policy values or other sensitive content.
