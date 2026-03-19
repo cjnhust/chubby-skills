@@ -81,8 +81,6 @@ def main() -> int:
     branch = args.branch or git_output(repo, "branch", "--show-current")
     if not branch:
         raise SystemExit("could not determine current branch")
-    if branch == args.base:
-        raise SystemExit(f"refusing PR handoff from base branch '{args.base}'; create or switch to a PR branch first")
     if not git_status_clean(repo):
         raise SystemExit("working tree is not clean; commit or stash before push/PR handoff")
 
@@ -92,12 +90,21 @@ def main() -> int:
         raise SystemExit("origin remote is missing")
     remote_url = origin_fetch.split("\t", 1)[1].split(" ", 1)[0]
     web_origin = normalize_origin_url(remote_url)
+    base_branch_exists = remote_branch_exists(repo, args.base)
+    bootstrap_base_push = branch == args.base and not base_branch_exists
+
+    if branch == args.base and not bootstrap_base_push:
+        raise SystemExit(f"refusing PR handoff from base branch '{args.base}'; create or switch to a PR branch first")
+    if args.create_pr and branch == args.base:
+        raise SystemExit(f"cannot create a PR from base branch '{args.base}'; push the bootstrap branch first")
 
     print(f"repo: {repo}")
     print(f"branch: {branch}")
     print(f"base: {args.base}")
     print(f"origin: {remote_url}")
     print(f"push_command: git -C {repo} push -u origin {branch}")
+    if bootstrap_base_push:
+        print("handoff_mode: bootstrap-base-push")
     if web_origin:
         print(f"compare_url: {compare_url(web_origin, args.base, branch)}")
     else:
@@ -120,7 +127,7 @@ def main() -> int:
             cmd.extend(["--title", args.title])
         if args.body_file:
             cmd.extend(["--body-file", args.body_file])
-        elif not args.title:
+        if not (args.title and args.body_file):
             cmd.append("--fill-first")
         if args.draft:
             cmd.append("--draft")

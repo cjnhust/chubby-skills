@@ -21,17 +21,33 @@ RSYNC_EXCLUDES = (
     "node_modules/",
     ".env",
     ".env.*",
+    ".npmrc",
+    ".pypirc",
+    ".netrc",
+    ".dockercfg",
     "cookies.json",
     "consent.json",
     "sessions/",
     "chrome-profile/",
+    ".aws/",
+    ".ssh/",
+    ".kube/",
+    "id_rsa",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
     "*.db",
     "*.sqlite",
     "*.pem",
     "*.key",
     "*.p12",
     "*.pfx",
+    "*.kdbx",
+    "*.ovpn",
 )
+
+SKILL_TREE_SENTINELS = {"skills", "owned", "third-party"}
+REVIEW_REQUIRED_BOUNDARIES = {"internal", ".system"}
 
 
 def candidate_config_paths() -> list[Path]:
@@ -97,7 +113,13 @@ def resolve_destination_root(args: argparse.Namespace, config: dict) -> Path:
 
 
 def is_review_required_root(src_root: Path) -> bool:
-    return src_root.name.startswith("danger-") or src_root.parent.name in {"internal", ".system"}
+    if src_root.name.startswith("danger-"):
+        return True
+
+    parents = list(src_root.parents)
+    sentinel_index = next((index for index, parent in enumerate(parents) if parent.name in SKILL_TREE_SENTINELS), None)
+    relevant_parents = parents[:sentinel_index] if sentinel_index is not None else parents[:1]
+    return any(parent.name in REVIEW_REQUIRED_BOUNDARIES for parent in relevant_parents)
 
 
 def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool, allow_review_required: bool) -> None:
