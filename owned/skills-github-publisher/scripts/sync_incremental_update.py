@@ -15,6 +15,7 @@ sys.dont_write_bytecode = True
 
 
 RSYNC_EXCLUDES = (
+    ".git/",
     ".DS_Store",
     "__pycache__/",
     "*.pyc",

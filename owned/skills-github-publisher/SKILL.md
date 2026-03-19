@@ -87,7 +87,7 @@ What it may do:
      - `default_local_policy_file`
    - If the local config resolves a publish repo and the user asks for an incremental update, diff and sync against that repo boundary instead of inventing a new staging path.
    - For deterministic incremental updates into a local publish git working copy, prefer `python3 scripts/sync_incremental_update.py --skill-root <path> [...]` and let it resolve the default publish repo / owned root from the local config when possible.
-   - The incremental sync helper should refuse `internal/`, `.system/`, and `danger-*` skill roots by default, and it should exclude publish-blocking junk such as `__pycache__/`, `node_modules/`, `.env*`, cookies, sessions, and raw key material unless the operator explicitly overrides that review-required boundary.
+   - The incremental sync helper should refuse `internal/`, `.system/`, and `danger-*` skill roots by default, and it should exclude publish-blocking junk such as `.git/`, `__pycache__/`, `node_modules/`, `.env*`, cookies, sessions, and raw key material unless the operator explicitly overrides that review-required boundary.
    - Explicit CLI overrides such as `--publish-repo` or `--owned-root` should win over local config defaults so an incremental sync cannot drift into the wrong working copy.
    - The incremental sync helper should also strip nested `internal/`, `.system/`, and `danger-*` subtrees from otherwise allowed skill roots so a mixed local skill tree cannot reintroduce blocked content through rsync.
    - If a source skill root already lives under a clear ownership boundary such as `third-party/`, the incremental sync helper should preserve that boundary by default instead of silently restaging the skill into `owned/`.

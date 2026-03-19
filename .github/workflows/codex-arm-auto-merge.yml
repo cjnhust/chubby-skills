@@ -13,6 +13,9 @@ permissions:
   issues: read
   pull-requests: write
 
+env:
+  CODEX_TRUSTED_MAINTAINERS: ${{ vars.CODEX_TRUSTED_MAINTAINERS }}
+
 jobs:
   codex-arm-auto-merge-controller:
     runs-on: ubuntu-latest
@@ -32,6 +35,11 @@ jobs:
               /did not find any major issues/i,
               /\bbreezy\b/i,
             ];
+            const trustedActors = new Set(
+              [owner, ...(process.env.CODEX_TRUSTED_MAINTAINERS || "").split(/[\s,]+/)]
+                .map((value) => value.trim())
+                .filter(Boolean),
+            );
 
             function bodyLooksClean(body) {
               return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
@@ -53,6 +61,96 @@ jobs:
                 normalizedHead.startsWith(normalizedReviewed) ||
                 normalizedReviewed.startsWith(normalizedHead)
               );
+            }
+
+            function actorCanTriggerEvaluation(login) {
+              return codexActors.has(login || "") || trustedActors.has(login || "");
+            }
+
+            async function listPullRequestReviews(pullNumber) {
+              return github.paginate(github.rest.pulls.listReviews, {
+                owner,
+                repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              });
+            }
+
+            async function listIssueComments(issueNumber) {
+              return github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number: issueNumber,
+                per_page: 100,
+              });
+            }
+
+            async function listPullRequestCommits(pullNumber) {
+              return github.paginate(github.rest.pulls.listCommits, {
+                owner,
+                repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              });
+            }
+
+            async function currentHeadHasTrustedApproval(pullNumber, headSha) {
+              const reviews = await listPullRequestReviews(pullNumber);
+              const latestTrustedReviewByActor = new Map();
+              for (const review of reviews) {
+                const login = review.user?.login || "";
+                if (!trustedActors.has(login)) {
+                  continue;
+                }
+                if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
+                  continue;
+                }
+                latestTrustedReviewByActor.set(login, review);
+              }
+              return [...latestTrustedReviewByActor.values()].some(
+                (review) => String(review.state || "").toUpperCase() === "APPROVED",
+              );
+            }
+
+            async function currentHeadIsTrustedSubmission(pullNumber) {
+              const commits = await listPullRequestCommits(pullNumber);
+              return commits.every((commit) => {
+                const candidateLogins = [commit.author?.login, commit.committer?.login].filter(Boolean);
+                return candidateLogins.length > 0 && candidateLogins.some((login) => trustedActors.has(login));
+              });
+            }
+
+            async function currentHeadCodexResult(pullNumber, headSha) {
+              const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
+              for (const review of reviews) {
+                const login = review.user?.login || "";
+                if (!codexActors.has(login)) {
+                  continue;
+                }
+                if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
+                  continue;
+                }
+                const state = String(review.state || "").toUpperCase();
+                const clean =
+                  state === "APPROVED" ||
+                  (state === "COMMENTED" && bodyLooksClean(review.body || ""));
+                return clean;
+              }
+
+              const comments = (await listIssueComments(pullNumber)).slice().reverse();
+              for (const comment of comments) {
+                const login = comment.user?.login || "";
+                if (!codexActors.has(login)) {
+                  continue;
+                }
+                const reviewedCommit = extractReviewedCommit(comment.body || "");
+                if (!reviewedCommitMatchesHead(reviewedCommit, headSha)) {
+                  continue;
+                }
+                return bodyLooksClean(comment.body || "");
+              }
+
+              return false;
             }
 
             async function enableWithRetry(pr) {
@@ -124,22 +222,14 @@ jobs:
             } else if (context.eventName === "pull_request_review") {
               const review = context.payload.review;
               const incomingPr = context.payload.pull_request;
-              if (!review || !incomingPr || !codexActors.has(review.user?.login || "")) {
-                core.info("Ignoring non-Codex review.");
+              if (!review || !incomingPr || !actorCanTriggerEvaluation(review.user?.login || "")) {
+                core.info("Ignoring unrelated review event.");
                 return;
               }
-              if (!reviewedCommitMatchesHead(review.commit_id || "", incomingPr.head?.sha || "")) {
+              if (codexActors.has(review.user?.login || "") && !reviewedCommitMatchesHead(review.commit_id || "", incomingPr.head?.sha || "")) {
                 core.info(
                   `Ignoring Codex review for commit ${review.commit_id || "<missing>"} because current head is ${incomingPr.head?.sha || "<missing>"}`,
                 );
-                return;
-              }
-              const state = (review.state || "").toUpperCase();
-              const clean =
-                state === "APPROVED" ||
-                (state === "COMMENTED" && bodyLooksClean(review.body || ""));
-              if (!clean) {
-                core.info("Codex review was not clean; not arming auto-merge.");
                 return;
               }
               pr = incomingPr;
@@ -147,6 +237,21 @@ jobs:
 
             if (!pr || pr.draft || pr.base?.ref !== "main" || pr.head?.repo?.full_name !== repoFullName) {
               core.info("Skipping draft, external, or non-main PR.");
+              return;
+            }
+
+            const cleanCodex = await currentHeadCodexResult(pr.number, pr.head.sha);
+            if (!cleanCodex) {
+              core.info("Current head does not yet have a clean Codex result; not arming auto-merge.");
+              return;
+            }
+
+            const trustedSubmission = await currentHeadIsTrustedSubmission(pr.number);
+            const trustedApproval = trustedSubmission
+              ? true
+              : await currentHeadHasTrustedApproval(pr.number, pr.head.sha);
+            if (!trustedApproval) {
+              core.info("Current head is not trusted and lacks trusted approval; not arming auto-merge.");
               return;
             }
 
