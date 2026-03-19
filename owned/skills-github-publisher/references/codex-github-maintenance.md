@@ -41,6 +41,8 @@ If the repository is already intentionally public and stable:
 - prefer Codex review on pull requests first
 - if the repo later installs Codex hard-gate auto-merge, limit direct auto-merge to trusted-maintainer-only submissions and require a current-head approval from the repository owner or another configured admin for anything else
 - if Codex leaves findings, let a trusted maintainer manually decide whether to comment `@codex address that feedback`; do not auto-wire recurring self-fix loops from workflows
+- if a trusted maintainer wants Codex to modify an existing PR branch, use an explicit follow-up request such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.` Treat this as a cloud-task writeback request, not as part of the automatic review gate.
+- do not assume the Code review toggle alone proves writeback is ready; if follow-up tasks only produce summaries, verify the repository is also usable from Codex cloud before expecting branch updates
 - then consider `@codex` or a Codex GitHub Action for follow-up maintenance
 
 This order keeps the first GitHub-side use narrower and easier to audit.

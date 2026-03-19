@@ -208,6 +208,7 @@ What it may do:
      - generate `CODEX_SETUP.md` so the remaining manual steps are explicit and minimal
      - if the repo installs a Codex hard gate with auto-merge, keep direct auto-merge limited to trusted-maintainer-only submissions; require a current-head approval from the repository owner or another configured admin for anything else
      - if Codex leaves findings, keep any `@codex address that feedback` step human-invoked by a trusted maintainer rather than wiring a recursive auto-fix workflow
+     - if the user wants Codex to write back to an existing PR branch, keep that as an explicit trusted-maintainer action on an already-public PR branch; ask Codex to update the current PR branch with a minimal patch and do not rely on this for unpublished or mixed-boundary trees
      - ensure `AGENTS.md` and the pull-request template keep Codex in review-first mode
      - prepare a smoke-test plan for a small docs-only PR, but stop before any account-side OAuth step or live `@codex` trigger that requires the user's confirmation
      - if the user explicitly authorizes browser-side assistance, prefer the same safe CDP pattern already used by local browser-automation skills:

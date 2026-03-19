@@ -11,6 +11,7 @@ Prepare everything locally so the maintainer only needs to do the account-side G
 - Start with GitHub-side review on public pull requests.
 - Do not start with cloud-side code generation or broad write permissions.
 - Do not authorize internal repositories, mixed public/private trees, or repos that still depend on local private policy files.
+- If you later test Codex writeback, keep it to one trusted-maintainer-only follow-up on an already-public PR branch and require minimal patch scope.
 
 ## Prepare In The Repo Before The User Clicks Anything
 
@@ -24,12 +25,14 @@ Prepare everything locally so the maintainer only needs to do the account-side G
 - If a smoke test is planned, make it a small docs-only pull request.
 - If browser-side troubleshooting is later needed, reuse the existing isolated-profile CDP pattern instead of touching the default browser profile.
 - If Codex leaves findings during the smoke test, keep any `@codex address that feedback` follow-up manual; do not configure an automatic fix loop.
+- If you want to test PR writeback after review succeeds, use one explicit trusted-maintainer comment such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.`
 
 ## Manual Steps The User Must Still Perform
 
 - Connect GitHub from ChatGPT or Codex.
 - Authorize only the intended public repository or a minimal repository subset.
 - If the UI exposes a Codex review toggle, enable review first and leave broader cloud editing disabled.
+- If follow-up tasks are expected to update an existing PR, confirm the same repository is usable from Codex cloud instead of assuming the review toggle alone is sufficient.
 - Confirm any privacy or training settings that matter for the user's account tier before proceeding.
 
 ## Smoke Test

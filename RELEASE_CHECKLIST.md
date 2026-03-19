@@ -43,4 +43,5 @@ git ls-remote --heads origin main
 - Push only after the license decision, third-party manifests, and security scan are all in the expected state.
 - If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.
 - If you later enable Codex on GitHub, start with PR review on the already public repository before allowing broader cloud-side edit flows.
+- If a trusted maintainer later wants Codex to write back to an existing public PR branch, make that a one-off explicit request instead of wiring an automatic fix loop.
 

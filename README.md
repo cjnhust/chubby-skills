@@ -81,6 +81,7 @@ See [`THIRD_PARTY_ACKNOWLEDGEMENTS.md`](THIRD_PARTY_ACKNOWLEDGEMENTS.md) for the
 ## Post-Publish Maintenance
 
 - Keep the initial sanitization and first public release local-first.
-- If you later want Codex on GitHub, prefer PR review on this already public repository before enabling broader cloud-side edit flows.
+- If you later want Codex on GitHub, prefer PR review on this already public repository before broader cloud-side edit flows.
+- If a trusted maintainer later wants Codex to write back to an existing PR branch, make that an explicit minimal-scope request on an already public PR branch rather than an automatic workflow loop.
 - Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.
 

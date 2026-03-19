@@ -432,7 +432,8 @@ def build_readme(root: Path, entries: list[SkillEntry], vendors: list[VendorUnit
     lines.append("## Post-Publish Maintenance")
     lines.append("")
     lines.append("- Keep the initial sanitization and first public release local-first.")
-    lines.append("- If you later want Codex on GitHub, prefer PR review on this already public repository before enabling broader cloud-side edit flows.")
+    lines.append("- If you later want Codex on GitHub, prefer PR review on this already public repository before broader cloud-side edit flows.")
+    lines.append("- If a trusted maintainer later wants Codex to write back to an existing PR branch, make that an explicit minimal-scope request on an already public PR branch rather than an automatic workflow loop.")
     lines.append("- Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.")
     lines.append("")
     return "\n".join(lines) + "\n"
@@ -680,7 +681,7 @@ python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --stric
 
 After creating the GitHub repository, enable Secret Scanning and Push Protection before the first public push.
 
-If you later enable Codex on GitHub for this repository, limit the first use to review on already public pull requests rather than broader cloud-side editing.
+If you later enable Codex on GitHub for this repository, limit the first use to review on already public pull requests rather than broader cloud-side editing. If a trusted maintainer later wants a follow-up task to write back to the current PR branch, make that request explicit and keep the patch scope narrow.
 """
 
 
@@ -735,6 +736,7 @@ def build_release_checklist(root: Path) -> str:
     lines.append("- Push only after the license decision, third-party manifests, and security scan are all in the expected state.")
     lines.append("- If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.")
     lines.append("- If you later enable Codex on GitHub, start with PR review on the already public repository before allowing broader cloud-side edit flows.")
+    lines.append("- If a trusted maintainer later wants Codex to write back to an existing public PR branch, make that a one-off explicit request instead of wiring an automatic fix loop.")
     lines.append("")
     return "\n".join(lines) + "\n"
 
@@ -767,9 +769,10 @@ def build_codex_setup(root: Path) -> str:
     lines.append("## Manual Steps You Still Need To Do")
     lines.append("")
     lines.append("1. In ChatGPT or Codex, connect GitHub and authorize only this public repository or the smallest possible repository subset.")
-    lines.append("2. If the UI exposes Codex review settings, enable review first and leave broader cloud editing disabled.")
-    lines.append("3. If repository indexing is delayed, retry after a short wait and use the current GitHub import or refresh flow exposed by the product.")
-    lines.append("4. Confirm any account-level privacy or training settings that matter for your plan before you rely on the integration.")
+    lines.append("2. If the UI exposes Codex review settings, enable review first.")
+    lines.append("3. If you later expect `@codex fix ...` or another follow-up task to update an existing PR branch, verify the same repository is also usable from Codex cloud; the review toggle alone is not enough evidence.")
+    lines.append("4. If repository indexing is delayed, retry after a short wait and use the current GitHub import or refresh flow exposed by the product.")
+    lines.append("5. Confirm any account-level privacy or training settings that matter for your plan before you rely on the integration.")
     lines.append("")
     lines.append("## If You Need Local Browser Help")
     lines.append("")
@@ -798,7 +801,8 @@ def build_codex_setup(root: Path) -> str:
     else:
         lines.append("- If this export repo later adopts the optional `codex-review-gate` workflow, wait for that gate before merging.")
     lines.append("- Trigger Codex review through the currently supported GitHub flow for your account.")
-    lines.append("- If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback`.")
+    lines.append("- If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback` or an explicit `@codex fix ... update this existing PR branch` request.")
+    lines.append("- For writeback requests, prefer explicit wording such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.`")
     lines.append("- Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.")
     lines.append("- Keep the review focus narrow:")
     lines.append("  - secret leakage or local-path regressions")
