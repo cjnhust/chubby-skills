@@ -168,6 +168,10 @@ What it may do:
    - If a real secret is found, stop, rotate or revoke it, remove it from the export tree, and only then continue.
 
 8. Finalize the local Git history in the export repo.
+   - Review the effective Git identity before the first public commit:
+     - run `python3 scripts/check_git_identity.py --root <export-repo> --strict`
+     - if the effective `user.name` or `user.email` is private, set a repo-local public identity before committing
+     - prefer a public display name plus a GitHub no-reply address or another intentionally public email
    - Review `git status --short` before staging anything.
    - Do not stage ignored junk or generated dependency trees just because they are present in the working directory.
    - If ignored working-tree junk such as `node_modules/` still exists inside the export repo, clean or quarantine it before the final handoff.
@@ -212,10 +216,12 @@ What it may do:
 - If provenance is already known, prefer a physical `third-party/` directory boundary in the staged export instead of only tagging the report.
 - Do not "fix" runtime credential storage code when the real issue is only a doc path or a committed runtime artifact.
 - Do not recommend Codex cloud or GitHub-side maintenance for unpublished or internal skill repos from this skill's default path.
+- Do not treat Git author and committer metadata as harmless; private names and emails in commit history are publish leaks too.
 - Prefer a smaller public export with clean boundaries over a broader export with ambiguous ownership.
 
 ## Resources
 
+- `scripts/check_git_identity.py`: verify repo-local git author metadata against local private policy before public commits
 - `scripts/preflight_scan.py`: local scan for secret-like literals, local-path leaks, and junk artifacts
 - `scripts/generate_export_docs.py`: generate staged `README.md`, acknowledgement docs, and prefilled third-party review manifests
 - `references/classification-and-structure.md`: repo-shaping rules for public/private and repo-local/global splits

@@ -23,6 +23,9 @@ The staged export should also carry these repo-level helper docs:
 
 The release flow should also cover the local commit step:
 
+- review the effective `git config user.name` and `git config user.email`
+- treat private author or committer metadata as a publication leak, not as harmless local preference
+- if needed, set a repo-local public identity before committing
 - review `git status --short`
 - ensure ignored junk such as `node_modules/` is not part of the final handoff
 - stage the intended changes only

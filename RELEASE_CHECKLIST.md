@@ -8,6 +8,7 @@ Use this checklist before creating the public GitHub repository or pushing from 
 - Review `README.md`, `THIRD_PARTY_ACKNOWLEDGEMENTS.md`, `third-party/ORIGIN.md`, and `third-party/LICENSES.md` together.
 - Keep `owned/` and `third-party/` boundaries explicit; do not fold imported skills into `owned/`.
 - Re-run the strict preflight scan from the repository root.
+- Verify the effective Git author identity is public-safe before committing or pushing.
 - Keep maintainer-specific sensitive scan inputs only in a local private policy file, not in committed commands or repo docs.
 - Review `git status --short` and make sure ignored junk such as `node_modules/` is not part of the final handoff.
 - Verify `.system/` and `danger-*` skills are still excluded unless you intentionally reviewed them for publication.
@@ -17,6 +18,9 @@ Use this checklist before creating the public GitHub repository or pushing from 
 
 ```bash
 python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file "$CODEX_HOME/private/publish-policy.json"
+python3 owned/skills-github-publisher/scripts/check_git_identity.py --root . --strict --local-policy-file "$CODEX_HOME/private/publish-policy.json"
+git config user.name "<public-name>"  # if the effective identity is still private
+git config user.email "<public-email-or-github-noreply>"  # if the effective identity is still private
 git status --short
 git init -b main  # only for a fresh local repo
 git add .
