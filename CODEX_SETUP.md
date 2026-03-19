@@ -31,6 +31,8 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 ## First Smoke Test
 
 - Use a small docs-only pull request.
+- Keep the `codex-review-gate` workflow green; that is the hard merge gate.
+- Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.
 - Trigger Codex review through the currently supported GitHub flow for your account.
 - Keep the review focus narrow:
   - secret leakage or local-path regressions

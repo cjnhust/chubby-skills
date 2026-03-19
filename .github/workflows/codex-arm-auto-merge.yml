@@ -1,0 +1,58 @@
+name: Codex Arm Auto Merge
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  codex-arm-auto-merge:
+    if: ${{ !github.event.pull_request.draft && github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.setFailed("pull_request payload missing");
+              return;
+            }
+
+            try {
+              await github.graphql(
+                `
+                  mutation EnableAutoMerge($pullRequestId: ID!) {
+                    enablePullRequestAutoMerge(
+                      input: {
+                        pullRequestId: $pullRequestId
+                        mergeMethod: SQUASH
+                      }
+                    ) {
+                      pullRequest {
+                        number
+                        autoMergeRequest {
+                          enabledAt
+                        }
+                      }
+                    }
+                  }
+                `,
+                { pullRequestId: pr.node_id },
+              );
+              core.info(`Enabled auto-merge for PR #${pr.number}`);
+            } catch (error) {
+              const message = String(error.message || error);
+              if (message.includes("is already enabled for auto-merge")) {
+                core.info(`Auto-merge already enabled for PR #${pr.number}`);
+                return;
+              }
+              throw error;
+            }
