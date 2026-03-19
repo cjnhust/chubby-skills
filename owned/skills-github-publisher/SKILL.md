@@ -179,6 +179,7 @@ What it may do:
 9. Execute the local publish handoff only after the export repo is clean.
    - Review `git remote -v` before the first push.
    - If no `origin` remote exists yet, create the GitHub repository outside this skill, then add `origin` deliberately in the export repo.
+   - For public GitHub publication on machines that also use internal SSH identities, prefer an `https://github.com/...` remote or an explicit GitHub-only SSH host alias. Do not rely on the default SSH identity selection when internal and external keys differ.
    - Push with `git push -u origin main` only after:
      - the strict preflight scan is clean
      - provenance review is complete for intentionally included third-party units
