@@ -188,6 +188,18 @@ What it may do:
    - After the first push, verify the published branch with `git ls-remote --heads origin main` or an equivalent remote check.
    - Record the final local verification commands in `RELEASE_CHECKLIST.md` so the publish-repo is self-contained for the next run.
 
+10. Decide whether post-publish Codex GitHub integration is appropriate.
+   - Read [references/codex-github-maintenance.md](references/codex-github-maintenance.md) before recommending Codex cloud, `@codex`, or a Codex GitHub Action.
+   - Default to a conservative rule:
+     - do not delegate unpublished, internal-only, or still-being-sanitized skill trees to Codex cloud or GitHub integration
+     - do not expose local private policy files, internal-only skills, or mixed public/private trees to cloud maintenance flows
+   - For a public skills repo that is already sanitized and intentionally shareable:
+     - prefer Codex GitHub code review first
+     - allow `@codex` or a Codex GitHub Action only after the repository boundary is already stable and public
+   - If the user asks about internal or pre-public repositories, keep the recommendation local-only by default:
+     - Codex app, CLI, or IDE extension on the maintainer machine
+     - no cloud delegation from this publication skill until a separate internal-security review explicitly allows it
+
 ## Boundary Rules
 
 - Do not push directly from the live `~/.codex/skills` tree unless the user explicitly asks for that riskier path.
@@ -198,6 +210,7 @@ What it may do:
 - Do not silently fold third-party content into `owned/` skill ownership; keep a `third-party` marker in reports and export structure decisions.
 - If provenance is already known, prefer a physical `third-party/` directory boundary in the staged export instead of only tagging the report.
 - Do not "fix" runtime credential storage code when the real issue is only a doc path or a committed runtime artifact.
+- Do not recommend Codex cloud or GitHub-side maintenance for unpublished or internal skill repos from this skill's default path.
 - Prefer a smaller public export with clean boundaries over a broader export with ambiguous ownership.
 
 ## Resources
@@ -205,6 +218,7 @@ What it may do:
 - `scripts/preflight_scan.py`: local scan for secret-like literals, local-path leaks, and junk artifacts
 - `scripts/generate_export_docs.py`: generate staged `README.md`, acknowledgement docs, and prefilled third-party review manifests
 - `references/classification-and-structure.md`: repo-shaping rules for public/private and repo-local/global splits
+- `references/codex-github-maintenance.md`: conservative recommendation for when Codex GitHub integration is appropriate after publication
 - `references/path-and-ignore-rules.md`: path rewrite rules and `.gitignore` baseline
 - `references/security-baseline.md`: stricter shift-left security baseline for publication checks
 - `references/repo-docs-and-attribution.md`: what the staged README and attribution docs should contain

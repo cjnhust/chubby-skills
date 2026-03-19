@@ -77,3 +77,9 @@ It keeps user-owned skills and third-party skills under separate top-level bound
 Thanks to the original author and maintainers of the Baoyu skill family. Current source references in the imported skills point to [JimLiu/baoyu-skills](https://github.com/JimLiu/baoyu-skills).
 See [`THIRD_PARTY_ACKNOWLEDGEMENTS.md`](THIRD_PARTY_ACKNOWLEDGEMENTS.md) for the current attribution notes and review status.
 
+## Post-Publish Maintenance
+
+- Keep the initial sanitization and first public release local-first.
+- If you later want Codex on GitHub, prefer PR review on this already public repository before enabling broader cloud-side edit flows.
+- Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.
+

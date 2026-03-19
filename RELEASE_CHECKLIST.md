@@ -11,6 +11,7 @@ Use this checklist before creating the public GitHub repository or pushing from 
 - Keep maintainer-specific sensitive scan inputs only in a local private policy file, not in committed commands or repo docs.
 - Review `git status --short` and make sure ignored junk such as `node_modules/` is not part of the final handoff.
 - Verify `.system/` and `danger-*` skills are still excluded unless you intentionally reviewed them for publication.
+- Keep Codex GitHub maintenance disabled until the repository is already public, sanitized, and boundary-stable.
 
 ## Commands
 
@@ -34,4 +35,5 @@ git ls-remote --heads origin main
 - Enable Secret Scanning and Push Protection before the first public push.
 - Push only after the license decision, third-party manifests, and security scan are all in the expected state.
 - If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.
+- If you later enable Codex on GitHub, start with PR review on the already public repository before allowing broader cloud-side edit flows.
 

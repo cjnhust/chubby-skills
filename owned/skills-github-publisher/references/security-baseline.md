@@ -34,6 +34,9 @@ This skill uses a shift-left security posture:
 - block inclusion of internal-only skill families such as company-branded or intranet-only integrations
 - keep sensitive scan inputs themselves local-only, for example in a private policy file outside the publish repo, rather than hardcoding them in shared commands or committed docs
 - when local policy is needed, allow it to carry exact literals, regexes, and extra secret or internal-host detection rules without publishing those values
+- for publication work, treat cloud delegation as a later step, not part of the initial sanitization path
+- do not hand unpublished or internal skill trees to Codex cloud, GitHub-side `@codex`, or workflow automation from this skill's default path
+- if the repo is already intentionally public and sanitized, Codex GitHub review may be enabled later as an optional maintenance aid, but only after the publish boundary is stable
 - keep third-party ownership explicit and separate from `owned/` content
 - for publish-ready exports, require origin and license metadata for each intentionally included `third-party` or vendored unit
 - do not treat placeholder manifests, TODO checklists, or `pending` review stubs as satisfying provenance or license review

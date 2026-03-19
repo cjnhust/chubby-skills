@@ -37,6 +37,12 @@ The same release flow should also cover the local publish handoff:
 - verify the pushed branch with `git ls-remote --heads origin main` or an equivalent remote check
 - keep real repository URLs, access tokens, and maintainer-specific sensitive scan inputs out of committed docs
 
+If the maintainer wants Codex-based GitHub maintenance after publication:
+
+- treat that as a post-publish decision, not part of the initial sanitization flow
+- prefer GitHub-side code review on an already public and boundary-stable repo before enabling broader cloud edits
+- do not recommend `@codex`, Codex web delegation, or a Codex GitHub Action for unpublished or internal-only repositories from this publication workflow
+
 ## Third-Party Attribution
 
 If the export intentionally includes third-party skills:

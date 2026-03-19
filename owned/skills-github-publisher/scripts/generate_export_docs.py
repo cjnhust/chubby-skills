@@ -425,6 +425,12 @@ def build_readme(root: Path, entries: list[SkillEntry], vendors: list[VendorUnit
         lines.append("Thanks to the original authors and maintainers of the imported third-party skills.")
     lines.append("See [`THIRD_PARTY_ACKNOWLEDGEMENTS.md`](THIRD_PARTY_ACKNOWLEDGEMENTS.md) for the current attribution notes and review status.")
     lines.append("")
+    lines.append("## Post-Publish Maintenance")
+    lines.append("")
+    lines.append("- Keep the initial sanitization and first public release local-first.")
+    lines.append("- If you later want Codex on GitHub, prefer PR review on this already public repository before enabling broader cloud-side edit flows.")
+    lines.append("- Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.")
+    lines.append("")
     return "\n".join(lines) + "\n"
 
 
@@ -650,6 +656,7 @@ This repository publishes Codex skills and helper scripts. It is prepared for so
 - Keep third-party material inside `third-party/` with explicit origin and license review.
 - Keep maintainer-specific sensitive scan inputs in a local private policy file such as `$CODEX_HOME/private/publish-policy.json`, not in committed docs or shared shell snippets.
 - Prefer redacted examples such as `your_token_here` instead of live values.
+- Keep the first sanitization and publication pass local-first. Do not hand unpublished branches, local private policy files, or internal-only skill trees to Codex cloud or GitHub-side Codex flows from this repo workflow.
 
 ## Reporting
 
@@ -668,6 +675,8 @@ python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --stric
 ```
 
 After creating the GitHub repository, enable Secret Scanning and Push Protection before the first public push.
+
+If you later enable Codex on GitHub for this repository, limit the first use to review on already public pull requests rather than broader cloud-side editing.
 """
 
 
@@ -690,6 +699,7 @@ def build_release_checklist(root: Path) -> str:
     lines.append("- Keep maintainer-specific sensitive scan inputs only in a local private policy file, not in committed commands or repo docs.")
     lines.append("- Review `git status --short` and make sure ignored junk such as `node_modules/` is not part of the final handoff.")
     lines.append("- Verify `.system/` and `danger-*` skills are still excluded unless you intentionally reviewed them for publication.")
+    lines.append("- Keep Codex GitHub maintenance disabled until the repository is already public, sanitized, and boundary-stable.")
     lines.append("")
     lines.append("## Commands")
     lines.append("")
@@ -713,6 +723,7 @@ def build_release_checklist(root: Path) -> str:
     lines.append("- Enable Secret Scanning and Push Protection before the first public push.")
     lines.append("- Push only after the license decision, third-party manifests, and security scan are all in the expected state.")
     lines.append("- If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.")
+    lines.append("- If you later enable Codex on GitHub, start with PR review on the already public repository before allowing broader cloud-side edit flows.")
     lines.append("")
     return "\n".join(lines) + "\n"
 

@@ -14,6 +14,7 @@ This repository publishes Codex skills and helper scripts. It is prepared for so
 - Keep third-party material inside `third-party/` with explicit origin and license review.
 - Keep maintainer-specific sensitive scan inputs in a local private policy file such as `$CODEX_HOME/private/publish-policy.json`, not in committed docs or shared shell snippets.
 - Prefer redacted examples such as `your_token_here` instead of live values.
+- Keep the first sanitization and publication pass local-first. Do not hand unpublished branches, local private policy files, or internal-only skill trees to Codex cloud or GitHub-side Codex flows from this repo workflow.
 
 ## Reporting
 
@@ -32,3 +33,5 @@ python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --stric
 ```
 
 After creating the GitHub repository, enable Secret Scanning and Push Protection before the first public push.
+
+If you later enable Codex on GitHub for this repository, limit the first use to review on already public pull requests rather than broader cloud-side editing.
