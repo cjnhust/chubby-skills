@@ -43,6 +43,9 @@ If the repository is already intentionally public and stable:
 - if Codex leaves findings, let a trusted maintainer manually decide whether to comment `@codex address that feedback`; do not auto-wire recurring self-fix loops from workflows
 - if a trusted maintainer wants Codex to modify an existing PR branch, use an explicit follow-up request such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.` Treat this as a cloud-task writeback request, not as part of the automatic review gate.
 - do not assume the Code review toggle alone proves writeback is ready; if follow-up tasks only produce summaries, verify the repository is also usable from Codex cloud before expecting branch updates
+- treat the current PR head SHA as the only proof that a fix landed; if Codex says it committed a change but the PR head did not move, treat the result as an un-applied task summary instead of a real GitHub writeback
+- if the Codex UI exposes a manual `Update branch` step, treat writeback as half-automatic and require a maintainer click; do not document this as fire-and-forget branch automation
+- when a latest-head fix makes an older Codex finding obsolete but GitHub leaves the review thread open, manually resolve the thread and rerun `@codex review` against the latest head instead of waiting for the stale thread state to self-heal
 - then consider `@codex` or a Codex GitHub Action for follow-up maintenance
 
 This order keeps the first GitHub-side use narrower and easier to audit.

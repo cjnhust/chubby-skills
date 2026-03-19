@@ -57,3 +57,14 @@ After the user completes the account-side authorization:
 - verify the review stays within the expected public repository boundary
 - if the review output looks safe and relevant, keep the integration for future PR review
 - if the review ignores the boundary or requests sensitive local context, stop and keep Codex local-only
+
+## Latest-Head Review Loop
+
+When Codex leaves findings on a PR and the maintainer pushes a fix:
+
+- treat the latest PR head SHA as the only truth for whether a fix landed
+- if Codex claims it committed a change but the PR head did not move, treat that as a task summary, not as a real GitHub writeback
+- if the Codex UI shows a manual `Update branch` action, treat that as a required maintainer confirmation step
+- if a previously reported finding is fixed on the latest head but the review thread stays open, manually resolve the thread
+- after resolving stale threads, trigger a fresh `@codex review` against the latest head
+- if GitHub reports a missing pull ref such as `refs/pull/<n>/head`, push a fresh branch head and recheck that ref before blaming repository policy or the review gate
