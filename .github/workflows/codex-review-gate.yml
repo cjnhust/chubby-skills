@@ -143,7 +143,7 @@ jobs:
               const commits = await listPullRequestCommits(pr.number);
               return commits.every((commit) => {
                 const candidateLogins = [commit.author?.login, commit.committer?.login].filter(Boolean);
-                return candidateLogins.length > 0 && candidateLogins.some((login) => trustedActors.has(login));
+                return candidateLogins.length > 0 && candidateLogins.every((login) => trustedActors.has(login));
               });
             }
 
