@@ -197,6 +197,7 @@ What it may do:
 10. Decide whether post-publish Codex GitHub integration is appropriate.
    - Read [references/codex-github-maintenance.md](references/codex-github-maintenance.md) before recommending Codex cloud, `@codex`, or a Codex GitHub Action.
    - Read [references/codex-github-smoke-test.md](references/codex-github-smoke-test.md) when the user wants everything prepared except the account-side authorization clicks.
+   - Read [references/codex-github-browser-troubleshooting.md](references/codex-github-browser-troubleshooting.md) when the user explicitly authorizes local browser-side help for ChatGPT, Codex, or GitHub setup.
    - Default to a conservative rule:
      - do not delegate unpublished, internal-only, or still-being-sanitized skill trees to Codex cloud or GitHub integration
      - do not expose local private policy files, internal-only skills, or mixed public/private trees to cloud maintenance flows
@@ -206,6 +207,11 @@ What it may do:
      - generate `CODEX_SETUP.md` so the remaining manual steps are explicit and minimal
      - ensure `AGENTS.md` and the pull-request template keep Codex in review-first mode
      - prepare a smoke-test plan for a small docs-only PR, but stop before any account-side OAuth step or live `@codex` trigger that requires the user's confirmation
+     - if the user explicitly authorizes browser-side assistance, prefer the same safe CDP pattern already used by local browser-automation skills:
+       - launch an isolated Chrome profile instead of touching the default profile
+       - keep login manual and in-tab; do not scrape cookies, localStorage, or browser credential files
+       - restrict navigation to the minimum public hosts needed for setup, such as `chatgpt.com`, `github.com`, and `help.openai.com`
+       - treat browser-side help as local troubleshooting only, not as a reason to broaden Codex cloud permissions
    - If the user asks about internal or pre-public repositories, keep the recommendation local-only by default:
      - Codex app, CLI, or IDE extension on the maintainer machine
      - no cloud delegation from this publication skill until a separate internal-security review explicitly allows it
@@ -222,6 +228,7 @@ What it may do:
 - Do not "fix" runtime credential storage code when the real issue is only a doc path or a committed runtime artifact.
 - Do not recommend Codex cloud or GitHub-side maintenance for unpublished or internal skill repos from this skill's default path.
 - Do not treat Git author and committer metadata as harmless; private names and emails in commit history are publish leaks too.
+- Do not repurpose browser-side CDP help into general session scraping; keep any browser assistance on isolated profiles and the minimum public setup hosts only.
 - Prefer a smaller public export with clean boundaries over a broader export with ambiguous ownership.
 
 ## Resources
@@ -230,6 +237,7 @@ What it may do:
 - `scripts/preflight_scan.py`: local scan for secret-like literals, local-path leaks, and junk artifacts
 - `scripts/generate_export_docs.py`: generate staged `README.md`, acknowledgement docs, and prefilled third-party review manifests
 - `references/classification-and-structure.md`: repo-shaping rules for public/private and repo-local/global splits
+- `references/codex-github-browser-troubleshooting.md`: safe local browser/CDP pattern for helping with public Codex-on-GitHub setup after explicit user approval
 - `references/codex-github-maintenance.md`: conservative recommendation for when Codex GitHub integration is appropriate after publication
 - `references/codex-github-smoke-test.md`: minimal post-publish Codex connection and review smoke-test flow for a public repo
 - `references/path-and-ignore-rules.md`: path rewrite rules and `.gitignore` baseline

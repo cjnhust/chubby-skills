@@ -48,6 +48,7 @@ If the maintainer wants Codex-based GitHub maintenance after publication:
 - treat that as a post-publish decision, not part of the initial sanitization flow
 - prefer GitHub-side code review on an already public and boundary-stable repo before enabling broader cloud edits
 - generate a repo-local `CODEX_SETUP.md` so only the account-side authorization clicks remain manual
+- if local browser help is later needed, keep it on an isolated Chrome profile and the minimum public setup hosts only
 - do not recommend `@codex`, Codex web delegation, or a Codex GitHub Action for unpublished or internal-only repositories from this publication workflow
 
 ## Third-Party Attribution

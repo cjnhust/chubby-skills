@@ -16,10 +16,15 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 3. If repository indexing is delayed, retry after a short wait and use the current GitHub import or refresh flow exposed by the product.
 4. Confirm any account-level privacy or training settings that matter for your plan before you rely on the integration.
 
+## If You Need Local Browser Help
+
+- Use an isolated Chrome profile instead of your default browser profile.
+- Keep login manual; do not read cookies, local storage, session storage, or browser credential files.
+- Keep browser-side troubleshooting limited to the minimum public setup hosts: `chatgpt.com`, `github.com`, and `help.openai.com`.
+
 ## First Smoke Test
 
 - Use a small docs-only pull request.
-- Keep the diff small enough that you can still verify every line manually after the review comes back.
 - Trigger Codex review through the currently supported GitHub flow for your account.
 - Keep the review focus narrow:
   - secret leakage or local-path regressions
@@ -40,3 +45,4 @@ Focus on secret leakage, local path regressions, internal-only content, and owne
 - Do not use Codex GitHub flows on unpublished branches that still carry local-only policy values.
 - Do not authorize internal repositories from this public-repo setup path.
 - If the first review asks for local private files or ignores the public boundary, disable the GitHub-side flow and keep Codex local-only.
+

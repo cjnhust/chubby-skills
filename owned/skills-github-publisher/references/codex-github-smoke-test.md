@@ -21,6 +21,7 @@ Prepare everything locally so the maintainer only needs to do the account-side G
   - the security posture for repository-scoped authorization
   - the first smoke-test procedure
 - If a smoke test is planned, make it a small docs-only pull request.
+- If browser-side troubleshooting is later needed, reuse the existing isolated-profile CDP pattern instead of touching the default browser profile.
 
 ## Manual Steps The User Must Still Perform
 
