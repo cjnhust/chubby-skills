@@ -19,6 +19,7 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 ## First Smoke Test
 
 - Use a small docs-only pull request.
+- Keep the diff small enough that you can still verify every line manually after the review comes back.
 - Trigger Codex review through the currently supported GitHub flow for your account.
 - Keep the review focus narrow:
   - secret leakage or local-path regressions
@@ -39,4 +40,3 @@ Focus on secret leakage, local path regressions, internal-only content, and owne
 - Do not use Codex GitHub flows on unpublished branches that still carry local-only policy values.
 - Do not authorize internal repositories from this public-repo setup path.
 - If the first review asks for local private files or ignores the public boundary, disable the GitHub-side flow and keep Codex local-only.
-
