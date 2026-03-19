@@ -54,3 +54,4 @@ Focus on secret leakage, local path regressions, internal-only content, and owne
 - Do not use Codex GitHub flows on unpublished branches that still carry local-only policy values.
 - Do not authorize internal repositories from this public-repo setup path.
 - If the first review asks for local private files or ignores the public boundary, disable the GitHub-side flow and keep Codex local-only.
+
