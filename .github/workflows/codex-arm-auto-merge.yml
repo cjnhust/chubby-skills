@@ -112,8 +112,11 @@ jobs:
               );
             }
 
-            async function currentHeadIsTrustedSubmission(pullNumber) {
-              const commits = await listPullRequestCommits(pullNumber);
+            async function currentHeadIsTrustedSubmission(pr) {
+              if (!trustedActors.has(pr.user?.login || "")) {
+                return false;
+              }
+              const commits = await listPullRequestCommits(pr.number);
               return commits.every((commit) => {
                 const candidateLogins = [commit.author?.login, commit.committer?.login].filter(Boolean);
                 return candidateLogins.length > 0 && candidateLogins.some((login) => trustedActors.has(login));
@@ -246,7 +249,7 @@ jobs:
               return;
             }
 
-            const trustedSubmission = await currentHeadIsTrustedSubmission(pr.number);
+            const trustedSubmission = await currentHeadIsTrustedSubmission(pr);
             const trustedApproval = trustedSubmission
               ? true
               : await currentHeadHasTrustedApproval(pr.number, pr.head.sha);

@@ -87,7 +87,7 @@ What it may do:
      - `default_local_policy_file`
    - If the local config resolves a publish repo and the user asks for an incremental update, diff and sync against that repo boundary instead of inventing a new staging path.
    - For deterministic incremental updates into a local publish git working copy, prefer `python3 scripts/sync_incremental_update.py --skill-root <path> [...]` and let it resolve the default publish repo / owned root from the local config when possible.
-   - The incremental sync helper should refuse `internal/`, `.system/`, and `danger-*` skill roots by default, and it should exclude publish-blocking junk such as `.git/`, `__pycache__/`, `node_modules/`, `.env*`, cookies, sessions, and raw key material unless the operator explicitly overrides that review-required boundary.
+   - The incremental sync helper should refuse `internal/`, `.system/`, and `danger-*` skill roots by default, and it should exclude publish-blocking junk such as `.git`, `.git/`, `__pycache__/`, `node_modules/`, `.env*`, cookies, sessions, and raw key material unless the operator explicitly overrides that review-required boundary.
    - Explicit CLI overrides such as `--publish-repo` or `--owned-root` should win over local config defaults so an incremental sync cannot drift into the wrong working copy.
    - The incremental sync helper should also strip nested `internal/`, `.system/`, and `danger-*` subtrees from otherwise allowed skill roots so a mixed local skill tree cannot reintroduce blocked content through rsync.
    - If a source skill root already lives under a clear ownership boundary such as `third-party/`, the incremental sync helper should preserve that boundary by default instead of silently restaging the skill into `owned/`.
@@ -244,7 +244,7 @@ What it may do:
      - prefer Codex GitHub code review first
      - allow `@codex` or a Codex GitHub Action only after the repository boundary is already stable and public
      - generate `CODEX_SETUP.md` so the remaining manual steps are explicit and minimal
-     - if the repo installs a Codex hard gate with auto-merge, keep direct auto-merge limited to trusted-maintainer-only submissions; require a current-head approval from the repository owner or another configured admin for anything else
+     - if the repo installs a Codex hard gate with auto-merge, keep direct auto-merge limited to trusted-maintainer-only submissions; treat a submission as trusted only when the PR opener and every commit on the current head resolve to the configured trusted maintainer set, and require a current-head approval from the repository owner or another configured admin for anything else
      - if Codex leaves findings, keep any `@codex address that feedback` step human-invoked by a trusted maintainer rather than wiring a recursive auto-fix workflow
      - if the user wants Codex to write back to an existing PR branch, keep that as an explicit trusted-maintainer action on an already-public PR branch; ask Codex to update the current PR branch with a minimal patch and do not rely on this for unpublished or mixed-boundary trees
      - treat the current PR head SHA as the only source of truth for whether a Codex fix landed; do not trust a Codex summary line such as "committed <sha>" unless the PR head or branch history actually changed on GitHub
