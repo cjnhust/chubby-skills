@@ -46,7 +46,11 @@ def remote_branch_exists(repo: Path, branch: str) -> bool:
         stderr=subprocess.DEVNULL,
         check=False,
     )
-    return result.returncode == 0
+    if result.returncode == 0:
+        return True
+    if result.returncode == 2:
+        return False
+    raise SystemExit(f"could not verify whether origin/{branch} exists; check remote connectivity and authentication first")
 
 
 def resolve_gh() -> str | None:

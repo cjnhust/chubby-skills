@@ -46,8 +46,12 @@ RSYNC_EXCLUDES = (
     "*.ovpn",
 )
 
-SKILL_TREE_SENTINELS = {"skills", "owned", "third-party"}
 REVIEW_REQUIRED_BOUNDARIES = {"internal", ".system"}
+NESTED_REVIEW_REQUIRED_EXCLUDES = (
+    "--filter=- internal/***",
+    "--filter=- .system/***",
+    "--filter=- danger-*/***",
+)
 
 
 def candidate_config_paths() -> list[Path]:
@@ -116,10 +120,7 @@ def is_review_required_root(src_root: Path) -> bool:
     if src_root.name.startswith("danger-"):
         return True
 
-    parents = list(src_root.parents)
-    sentinel_index = next((index for index, parent in enumerate(parents) if parent.name in SKILL_TREE_SENTINELS), None)
-    relevant_parents = parents[:sentinel_index] if sentinel_index is not None else parents[:1]
-    return any(parent.name in REVIEW_REQUIRED_BOUNDARIES for parent in relevant_parents)
+    return any(parent.name in REVIEW_REQUIRED_BOUNDARIES for parent in src_root.parents)
 
 
 def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool, allow_review_required: bool) -> None:
@@ -142,6 +143,7 @@ def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool, allow_review_
     ]
     for pattern in RSYNC_EXCLUDES:
         cmd.extend(["--exclude", pattern])
+    cmd.extend(NESTED_REVIEW_REQUIRED_EXCLUDES)
     cmd.extend(
         [
         f"{src_root}/",
