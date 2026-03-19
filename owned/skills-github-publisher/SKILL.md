@@ -78,6 +78,16 @@ What it may do:
 
 ## Workflow
 
+0. Resolve local defaults before inventory when available.
+   - Read [references/local-config.md](references/local-config.md) when the user wants repeated local publication work, incremental updates against one publish repo, or a local default publish boundary.
+   - Prefer `python3 scripts/resolve_local_publish_config.py` to discover private local defaults instead of hardcoding workstation paths in the skill, export repo, or committed docs.
+   - Supported local defaults should stay outside the public repo, for example:
+     - `default_publish_repo`
+     - `default_owned_root`
+     - `default_local_policy_file`
+   - If the local config resolves a publish repo and the user asks for an incremental update, diff and sync against that repo boundary instead of inventing a new staging path.
+   - For deterministic incremental updates into a local publish git working copy, prefer `python3 scripts/sync_incremental_update.py --skill-root <path> [...]` and let it resolve the default publish repo / owned root from the local config when possible.
+
 1. Inventory the candidate roots.
    - List the requested roots before changing anything.
    - Separate repo-local skill families from global skill families.
@@ -160,6 +170,11 @@ What it may do:
    - Run `python3 scripts/generate_export_docs.py --root <stage-export>` to derive these docs from the staged `SKILL.md` files, vendored package metadata, and optional review-evidence data.
    - If the user wants a formal repo skeleton instead of only a staging tree, promote the staged export into a dedicated publish-repo working copy and initialize Git there after doc generation. Do not auto-create the root `LICENSE`; leave that decision explicit in `LICENSE_DECISION.md`.
    - Read [references/repo-docs-and-attribution.md](references/repo-docs-and-attribution.md) when shaping the repo-facing docs.
+   - If the user is updating an existing local publish repo rather than creating a fresh staging tree:
+     - sync the changed skill roots into that working copy first
+     - then regenerate repo-facing docs
+     - then rerun the strict preflight scan in the publish repo
+     - then review `git status --short` in that repo before any commit or push
 
 7. Finish with a publish-readiness summary.
    - State what was included.
@@ -173,6 +188,7 @@ What it may do:
      - run `python3 scripts/check_git_identity.py --root <export-repo> --strict`
      - if the effective `user.name` or `user.email` is private, set a repo-local public identity before committing
      - prefer a public display name plus a GitHub no-reply address or another intentionally public email
+   - When syntax-checking Python helper scripts inside the export repo, prefer `python3 scripts/safe_py_compile.py <files...>` over raw `python3 -m py_compile`; the raw command leaves `__pycache__` in-tree and will trip the strict preflight scan.
    - Review `git status --short` before staging anything.
    - Do not stage ignored junk or generated dependency trees just because they are present in the working directory.
    - If ignored working-tree junk such as `node_modules/` still exists inside the export repo, clean or quarantine it before the final handoff.
@@ -205,6 +221,9 @@ What it may do:
      - prefer Codex GitHub code review first
      - allow `@codex` or a Codex GitHub Action only after the repository boundary is already stable and public
      - generate `CODEX_SETUP.md` so the remaining manual steps are explicit and minimal
+     - if the repo installs a Codex hard gate with auto-merge, keep direct auto-merge limited to trusted-maintainer-only submissions; require a current-head approval from the repository owner or another configured admin for anything else
+     - if Codex leaves findings, keep any `@codex address that feedback` step human-invoked by a trusted maintainer rather than wiring a recursive auto-fix workflow
+     - if the user wants Codex to write back to an existing PR branch, keep that as an explicit trusted-maintainer action on an already-public PR branch; ask Codex to update the current PR branch with a minimal patch and do not rely on this for unpublished or mixed-boundary trees
      - ensure `AGENTS.md` and the pull-request template keep Codex in review-first mode
      - prepare a smoke-test plan for a small docs-only PR, but stop before any account-side OAuth step or live `@codex` trigger that requires the user's confirmation
      - if the user explicitly authorizes browser-side assistance, prefer the same safe CDP pattern already used by local browser-automation skills:
@@ -233,9 +252,13 @@ What it may do:
 
 ## Resources
 
+- `scripts/resolve_local_publish_config.py`: resolve maintainer-local defaults such as the preferred publish repo and local private policy file without hardcoding them in the public skill
+- `scripts/sync_incremental_update.py`: sync one or more local skills into the configured publish repo working copy for incremental update flows
 - `scripts/check_git_identity.py`: verify repo-local git author metadata against local private policy before public commits
 - `scripts/preflight_scan.py`: local scan for secret-like literals, local-path leaks, and junk artifacts
 - `scripts/generate_export_docs.py`: generate staged `README.md`, acknowledgement docs, and prefilled third-party review manifests
+- `scripts/safe_py_compile.py`: syntax-check Python helpers without leaving `__pycache__` in the repo tree
+- `references/local-config.md`: private local config contract for repeated incremental publication work
 - `references/classification-and-structure.md`: repo-shaping rules for public/private and repo-local/global splits
 - `references/codex-github-browser-troubleshooting.md`: safe local browser/CDP pattern for helping with public Codex-on-GitHub setup after explicit user approval
 - `references/codex-github-maintenance.md`: conservative recommendation for when Codex GitHub integration is appropriate after publication

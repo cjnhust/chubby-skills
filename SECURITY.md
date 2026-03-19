@@ -34,4 +34,4 @@ python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --stric
 
 After creating the GitHub repository, enable Secret Scanning and Push Protection before the first public push.
 
-If you later enable Codex on GitHub for this repository, limit the first use to review on already public pull requests rather than broader cloud-side editing.
+If you later enable Codex on GitHub for this repository, limit the first use to review on already public pull requests rather than broader cloud-side editing. If a trusted maintainer later wants a follow-up task to write back to the current PR branch, make that request explicit and keep the patch scope narrow.

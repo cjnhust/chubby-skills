@@ -39,14 +39,29 @@ function extractVisuals(text) {
       current.section = sectionMatch[1].trim();
       continue;
     }
+    const anchorMatch = line.match(/^\s*-\s*draft_anchor_heading:\s*(.+)$/);
+    if (anchorMatch) {
+      current.draftAnchorHeading = anchorMatch[1].trim();
+      continue;
+    }
     const typeMatch = line.match(/^\s*-\s*visual_type:\s*(.+)$/);
     if (typeMatch) {
       current.visualType = typeMatch[1].trim();
       continue;
     }
+    const renderViaMatch = line.match(/^\s*-\s*render_via:\s*(.+)$/);
+    if (renderViaMatch) {
+      current.renderVia = renderViaMatch[1].trim();
+      continue;
+    }
     const purposeMatch = line.match(/^\s*-\s*purpose:\s*(.+)$/);
     if (purposeMatch) {
       current.purpose = purposeMatch[1].trim();
+      continue;
+    }
+    const statusMatch = line.match(/^\s*-\s*status:\s*(.+)$/);
+    if (statusMatch) {
+      current.status = statusMatch[1].trim();
       continue;
     }
   }
@@ -63,18 +78,116 @@ function renderPrompt(visual) {
     "",
     `<!-- ${GENERATED_MARKER} -->`,
     `- section: ${visual.section}`,
+    `- draft_anchor_heading: ${visual.draftAnchorHeading || "TODO"}`,
     `- visual_type: ${visual.visualType}`,
+    `- render_via: ${visual.renderVia || "TODO"}`,
     `- purpose: ${visual.purpose}`,
     "",
     "## Structure Source",
     "",
     "- Reference `notes/diagram-structures.md` before drafting or editing this prompt.",
+    "- Treat Mermaid in `notes/diagram-structures.md` as structure source only; do not directly export it as the default rendered output.",
+    "- Render this visual through the atomic visual skill named in `render_via` unless the user explicitly asks for direct Mermaid export.",
     "",
     "## Prompt",
     "",
     "TODO",
     "",
   ].join("\n");
+}
+
+function ensureDiagramSections(diagramPath, visuals) {
+  let current = fs.existsSync(diagramPath) ? readText(diagramPath).trimEnd() : "# Diagram Structures";
+  let changed = false;
+
+  for (const visual of visuals) {
+    const header = `## ${visual.id}`;
+    if (current.includes(`\n${header}\n`) || current.startsWith(`${header}\n`)) {
+      continue;
+    }
+    current += [
+      "",
+      "",
+      header,
+      "",
+      `- title: ${visual.section} 图`,
+      `- draft_anchor_heading: ${visual.draftAnchorHeading || "TODO"}`,
+      `- visual_type: ${visual.visualType}`,
+      `- purpose: ${visual.purpose}`,
+      "- status: pending",
+      "",
+    ].join("\n");
+    changed = true;
+  }
+
+  if (changed) {
+    writeText(diagramPath, `${current}\n`);
+  }
+}
+
+function buildPlaceholderBlock(visual) {
+  return [
+    "> [!visual-placeholder]",
+    `> id: ${visual.id}`,
+    `> section: ${visual.section}`,
+    `> draft_anchor_heading: ${visual.draftAnchorHeading || "TODO"}`,
+    `> visual_type: ${visual.visualType}`,
+    `> render_via: ${visual.renderVia || "TODO"}`,
+    `> purpose: ${visual.purpose}`,
+    "> next_step: review structure here, then render through the declared leaf visual skill.",
+  ];
+}
+
+function insertPlaceholdersIntoDraft(draftPath, visuals) {
+  if (!fs.existsSync(draftPath)) {
+    return [];
+  }
+
+  const lines = readText(draftPath).split(/\r?\n/);
+  const insertedIds = [];
+
+  for (const visual of visuals) {
+    if (!visual.draftAnchorHeading || visual.draftAnchorHeading === "TODO") {
+      continue;
+    }
+    if (readText(draftPath).includes(`> id: ${visual.id}`)) {
+      continue;
+    }
+
+    const headingIndex = lines.findIndex((line) => {
+      const match = line.match(/^#{2,6}\s+(.*)$/);
+      return match && match[1].trim() === visual.draftAnchorHeading;
+    });
+    if (headingIndex < 0) {
+      continue;
+    }
+
+    const block = ["", ...buildPlaceholderBlock(visual), ""];
+    lines.splice(headingIndex + 1, 0, ...block);
+    insertedIds.push(visual.id);
+  }
+
+  if (insertedIds.length > 0) {
+    writeText(draftPath, `${lines.join("\n")}\n`);
+  }
+
+  return insertedIds;
+}
+
+function updateInventoryStatuses(inventoryPath, visuals, insertedIds) {
+  if (insertedIds.length === 0) {
+    return;
+  }
+
+  let text = readText(inventoryPath);
+  for (const visual of visuals) {
+    if (!insertedIds.includes(visual.id)) {
+      continue;
+    }
+    const blockPattern = new RegExp(`(- id: ${visual.id}[\\s\\S]*?\\n\\s*- status:\\s*)(pending)(\\b)`, "m");
+    text = text.replace(blockPattern, `$1draft-placeholder$3`);
+  }
+  writeText(inventoryPath, text);
 }
 
 function main() {
@@ -85,6 +198,8 @@ function main() {
   }
 
   const inventoryPath = path.join(workspace, "notes/visual-inventory.md");
+  const diagramPath = path.join(workspace, "notes/diagram-structures.md");
+  const draftPath = path.join(workspace, "drafts/report.md");
   const promptsDir = path.join(workspace, "prompts");
   if (!fs.existsSync(inventoryPath)) {
     throw new Error("notes/visual-inventory.md is missing");
@@ -98,6 +213,9 @@ function main() {
       writeText(promptPath, renderPrompt(visual));
     }
   }
+  ensureDiagramSections(diagramPath, visuals);
+  const insertedIds = insertPlaceholdersIntoDraft(draftPath, visuals);
+  updateInventoryStatuses(inventoryPath, visuals, insertedIds);
 
   console.log(promptsDir);
 }

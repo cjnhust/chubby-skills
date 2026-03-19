@@ -20,58 +20,64 @@ const FINAL_VISUAL_STATES = new Set([
   "skipped",
 ]);
 
-function updateFlowClosure(text) {
-  let updated = text
-    .replace(/^- status: .*$/m, "- status: completed")
-    .replace(/^- article_status: .*$/m, "- article_status: completed")
-    .replace(/^- visual_status: .*$/m, "- visual_status: integrated")
-    .replace(/^- export_status: .*$/m, "- export_status: completed");
-
-  updated = updated.replace(
-    /## Deferred[\s\S]*?(?=\n## Waiting On User|\n## Next Action|$)/m,
-    [
-      "## Deferred",
-      "",
-      "- local runtime validation / benchmark",
-      "",
-    ].join("\n")
-  );
-
-  updated = updated.replace(
-    /## Waiting On User[\s\S]*?(?=\n## Next Action|$)/m,
-    [
-      "## Waiting On User",
-      "",
-      "- none",
-      "",
-    ].join("\n")
-  );
-
-  updated = updated.replace(
-    /## Next Action[\s\S]*$/m,
-    [
-      "## Next Action",
-      "",
-      "- Final report exported to `exports/report-final.md`; next optional step is local validation / benchmark if needed.",
-      "",
-    ].join("\n")
-  );
-
-  if (!updated.includes("exported final report")) {
-    updated = updated.replace(
-      /## Completed In This Pass\s*\n([\s\S]*?)(?=\n## Deferred|\n## Waiting On User|\n## Next Action|$)/m,
-      (match, sectionBody) =>
-        [
-          "## Completed In This Pass",
-          "",
-          sectionBody.trimEnd(),
-          "- exported final report to `exports/report-final.md`",
-          "",
-        ].join("\n")
+function assertNoAbsoluteFilesystemImageLinks(text) {
+  const matches = [...text.matchAll(/!\[[^\]]*\]\((\/[^)\s]+)\)/g)].map((m) => m[1]);
+  const offenders = matches.filter((target) => target.startsWith("/"));
+  if (offenders.length > 0) {
+    throw new Error(
+      `draft contains absolute filesystem image links; use report-relative paths instead (${[...new Set(offenders)].slice(0, 3).join(", ")})`
     );
   }
+}
 
-  return updated;
+function updateFlowClosure(text) {
+  const thesisStatusMatch = text.match(/^- thesis_status: .*$/m);
+  const thesisStatusLine = thesisStatusMatch ? thesisStatusMatch[0] : "- thesis_status: completed";
+  const deckStatusMatch = text.match(/^- deck_status: .*$/m);
+  const deckStatusLine = deckStatusMatch ? deckStatusMatch[0] : "- deck_status: not-started";
+
+  const completedMatch = text.match(
+    /## Completed In This Pass\s*\n([\s\S]*?)(?=\n## Deferred|\n## Waiting On User|\n## Next Action|$)/m
+  );
+  const completedBullets = completedMatch
+    ? completedMatch[1]
+        .split(/\r?\n/)
+        .map((line) => line.trimEnd())
+        .filter((line) => /^- /.test(line))
+    : [];
+
+  const dedupedCompleted = [...new Set(completedBullets)];
+  if (!dedupedCompleted.includes("- exported final report to `exports/report-final.md`")) {
+    dedupedCompleted.push("- exported final report to `exports/report-final.md`");
+  }
+
+  return [
+    "# Flow Closure",
+    "",
+    "- status: completed",
+    thesisStatusLine.replace(/: .*/, ": completed"),
+    "- article_status: completed",
+    "- visual_status: integrated",
+    deckStatusLine,
+    "- export_status: completed",
+    "",
+    "## Completed In This Pass",
+    "",
+    ...dedupedCompleted,
+    "",
+    "## Deferred",
+    "",
+    "- local runtime validation / benchmark",
+    "",
+    "## Waiting On User",
+    "",
+    "- none",
+    "",
+    "## Next Action",
+    "",
+    "- Final report exported to `exports/report-final.md`; next optional step is local validation / benchmark if needed.",
+    "",
+  ].join("\n");
 }
 
 function main() {
@@ -85,12 +91,16 @@ function main() {
   const outputPath = resolveAbsolute(args.output) || path.join(workspace, "exports/report-final.md");
   const diagramPath = path.join(workspace, "notes/diagram-structures.md");
   const factCheckPath = path.join(workspace, "notes/fact-check.md");
+  const reportThesisPath = path.join(workspace, "notes/report-thesis.md");
+  const selectionBundlePath = path.join(workspace, "notes/selection-bundle.md");
   const sourceBriefPath = path.join(workspace, "source/source.md");
   const codeVerificationPath = path.join(workspace, "notes/code-verification.md");
   const visualInventoryPath = path.join(workspace, "notes/visual-inventory.md");
   const flowClosurePath = path.join(workspace, "notes/flow-closure.md");
 
   const draft = readText(draftPath);
+
+  assertNoAbsoluteFilesystemImageLinks(draft);
 
   if (draft.includes("[!visual-placeholder]")) {
     throw new Error("draft still contains visual placeholder blocks; resolve them before finalizing");
@@ -102,6 +112,22 @@ function main() {
 
   if (!fs.existsSync(factCheckPath)) {
     throw new Error("notes/fact-check.md is missing");
+  }
+
+  if (!fs.existsSync(reportThesisPath)) {
+    throw new Error("notes/report-thesis.md is missing");
+  }
+
+  const reportThesis = readText(reportThesisPath);
+  for (const requiredPattern of [
+    /^- report_mode:\s*(?!TODO\b).+/m,
+    /^- target_reader:\s*(?!TODO\b).+/m,
+    /^- core_question:\s*(?!TODO\b).+/m,
+    /^- single_sentence_thesis:\s*(?!TODO\b).+/m,
+  ]) {
+    if (!requiredPattern.test(reportThesis)) {
+      throw new Error("report thesis gate not passed; complete notes/report-thesis.md before finalizing");
+    }
   }
 
   const factCheck = readText(factCheckPath);
@@ -131,6 +157,16 @@ function main() {
     if (invalidStatuses.length > 0) {
       throw new Error(
         `visual inventory still contains unapproved items (${[...new Set(invalidStatuses)].join(", ")}); require explicit user confirmation before finalizing`
+      );
+    }
+
+    const approvedCount = statuses.filter((status) => status.startsWith("approved-")).length;
+    const skippedOnly = statuses.length > 0 && approvedCount === 0 && statuses.every((status) => status === "skipped");
+    const selectionBundle = fs.existsSync(selectionBundlePath) ? readText(selectionBundlePath) : "";
+    const textOnlyByUser = /^- visual_strategy:\s*text-only-by-user$/m.test(selectionBundle);
+    if (skippedOnly && !textOnlyByUser) {
+      throw new Error(
+        "all planned visuals are marked skipped while visual strategy is not text-only-by-user; keep at least one approved visual or explicitly switch the bundle to text-only-by-user"
       );
     }
   }

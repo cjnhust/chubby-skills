@@ -12,9 +12,10 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 ## Manual Steps You Still Need To Do
 
 1. In ChatGPT or Codex, connect GitHub and authorize only this public repository or the smallest possible repository subset.
-2. If the UI exposes Codex review settings, enable review first and leave broader cloud editing disabled.
-3. If repository indexing is delayed, retry after a short wait and use the current GitHub import or refresh flow exposed by the product.
-4. Confirm any account-level privacy or training settings that matter for your plan before you rely on the integration.
+2. If the UI exposes Codex review settings, enable review first.
+3. If you later expect `@codex fix ...` or another follow-up task to update an existing PR branch, verify the same repository is also usable from Codex cloud; the review toggle alone is not enough evidence.
+4. If repository indexing is delayed, retry after a short wait and use the current GitHub import or refresh flow exposed by the product.
+5. Confirm any account-level privacy or training settings that matter for your plan before you rely on the integration.
 
 ## If You Need Local Browser Help
 
@@ -32,8 +33,14 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 
 - Use a small docs-only pull request.
 - Keep the `codex-review-gate` workflow green; that is the hard merge gate.
+- Only a trusted-maintainer-only submission can skip an extra human approval: the pull request must be opened by the repository owner or another configured admin profile, and every commit on the current head must resolve to that same trusted maintainer set.
+- If the PR is opened by someone else or includes any commit not attributed to that trusted maintainer set, keep the gate blocked until the repository owner or another configured admin approves the current head.
 - Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.
+- If you are introducing the hard-gate workflows for the first time, the bootstrap PR that lands them may need a one-time manual exception.
 - Trigger Codex review through the currently supported GitHub flow for your account.
+- If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback` or an explicit `@codex fix ... update this existing PR branch` request.
+- For writeback requests, prefer explicit wording such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.`
+- Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.
 - Keep the review focus narrow:
   - secret leakage or local-path regressions
   - accidental inclusion of internal-only content
@@ -53,3 +60,4 @@ Focus on secret leakage, local path regressions, internal-only content, and owne
 - Do not use Codex GitHub flows on unpublished branches that still carry local-only policy values.
 - Do not authorize internal repositories from this public-repo setup path.
 - If the first review asks for local private files or ignores the public boundary, disable the GitHub-side flow and keep Codex local-only.
+

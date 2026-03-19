@@ -432,7 +432,8 @@ def build_readme(root: Path, entries: list[SkillEntry], vendors: list[VendorUnit
     lines.append("## Post-Publish Maintenance")
     lines.append("")
     lines.append("- Keep the initial sanitization and first public release local-first.")
-    lines.append("- If you later want Codex on GitHub, prefer PR review on this already public repository before enabling broader cloud-side edit flows.")
+    lines.append("- If you later want Codex on GitHub, prefer PR review on this already public repository before broader cloud-side edit flows.")
+    lines.append("- If a trusted maintainer later wants Codex to write back to an existing PR branch, make that an explicit minimal-scope request on an already public PR branch rather than an automatic workflow loop.")
     lines.append("- Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.")
     lines.append("")
     return "\n".join(lines) + "\n"
@@ -680,7 +681,7 @@ python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --stric
 
 After creating the GitHub repository, enable Secret Scanning and Push Protection before the first public push.
 
-If you later enable Codex on GitHub for this repository, limit the first use to review on already public pull requests rather than broader cloud-side editing.
+If you later enable Codex on GitHub for this repository, limit the first use to review on already public pull requests rather than broader cloud-side editing. If a trusted maintainer later wants a follow-up task to write back to the current PR branch, make that request explicit and keep the patch scope narrow.
 """
 
 
@@ -735,11 +736,24 @@ def build_release_checklist(root: Path) -> str:
     lines.append("- Push only after the license decision, third-party manifests, and security scan are all in the expected state.")
     lines.append("- If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.")
     lines.append("- If you later enable Codex on GitHub, start with PR review on the already public repository before allowing broader cloud-side edit flows.")
+    lines.append("- If a trusted maintainer later wants Codex to write back to an existing public PR branch, make that a one-off explicit request instead of wiring an automatic fix loop.")
     lines.append("")
     return "\n".join(lines) + "\n"
 
 
-def build_codex_setup() -> str:
+def has_codex_review_gate(root: Path) -> bool:
+    workflows_dir = root / ".github" / "workflows"
+    return (workflows_dir / "codex-review-gate.yml").exists()
+
+
+def has_codex_auto_merge(root: Path) -> bool:
+    workflows_dir = root / ".github" / "workflows"
+    return (workflows_dir / "codex-arm-auto-merge.yml").exists()
+
+
+def build_codex_setup(root: Path) -> str:
+    review_gate_enabled = has_codex_review_gate(root)
+    auto_merge_enabled = has_codex_auto_merge(root)
     lines: list[str] = []
     lines.append("# Codex Setup")
     lines.append("")
@@ -755,20 +769,41 @@ def build_codex_setup() -> str:
     lines.append("## Manual Steps You Still Need To Do")
     lines.append("")
     lines.append("1. In ChatGPT or Codex, connect GitHub and authorize only this public repository or the smallest possible repository subset.")
-    lines.append("2. If the UI exposes Codex review settings, enable review first and leave broader cloud editing disabled.")
-    lines.append("3. If repository indexing is delayed, retry after a short wait and use the current GitHub import or refresh flow exposed by the product.")
-    lines.append("4. Confirm any account-level privacy or training settings that matter for your plan before you rely on the integration.")
+    lines.append("2. If the UI exposes Codex review settings, enable review first.")
+    lines.append("3. If you later expect `@codex fix ...` or another follow-up task to update an existing PR branch, verify the same repository is also usable from Codex cloud; the review toggle alone is not enough evidence.")
+    lines.append("4. If repository indexing is delayed, retry after a short wait and use the current GitHub import or refresh flow exposed by the product.")
+    lines.append("5. Confirm any account-level privacy or training settings that matter for your plan before you rely on the integration.")
     lines.append("")
     lines.append("## If You Need Local Browser Help")
     lines.append("")
     lines.append("- Use an isolated Chrome profile instead of your default browser profile.")
     lines.append("- Keep login manual; do not read cookies, local storage, session storage, or browser credential files.")
     lines.append("- Keep browser-side troubleshooting limited to the minimum public setup hosts: `chatgpt.com`, `github.com`, and `help.openai.com`.")
+    lines.append("- Debug in this order:")
+    lines.append("  1. `https://chatgpt.com/codex/settings/code-review`")
+    lines.append("  2. search the exact repository slug in the repository search box")
+    lines.append("  3. if it is missing, go to `https://chatgpt.com/codex/settings/connectors`")
+    lines.append("  4. use the GitHub `设置` button to open the ChatGPT Codex Connector installation page on GitHub")
+    lines.append("  5. if GitHub asks for login, log in manually in the isolated profile, then authorize the missing repository")
     lines.append("")
     lines.append("## First Smoke Test")
     lines.append("")
     lines.append("- Use a small docs-only pull request.")
+    if review_gate_enabled:
+        lines.append("- Keep the `codex-review-gate` workflow green; that is the hard merge gate.")
+        lines.append("- Only a trusted-maintainer-only submission can skip an extra human approval: the pull request must be opened by the repository owner or another configured admin profile, and every commit on the current head must resolve to that same trusted maintainer set.")
+        lines.append("- If the PR is opened by someone else or includes any commit not attributed to that trusted maintainer set, keep the gate blocked until the repository owner or another configured admin approves the current head.")
+        if auto_merge_enabled:
+            lines.append("- Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.")
+        else:
+            lines.append("- Merge manually after the gate succeeds if this repo does not install the optional auto-merge workflow.")
+        lines.append("- If you are introducing the hard-gate workflows for the first time, the bootstrap PR that lands them may need a one-time manual exception.")
+    else:
+        lines.append("- If this export repo later adopts the optional `codex-review-gate` workflow, wait for that gate before merging.")
     lines.append("- Trigger Codex review through the currently supported GitHub flow for your account.")
+    lines.append("- If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback` or an explicit `@codex fix ... update this existing PR branch` request.")
+    lines.append("- For writeback requests, prefer explicit wording such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.`")
+    lines.append("- Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.")
     lines.append("- Keep the review focus narrow:")
     lines.append("  - secret leakage or local-path regressions")
     lines.append("  - accidental inclusion of internal-only content")
@@ -833,7 +868,7 @@ def main() -> int:
     (root / "THIRD_PARTY_ACKNOWLEDGEMENTS.md").write_text(build_acknowledgements(entries, vendors, evidence), encoding="utf-8")
     (root / "SECURITY.md").write_text(build_security_policy(), encoding="utf-8")
     (root / "RELEASE_CHECKLIST.md").write_text(build_release_checklist(root), encoding="utf-8")
-    (root / "CODEX_SETUP.md").write_text(build_codex_setup(), encoding="utf-8")
+    (root / "CODEX_SETUP.md").write_text(build_codex_setup(root), encoding="utf-8")
     (root / "LICENSE_DECISION.md").write_text(build_license_decision(root), encoding="utf-8")
     third_party_dir = root / "third-party"
     third_party_dir.mkdir(parents=True, exist_ok=True)

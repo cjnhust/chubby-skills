@@ -56,6 +56,7 @@ function sourceCatalogTemplate() {
     "  - url: TODO",
     "  - type: TODO",
     "  - role: TODO",
+    "  - role_in_judgment: seed | baseline | mechanism-evidence | case-study | counterexample | supporting",
     "",
   ].join("\n");
 }
@@ -84,6 +85,31 @@ function evidenceMatrixTemplate() {
     "| Dimension | Findings | Sources | Confidence / Gaps |",
     "| --- | --- | --- | --- |",
     "| TODO | TODO | TODO | TODO |",
+    "",
+  ].join("\n");
+}
+
+function reportThesisTemplate() {
+  return [
+    "# Report Thesis",
+    "",
+    `<!-- ${GENERATED_MARKER} -->`,
+    "- report_mode: TODO",
+    "- target_reader: TODO",
+    "- core_question: TODO",
+    "- single_sentence_thesis: TODO",
+    "",
+    "## Section Spine",
+    "",
+    "- TODO",
+    "",
+    "## Source Integration Plan",
+    "",
+    "- S01: TODO",
+    "",
+    "## Non Goals",
+    "",
+    "- TODO",
     "",
   ].join("\n");
 }
@@ -140,6 +166,7 @@ function selectionBundleTemplate() {
     "- selected_theme: serious-engineering",
     "- writing_posture: research-report",
     "- visual_profile: serious-engineering",
+    "- visual_strategy: auto-plan-and-review",
     "- visual_style_override: null",
     "- confirmed: false",
     "",
@@ -175,28 +202,36 @@ function visualInventoryTemplate() {
     "",
     "- id: V01",
     "  - section: 项目定位",
+    "  - draft_anchor_heading: TODO",
     "  - visual_type: framework",
+    "  - render_via: baoyu-article-illustrator",
     "  - source_anchor: TODO",
     "  - purpose: 说明项目或技术的整体定位与结构",
     "  - status: pending",
     "",
     "- id: V02",
     "  - section: 最小 SOP",
+    "  - draft_anchor_heading: TODO",
     "  - visual_type: flowchart",
+    "  - render_via: baoyu-article-illustrator",
     "  - source_anchor: TODO",
     "  - purpose: 收拢 quickstart 或 first-pass 验证路径",
     "  - status: pending",
     "",
     "- id: V03",
     "  - section: 模块或能力版图",
+    "  - draft_anchor_heading: TODO",
     "  - visual_type: framework | comparison",
+    "  - render_via: baoyu-article-illustrator | baoyu-infographic",
     "  - source_anchor: TODO",
     "  - purpose: 说明主要模块、能力面或边界分层",
     "  - status: pending",
     "",
     "- id: V04",
     "  - section: 适用场景与限制",
+    "  - draft_anchor_heading: TODO",
     "  - visual_type: comparison | infographic",
+    "  - render_via: baoyu-infographic | baoyu-image-gen",
     "  - source_anchor: TODO",
     "  - purpose: 压缩 fit / unfit scenarios、主要坑和建议动作",
     "  - status: pending",
@@ -231,6 +266,10 @@ function draftTemplate(topic) {
     "",
     "TODO",
     "",
+    "## 2. 主线判断",
+    "",
+    "TODO",
+    "",
   ].join("\n");
 }
 
@@ -240,6 +279,7 @@ function flowClosureTemplate() {
     "",
     `<!-- ${GENERATED_MARKER} -->`,
     "- status: paused-for-review",
+    "- thesis_status: not-started",
     "- article_status: not-started",
     "- visual_status: not-started",
     "- deck_status: not-started",
@@ -294,6 +334,7 @@ function main() {
   maybeWriteText(path.join(workspace, "source/source-catalog.md"), sourceCatalogTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/research-questions.md"), researchQuestionsTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/evidence-matrix.md"), evidenceMatrixTemplate(), { force, marker });
+  maybeWriteText(path.join(workspace, "notes/report-thesis.md"), reportThesisTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/code-verification.md"), codeVerificationTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/fact-check.md"), factCheckTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/selection-bundle.md"), selectionBundleTemplate(), { force, marker });
