@@ -23,6 +23,7 @@ git config user.name "<public-name>"  # if the effective identity is still priva
 git config user.email "<public-email-or-github-noreply>"  # if the effective identity is still private
 git status --short
 git init -b main  # only for a fresh local repo
+git switch -c codex/<change-name>  # for updates to an existing public repo
 git add .
 git commit -m "Prepare public skills export"
 git show --stat --name-status --oneline -1
@@ -30,8 +31,9 @@ git status --short
 git remote -v
 gh auth login --hostname github.com --git-protocol https --web  # recommended for HTTPS remotes
 git remote add origin <your-github-repo-url>  # prefer https://github.com/... for public repos when internal SSH keys also exist
-git push -u origin main
-git ls-remote --heads origin main
+git push -u origin codex/<change-name>  # for updates to an existing public repo
+gh pr create --base main --head codex/<change-name>  # or open the PR in the GitHub UI
+git ls-remote --heads origin codex/<change-name>
 ```
 
 ## GitHub Setup
@@ -40,6 +42,7 @@ git ls-remote --heads origin main
 - Prefer an HTTPS GitHub remote, or an explicit GitHub-only SSH alias, when the machine also carries separate internal SSH identities.
 - Prefer GitHub CLI login or another OS-keychain-backed HTTPS credential flow over typing PATs into terminal prompts.
 - Enable Secret Scanning and Push Protection before the first public push.
+- For normal updates to an already public repo, push a PR branch and merge through pull request review rather than pushing directly to `main`.
 - Push only after the license decision, third-party manifests, and security scan are all in the expected state.
 - If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.
 - If you later enable Codex on GitHub, start with PR review on the already public repository before allowing broader cloud-side edit flows.

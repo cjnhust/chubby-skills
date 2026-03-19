@@ -188,6 +188,10 @@ What it may do:
      - run `python3 scripts/check_git_identity.py --root <export-repo> --strict`
      - if the effective `user.name` or `user.email` is private, set a repo-local public identity before committing
      - prefer a public display name plus a GitHub no-reply address or another intentionally public email
+   - For updates to an existing public repo, create or reuse a PR branch before staging or committing.
+     - prefer a `codex/<change-name>` branch
+     - do not keep new publication commits only on `main`
+     - if the current local change was prepared while checked out on `main`, branch from the current HEAD before the publish handoff continues
    - When syntax-checking Python helper scripts inside the export repo, prefer `python3 scripts/safe_py_compile.py <files...>` over raw `python3 -m py_compile`; the raw command leaves `__pycache__` in-tree and will trip the strict preflight scan.
    - Review `git status --short` before staging anything.
    - Do not stage ignored junk or generated dependency trees just because they are present in the working directory.
@@ -202,12 +206,17 @@ What it may do:
    - If no `origin` remote exists yet, create the GitHub repository outside this skill, then add `origin` deliberately in the export repo.
    - For public GitHub publication on machines that also use internal SSH identities, prefer an `https://github.com/...` remote or an explicit GitHub-only SSH host alias. Do not rely on the default SSH identity selection when internal and external keys differ.
    - When using an HTTPS remote, prefer GitHub CLI login such as `gh auth login --hostname github.com --git-protocol https --web` so credentials land in the OS keychain instead of being typed into terminal prompts for each push.
-   - Push with `git push -u origin main` only after:
+   - For updates to an existing public repo, prefer:
+     - `git push -u origin <pr-branch>`
+     - open a pull request from `<pr-branch>` into the protected default branch
+     - let the repository's review and merge rules decide when it lands on `main`
+   - Reserve direct `main` pushes for explicit bootstrap cases such as a brand-new empty publish repo, not for normal updates to an already public skills repo.
+   - Push only after:
      - the strict preflight scan is clean
      - provenance review is complete for intentionally included third-party units
      - `git status --short` is empty after the release commit
    - If GitHub push protection blocks the push, stop and treat it as a real blocker until the flagged content is removed or explained.
-   - After the first push, verify the published branch with `git ls-remote --heads origin main` or an equivalent remote check.
+   - After the push, verify the published branch with `git ls-remote --heads origin <branch>` or an equivalent remote check.
    - Record the final local verification commands in `RELEASE_CHECKLIST.md` so the publish-repo is self-contained for the next run.
 
 10. Decide whether post-publish Codex GitHub integration is appropriate.

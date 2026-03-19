@@ -39,8 +39,10 @@ The same release flow should also cover the local publish handoff:
 - add `origin` only after the target GitHub repository exists
 - prefer an `https://github.com/...` remote, or an explicit GitHub-only SSH alias, when the machine also carries internal SSH identities
 - for HTTPS remotes, prefer `gh auth login` or another OS-keychain-backed credential flow instead of pasting PATs into terminal prompts
-- push with `git push -u origin main` only after local scans and provenance checks are clean
-- verify the pushed branch with `git ls-remote --heads origin main` or an equivalent remote check
+- for updates to an existing public repo, create or reuse a PR branch such as `codex/<change-name>` before committing
+- push that PR branch with `git push -u origin <branch>` only after local scans and provenance checks are clean
+- open a pull request into the protected default branch instead of treating direct `main` push as the normal update path
+- verify the pushed branch with `git ls-remote --heads origin <branch>` or an equivalent remote check
 - keep real repository URLs, access tokens, and maintainer-specific sensitive scan inputs out of committed docs
 
 If the maintainer wants Codex-based GitHub maintenance after publication:
