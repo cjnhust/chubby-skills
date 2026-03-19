@@ -33,7 +33,7 @@ gh auth login --hostname github.com --git-protocol https --web  # recommended fo
 git remote add origin <your-github-repo-url>  # prefer https://github.com/... for public repos when internal SSH keys also exist
 python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --root . --base main  # inspect push/PR handoff first
 git push -u origin codex/<change-name>  # for updates to an existing public repo
-gh pr create --base main --head codex/<change-name>  # or open the PR in the GitHub UI
+gh pr create --base main --head codex/<change-name> --fill-first  # or open the PR in the GitHub UI
 git ls-remote --heads origin codex/<change-name>
 ```
 

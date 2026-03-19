@@ -210,6 +210,7 @@ What it may do:
      - use it without side-effect flags first to print the detected branch, push command, and PR handoff URL
      - then use `--push` when the branch is ready to publish
      - then use `--create-pr` only when `gh` is available and authenticated
+     - when no explicit PR title/body is provided, the helper should fall back to `gh pr create --fill-first` instead of failing in non-interactive mode
      - if `gh` is unavailable, fall back to the printed compare / PR URL and open the PR in the browser manually
    - For updates to an existing public repo, prefer:
      - `git push -u origin <pr-branch>`

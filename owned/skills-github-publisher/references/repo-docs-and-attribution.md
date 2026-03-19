@@ -43,6 +43,7 @@ The same release flow should also cover the local publish handoff:
 - prefer a helper such as `python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --root . --base main` to standardize the final local handoff
 - push that PR branch with `git push -u origin <branch>` only after local scans and provenance checks are clean
 - open a pull request into the protected default branch instead of treating direct `main` push as the normal update path
+- when `gh` is available but no explicit title/body is supplied, prefer a non-interactive default such as `gh pr create --fill-first`
 - if `gh` is unavailable locally, print and use the manual compare / PR URL instead of silently dropping the PR step
 - verify the pushed branch with `git ls-remote --heads origin <branch>` or an equivalent remote check
 - keep real repository URLs, access tokens, and maintainer-specific sensitive scan inputs out of committed docs

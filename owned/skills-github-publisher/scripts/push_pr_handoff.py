@@ -102,6 +102,8 @@ def main() -> int:
             cmd.extend(["--title", args.title])
         if args.body_file:
             cmd.extend(["--body-file", args.body_file])
+        elif not args.title:
+            cmd.append("--fill-first")
         if args.draft:
             cmd.append("--draft")
         subprocess.run(cmd, check=True, cwd=repo)

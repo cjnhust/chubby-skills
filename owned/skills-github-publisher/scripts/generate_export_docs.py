@@ -726,7 +726,7 @@ def build_release_checklist(root: Path) -> str:
     lines.append("git remote add origin <your-github-repo-url>  # prefer https://github.com/... for public repos when internal SSH keys also exist")
     lines.append("python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --root . --base main  # inspect push/PR handoff first")
     lines.append("git push -u origin codex/<change-name>  # for updates to an existing public repo")
-    lines.append("gh pr create --base main --head codex/<change-name>  # or open the PR in the GitHub UI")
+    lines.append("gh pr create --base main --head codex/<change-name> --fill-first  # or open the PR in the GitHub UI")
     lines.append("git ls-remote --heads origin codex/<change-name>")
     lines.append("```")
     lines.append("")
