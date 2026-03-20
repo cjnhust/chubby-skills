@@ -82,6 +82,16 @@ See [`THIRD_PARTY_ACKNOWLEDGEMENTS.md`](THIRD_PARTY_ACKNOWLEDGEMENTS.md) for the
 
 - Keep the initial sanitization and first public release local-first.
 - If you later want Codex on GitHub, prefer PR review on this already public repository before broader cloud-side edit flows.
+- Trigger Codex review exactly once per PR head: use repository auto review or reviewer request when available, and keep `@codex review` as the manual fallback instead of stacking both.
+- Resolve Codex review threads before merge; if the head changes, wait for a fresh current-head review rather than relying on an older clean result.
 - If a trusted maintainer later wants Codex to write back to an existing PR branch, make that an explicit minimal-scope request on an already public PR branch rather than an automatic workflow loop.
 - Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.
 
+## Maintainer Incremental Flow
+
+- Pin one local publish working copy through the private `default_publish_repo` config and reuse that repo instead of creating a new staging directory for each update.
+- Treat this repository as the publish mirror, not the authoring source of truth for skill bundles.
+- Do not hand-edit files under `owned/<skill>/` or `third-party/<skill>/` in this repo. Make the change in the local source skill, then sync it out.
+- Start repeated syncs with `python3 owned/skills-github-publisher/scripts/prepare_incremental_pr.py --skill-root /absolute/path/to/skill`, which refreshes the base branch, creates or reuses a PR branch, syncs the skill roots, writes `.publish-sync/manifest.json`, and reruns local checks.
+- After reviewing and committing, use `python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --base main` to inspect the push and PR handoff from the same fixed publish repo.
+- PRs that change managed skill content now have to pass `publish-sync-guard`, which rejects direct edits that do not match the recorded local sync manifest.

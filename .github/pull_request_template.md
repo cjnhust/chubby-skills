@@ -14,10 +14,16 @@
 ## Validation
 
 - [ ] Ran `python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file "$CODEX_HOME/private/publish-policy.json"`
+- [ ] If skill bundle files under `owned/<skill>/` or `third-party/<skill>/` changed, the change came from local source sync and `.publish-sync/manifest.json` was updated by the sync helper
 
 ## Codex Review
 
-- Recommended comment after opening the PR:
+- [ ] Current head has received a Codex review
+- [ ] All Codex review threads on the current head are resolved before merge
+- Use one trigger path per head: repository auto review / reviewer request, or the manual fallback comment below. Do not stack both on the same head.
+- If you push another commit, wait for a fresh current-head review before merge.
+
+Manual fallback comment if the repository is not already triggering Codex review:
 
 ```text
 @codex review

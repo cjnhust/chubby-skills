@@ -12,6 +12,8 @@ from urllib.parse import quote
 
 sys.dont_write_bytecode = True
 
+from sync_incremental_update import load_local_config
+
 
 def git_output(repo: Path, *args: str) -> str:
     return subprocess.check_output(["git", "-C", str(repo), *args], text=True).strip()
@@ -65,7 +67,10 @@ def resolve_gh() -> str | None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate and execute push/PR handoff for a publish repo.")
-    parser.add_argument("--root", required=True, help="Publish repo working copy.")
+    parser.add_argument(
+        "--root",
+        help="Publish repo working copy. Defaults to the current git repo or local default_publish_repo.",
+    )
     parser.add_argument("--base", default="main", help="PR base branch. Defaults to main.")
     parser.add_argument("--branch", help="PR branch. Defaults to the current branch.")
     parser.add_argument("--title", help="Optional PR title for gh pr create.")
@@ -76,9 +81,33 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def resolve_repo_root(explicit_root: str | None) -> Path:
+    if explicit_root:
+        return Path(explicit_root).expanduser().resolve()
+
+    cwd = Path.cwd().resolve()
+    try:
+        root = subprocess.check_output(
+            ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except subprocess.CalledProcessError:
+        root = ""
+    if root:
+        return Path(root).resolve()
+
+    config = load_local_config()
+    publish_repo = config.get("default_publish_repo")
+    if isinstance(publish_repo, str) and publish_repo:
+        return Path(publish_repo).expanduser().resolve()
+
+    raise SystemExit("publish repo is not configured; pass --root or set default_publish_repo in local config")
+
+
 def main() -> int:
     args = parse_args()
-    repo = Path(args.root).expanduser().resolve()
+    repo = resolve_repo_root(args.root)
     if not (repo / ".git").exists():
         raise SystemExit(f"not a git repo: {repo}")
 

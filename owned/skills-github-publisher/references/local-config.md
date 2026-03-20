@@ -34,3 +34,9 @@ Keep this file outside the publish repo.
 - Do not copy these absolute paths into `SKILL.md`, `README.md`, release docs, or shared shell snippets.
 - Use it only to resolve local defaults for one maintainer machine.
 - Incremental update flows should prefer syncing into the configured publish repo working copy instead of creating a new ad hoc staging tree each time.
+- For repeat work on one publish repo, treat `default_publish_repo` as the fixed working copy and branch from there instead of creating a new sibling directory for every run.
+- Treat that fixed publish repo as a mirror, not the authoring source of truth for skill bundle content.
+- A good repeated flow is:
+  1. `python3 scripts/prepare_incremental_pr.py --skill-root <absolute-skill-root> [...]`
+  2. review and commit the PR branch changes in the fixed publish repo
+  3. `python3 scripts/push_pr_handoff.py --base main`

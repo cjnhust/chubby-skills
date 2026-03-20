@@ -7,6 +7,14 @@ on:
   pull_request_review:
     types:
       - submitted
+  pull_request_review_thread:
+    types:
+      - resolved
+      - unresolved
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -123,7 +131,70 @@ jobs:
               });
             }
 
-            async function currentHeadCodexResult(pullNumber, headSha) {
+            async function listCodexUnresolvedThreads(pullNumber) {
+              const unresolved = [];
+              let after = null;
+
+              while (true) {
+                const response = await github.graphql(
+                  `
+                    query($owner: String!, $repo: String!, $pullNumber: Int!, $after: String) {
+                      repository(owner: $owner, name: $repo) {
+                        pullRequest(number: $pullNumber) {
+                          reviewThreads(first: 100, after: $after) {
+                            nodes {
+                              isResolved
+                              comments(first: 100) {
+                                nodes {
+                                  author {
+                                    login
+                                  }
+                                  url
+                                }
+                              }
+                            }
+                            pageInfo {
+                              hasNextPage
+                              endCursor
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `,
+                  {
+                    owner,
+                    repo,
+                    pullNumber,
+                    after,
+                  },
+                );
+
+                const reviewThreads = response.repository.pullRequest?.reviewThreads;
+                if (!reviewThreads) {
+                  return unresolved;
+                }
+
+                for (const thread of reviewThreads.nodes) {
+                  if (thread.isResolved) {
+                    continue;
+                  }
+                  const codexComment = thread.comments.nodes.find((comment) =>
+                    codexActors.has(comment.author?.login || ""),
+                  );
+                  if (codexComment?.url) {
+                    unresolved.push(codexComment.url);
+                  }
+                }
+
+                if (!reviewThreads.pageInfo.hasNextPage) {
+                  return unresolved;
+                }
+                after = reviewThreads.pageInfo.endCursor;
+              }
+            }
+
+            async function currentHeadHasCodexReview(pullNumber, headSha) {
               const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
               for (const review of reviews) {
                 const login = review.user?.login || "";
@@ -133,11 +204,7 @@ jobs:
                 if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
                   continue;
                 }
-                const state = String(review.state || "").toUpperCase();
-                const clean =
-                  state === "APPROVED" ||
-                  (state === "COMMENTED" && bodyLooksClean(review.body || ""));
-                return clean;
+                return true;
               }
 
               const comments = (await listIssueComments(pullNumber)).slice().reverse();
@@ -150,7 +217,7 @@ jobs:
                 if (!reviewedCommitMatchesHead(reviewedCommit, headSha)) {
                   continue;
                 }
-                return bodyLooksClean(comment.body || "");
+                return true;
               }
 
               return false;
@@ -222,6 +289,13 @@ jobs:
                 );
                 return;
               }
+            } else if (context.eventName === "pull_request_review_thread") {
+              const incomingPr = context.payload.pull_request;
+              if (!incomingPr) {
+                core.info("Ignoring unrelated review-thread event.");
+                return;
+              }
+              pr = incomingPr;
             } else if (context.eventName === "pull_request_review") {
               const review = context.payload.review;
               const incomingPr = context.payload.pull_request;
@@ -243,9 +317,15 @@ jobs:
               return;
             }
 
-            const cleanCodex = await currentHeadCodexResult(pr.number, pr.head.sha);
-            if (!cleanCodex) {
-              core.info("Current head does not yet have a clean Codex result; not arming auto-merge.");
+            const hasCodexReview = await currentHeadHasCodexReview(pr.number, pr.head.sha);
+            if (!hasCodexReview) {
+              core.info("Current head does not yet have a Codex review; not arming auto-merge.");
+              return;
+            }
+
+            const unresolvedThreadUrls = await listCodexUnresolvedThreads(pr.number);
+            if (unresolvedThreadUrls.length > 0) {
+              core.info(`Current head still has ${unresolvedThreadUrls.length} unresolved Codex thread(s); not arming auto-merge.`);
               return;
             }
 

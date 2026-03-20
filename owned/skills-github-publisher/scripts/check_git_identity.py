@@ -22,11 +22,15 @@ from preflight_scan import (
     read_forbidden_literals_file,
     read_local_policy_file,
 )
+from sync_incremental_update import load_local_config
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check git identity metadata before publishing.")
-    parser.add_argument("--root", required=True, help="Git repository root.")
+    parser.add_argument(
+        "--root",
+        help="Git repository root. Defaults to the current git repo or local default_publish_repo.",
+    )
     parser.add_argument("--strict", action="store_true", help="Exit non-zero if blocked identity data is found.")
     parser.add_argument(
         "--forbid-literal",
@@ -49,6 +53,30 @@ def git_output(repo: Path, *args: str) -> str:
     return subprocess.check_output(["git", "-C", str(repo), *args], text=True, encoding="utf-8", errors="replace")
 
 
+def resolve_repo_root(explicit_root: str | None) -> Path:
+    if explicit_root:
+        return Path(explicit_root).expanduser().resolve()
+
+    cwd = Path.cwd().resolve()
+    try:
+        root = subprocess.check_output(
+            ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except subprocess.CalledProcessError:
+        root = ""
+    if root:
+        return Path(root).resolve()
+
+    config = load_local_config()
+    publish_repo = config.get("default_publish_repo")
+    if isinstance(publish_repo, str) and publish_repo:
+        return Path(publish_repo).expanduser().resolve()
+
+    raise SystemExit("publish repo is not configured; pass --root or set default_publish_repo in local config")
+
+
 def safe_git_config(repo: Path, *args: str) -> str | None:
     try:
         value = git_output(repo, "config", *args).strip()
@@ -69,7 +97,7 @@ def field_block_reason(value: str, forbidden_literals: list[str], forbidden_rege
 
 def main() -> int:
     args = parse_args()
-    repo = Path(args.root).expanduser().resolve()
+    repo = resolve_repo_root(args.root)
     if not repo.exists() or not repo.is_dir():
         raise SystemExit(f"Repository root not found: {repo}")
 

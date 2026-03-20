@@ -13,6 +13,14 @@ on:
   pull_request_review:
     types:
       - submitted
+  pull_request_review_thread:
+    types:
+      - resolved
+      - unresolved
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -38,11 +46,6 @@ jobs:
               "chatgpt-codex-connector[bot]",
               "chatgpt-codex-connector",
             ]);
-            const cleanBodyPatterns = [
-              /didn't find any major issues/i,
-              /did not find any major issues/i,
-              /\bbreezy\b/i,
-            ];
             const trustedActors = new Set(
               [owner, ...(process.env.CODEX_TRUSTED_MAINTAINERS || "").split(/[\s,]+/)]
                 .map((value) => value.trim())
@@ -63,10 +66,6 @@ jobs:
 
             function isSameRepoPullRequest(pr) {
               return pr?.head?.repo?.full_name === repoFullName;
-            }
-
-            function bodyLooksClean(body) {
-              return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
             }
 
             function extractReviewedCommit(body) {
@@ -147,7 +146,70 @@ jobs:
               });
             }
 
-            async function currentHeadCodexResult(pullNumber, headSha) {
+            async function listCodexUnresolvedThreads(pullNumber) {
+              const unresolved = [];
+              let after = null;
+
+              while (true) {
+                const response = await github.graphql(
+                  `
+                    query($owner: String!, $repo: String!, $pullNumber: Int!, $after: String) {
+                      repository(owner: $owner, name: $repo) {
+                        pullRequest(number: $pullNumber) {
+                          reviewThreads(first: 100, after: $after) {
+                            nodes {
+                              isResolved
+                              comments(first: 100) {
+                                nodes {
+                                  author {
+                                    login
+                                  }
+                                  url
+                                }
+                              }
+                            }
+                            pageInfo {
+                              hasNextPage
+                              endCursor
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `,
+                  {
+                    owner,
+                    repo,
+                    pullNumber,
+                    after,
+                  },
+                );
+
+                const reviewThreads = response.repository.pullRequest?.reviewThreads;
+                if (!reviewThreads) {
+                  return unresolved;
+                }
+
+                for (const thread of reviewThreads.nodes) {
+                  if (thread.isResolved) {
+                    continue;
+                  }
+                  const codexComment = thread.comments.nodes.find((comment) =>
+                    codexActors.has(comment.author?.login || ""),
+                  );
+                  if (codexComment?.url) {
+                    unresolved.push(codexComment.url);
+                  }
+                }
+
+                if (!reviewThreads.pageInfo.hasNextPage) {
+                  return unresolved;
+                }
+                after = reviewThreads.pageInfo.endCursor;
+              }
+            }
+
+            async function currentHeadCodexReview(pullNumber, headSha) {
               const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
               for (const review of reviews) {
                 const login = review.user?.login || "";
@@ -157,12 +219,7 @@ jobs:
                 if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
                   continue;
                 }
-                const state = String(review.state || "").toUpperCase();
-                const clean =
-                  state === "APPROVED" ||
-                  (state === "COMMENTED" && bodyLooksClean(review.body || ""));
                 return {
-                  clean,
                   targetUrl: review.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
                 };
               }
@@ -178,7 +235,6 @@ jobs:
                   continue;
                 }
                 return {
-                  clean: bodyLooksClean(comment.body || ""),
                   targetUrl: comment.html_url,
                 };
               }
@@ -188,26 +244,29 @@ jobs:
 
             async function evaluateGate(pr, fallbackTargetUrl) {
               const headSha = pr.head.sha;
-              const codexResult = await currentHeadCodexResult(pr.number, headSha);
-              if (!codexResult) {
+              const codexReview = await currentHeadCodexReview(pr.number, headSha);
+              if (!codexReview) {
                 await setStatus(
                   headSha,
                   "pending",
-                  "Waiting for Codex review to finish",
+                  "Waiting for current-head Codex review",
                   pr.html_url,
                 );
-                core.info(`Set ${gateContext}=pending on ${headSha} because no current-head Codex result exists yet`);
+                core.info(`Set ${gateContext}=pending on ${headSha} because no current-head Codex review exists yet`);
                 return;
               }
 
-              if (!codexResult.clean) {
+              const unresolvedThreadUrls = await listCodexUnresolvedThreads(pr.number);
+              if (unresolvedThreadUrls.length > 0) {
                 await setStatus(
                   headSha,
                   "failure",
-                  "Codex review requires follow-up",
-                  codexResult.targetUrl || fallbackTargetUrl || pr.html_url,
+                  "Resolve all Codex review threads before merge",
+                  unresolvedThreadUrls[0] || codexReview.targetUrl || fallbackTargetUrl || pr.html_url,
                 );
-                core.info(`Set ${gateContext}=failure on ${headSha} because current-head Codex reported findings`);
+                core.info(
+                  `Set ${gateContext}=failure on ${headSha} because ${unresolvedThreadUrls.length} Codex review thread(s) remain unresolved`,
+                );
                 return;
               }
 
@@ -231,9 +290,9 @@ jobs:
                 headSha,
                 "success",
                 trustedSubmission
-                  ? "Codex review finished without major issues"
-                  : "Codex review clean and trusted approval present",
-                codexResult.targetUrl || fallbackTargetUrl || pr.html_url,
+                  ? "Codex review completed and threads are resolved"
+                  : "Codex review completed, threads resolved, and trusted approval present",
+                codexReview.targetUrl || fallbackTargetUrl || pr.html_url,
               );
               core.info(`Set ${gateContext}=success on ${headSha}`);
             }
@@ -247,7 +306,7 @@ jobs:
               await setStatus(
                 pr.head.sha,
                 "pending",
-                "Waiting for Codex review to finish",
+                "Waiting for current-head Codex review",
                 pr.html_url,
               );
               core.info(`Set ${gateContext}=pending on ${pr.head.sha}`);
@@ -295,4 +354,14 @@ jobs:
                 return;
               }
               await evaluateGate(pr, review.html_url || pr.html_url);
+              return;
+            }
+
+            if (context.eventName === "pull_request_review_thread") {
+              const pr = context.payload.pull_request;
+              if (!pr || pr.draft || !isSameRepoPullRequest(pr)) {
+                core.info("Skipping thread event for draft or external PR.");
+                return;
+              }
+              await evaluateGate(pr, pr.html_url);
             }

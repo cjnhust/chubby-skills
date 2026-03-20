@@ -1,0 +1,92 @@
+{
+  "base_ref": "HEAD",
+  "deleted_files": [],
+  "files": [
+    {
+      "path": "owned/skills-github-publisher/SKILL.md",
+      "sha256": "a5b82283b21f2ba81072d0139ab1e129beb1491063bde2388103ca2cb8778cab"
+    },
+    {
+      "path": "owned/skills-github-publisher/agents/openai.yaml",
+      "sha256": "3670f00291e10fc3d11bb60f9b9f754b5ad9bef56a44c12e6a618370783cb096"
+    },
+    {
+      "path": "owned/skills-github-publisher/references/classification-and-structure.md",
+      "sha256": "887c03387c3687bca7ad09324ba9733b5f0d388aac7476aa00867939c2ed46bd"
+    },
+    {
+      "path": "owned/skills-github-publisher/references/codex-github-browser-troubleshooting.md",
+      "sha256": "e1e47c7a5b5b92fff6ac632fd16157bea37abac9e8b9c5b804c2734155c5c186"
+    },
+    {
+      "path": "owned/skills-github-publisher/references/codex-github-maintenance.md",
+      "sha256": "3b6b4998449f88514413166975c3437d9fa9c1758e4a0a86d58cbfae4b1a4eef"
+    },
+    {
+      "path": "owned/skills-github-publisher/references/codex-github-smoke-test.md",
+      "sha256": "fc2f7a1a9e0d5717e21585545d10036be836f921e32b544609a261bac162511e"
+    },
+    {
+      "path": "owned/skills-github-publisher/references/local-config.md",
+      "sha256": "67138c30e7ec7ff9f3dc4b96678f193228bcf5d7f4c0f446b963c783c8509602"
+    },
+    {
+      "path": "owned/skills-github-publisher/references/path-and-ignore-rules.md",
+      "sha256": "e4c5b245387d3d33760a77fe0138b59fb06ace3493d63a34d9bf107f1759f233"
+    },
+    {
+      "path": "owned/skills-github-publisher/references/repo-docs-and-attribution.md",
+      "sha256": "7e8b9ed20e2044cd37070224714bc8a7785537c816d10467c2a9ebc01e596908"
+    },
+    {
+      "path": "owned/skills-github-publisher/references/security-baseline.md",
+      "sha256": "bc27dffcede63b956a379570aaafe51494711208e2f9c5226ae2c6ba7934182c"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/check_git_identity.py",
+      "sha256": "f1023006eead1aec4cdd72b3c41852e5f4c313a5b418a34ffddf6d150f818064"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/generate_export_docs.py",
+      "sha256": "60420005b35ba073cb5b8b0e99feae24776dde80f35619c99c582ec384b5b5f6"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/preflight_scan.py",
+      "sha256": "13596e0b4a7aca6d6b98ffd0846c135d26da1543c02bb37cf5f6e6413178f9f4"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/prepare_incremental_pr.py",
+      "sha256": "7dfb87a322ffb22cfa8c9fbea227815cf0bea83a8599d14903b8ee1da3f4fb2f"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
+      "sha256": "fa4e838f6269a28338cf26bd1337b330b3ae1ebf1f5306d4eb05d1562bc278f7"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/push_pr_handoff.py",
+      "sha256": "4a0340ef1b8ad84f93f270329362bffad30b1b490cc3ac816301470b59b0c4b6"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/resolve_local_publish_config.py",
+      "sha256": "b0b967d4f3c2580f20c1848625c15910e09870085eadf95dacbdc91b557631ad"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/safe_py_compile.py",
+      "sha256": "eb8a6b989baa09f916de7e032ae5a37d099d1f32e003d6ebc37a2f40bc853e67"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/sync_incremental_update.py",
+      "sha256": "c5ba5c41bac5f3dfd0dffec342a63652a3ab32a217d49d90d43ff81d94ebf085"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/verify_publish_sync.py",
+      "sha256": "c3da051cfa813e4190e5286821dfcf83f55a10e0901b8186512567b74610d373"
+    }
+  ],
+  "generator": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
+  "mode": "local-sync-only",
+  "schema_version": 1,
+  "synchronized_skill_roots": [
+    "owned/skills-github-publisher"
+  ]
+}

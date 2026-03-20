@@ -32,18 +32,18 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 ## First Smoke Test
 
 - Use a small docs-only pull request.
-- Keep the `codex-review-gate` workflow green; that is the hard merge gate.
+- Keep the `codex-review-gate` workflow green; that gate now requires a current-head Codex review, all Codex review threads resolved, and any required trusted approval.
 - Only a trusted-maintainer-only submission can skip an extra human approval: the pull request must be opened by the repository owner or another configured admin profile, and every commit on the current head must resolve to that same trusted maintainer set.
 - If the PR is opened by someone else or includes any commit not attributed to that trusted maintainer set, keep the gate blocked until the repository owner or another configured admin approves the current head.
 - Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.
 - If you are introducing the hard-gate workflows for the first time, the bootstrap PR that lands them may need a one-time manual exception.
-- Trigger Codex review through the currently supported GitHub flow for your account.
+- Trigger Codex review through exactly one supported GitHub flow for each head: repository auto review, reviewer request, or a manual `@codex review` fallback. Do not stack multiple trigger paths on the same head.
 - If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback` or an explicit `@codex fix ... update this existing PR branch` request.
 - For writeback requests, prefer explicit wording such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.`
 - Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.
 - Treat the latest PR head SHA as the only proof that a Codex fix landed; do not trust a task summary that claims it committed a change unless the PR head actually moved on GitHub.
 - If Codex follow-up tasks expose a manual `Update branch` action, treat that as a required maintainer confirmation step rather than as automatic branch writeback.
-- If a finding is already fixed on the latest head but the old review thread stays open, resolve that thread manually and rerun `@codex review` on the latest head.
+- If a finding is already fixed on the latest head but the old review thread stays open, resolve that thread manually and request one fresh current-head review through the same single trigger path you are using for the PR.
 - If a review run fails with a missing PR ref such as `refs/pull/<n>/head`, push a fresh branch head and recheck the PR ref before changing repository policy or the merge gate.
 - Keep the review focus narrow:
   - secret leakage or local-path regressions
@@ -51,7 +51,7 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
   - ownership-boundary mistakes between `owned/` and `third-party/`
   - provenance or attribution regressions
 
-Suggested review request:
+Manual fallback review request:
 
 ```text
 @codex review
