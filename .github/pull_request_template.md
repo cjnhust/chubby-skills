@@ -22,6 +22,7 @@
 - [ ] All review threads are resolved before merge through GitHub conversation resolution
 - Use one trigger path per head: repository auto review / reviewer request, or the manual fallback comment below. Do not stack both on the same head.
 - The gate counts the resulting current-head Codex pull-request review. A standalone issue comment does not satisfy the gate.
+- If Codex leaves inline findings on the current head, resolve or fix them and then request one fresh current-head review; the gate does not clear from thread resolution alone.
 - If you push another commit, wait for a fresh current-head review before merge.
 
 Manual fallback comment if the repository is not already triggering Codex review:

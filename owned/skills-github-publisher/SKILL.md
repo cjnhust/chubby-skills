@@ -252,6 +252,7 @@ What it may do:
      - generate `CODEX_SETUP.md` so the remaining manual steps are explicit and minimal
      - trigger Codex review exactly once per PR head: use repository auto review or reviewer request when available, and keep one manual `@codex review` request as the fallback instead of stacking multiple trigger paths on the same head
      - treat the resulting current-head Codex pull-request review as the gate input; do not count a standalone issue comment as proof that the gate should pass
+     - if Codex leaves inline findings on the current head, resolve or fix them and then request one fresh current-head review; the gate does not clear from thread resolution alone
      - if the repo installs a Codex hard gate with auto-merge, keep direct auto-merge limited to trusted-maintainer-only submissions; treat a submission as trusted only when the PR opener and every commit on the current head resolve to the configured trusted maintainer set, and require a current-head approval from the repository owner or another configured admin for anything else
      - if the repo installs a Codex hard gate, prefer requiring a current-head Codex review and pairing it with GitHub's native conversation-resolution rule instead of assuming every Codex review must end in a clean approval state
      - if Codex leaves findings, keep any `@codex address that feedback` step human-invoked by a trusted maintainer rather than wiring a recursive auto-fix workflow

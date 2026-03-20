@@ -14,6 +14,7 @@ Prepare everything locally so the maintainer only needs to do the account-side G
 - If you later test Codex writeback, keep it to one trusted-maintainer-only follow-up on an already-public PR branch and require minimal patch scope.
 - Trigger Codex review only once per PR head. Use repository auto review or reviewer request when available, and keep one manual `@codex review` request as the fallback instead of stacking both.
 - Treat the resulting current-head Codex pull-request review as the gate input; a standalone issue comment is not enough to satisfy the merge gate.
+- If Codex leaves inline findings on the current head, resolve or fix them and then request one fresh current-head review; the gate does not clear from thread resolution alone.
 
 ## Prepare In The Repo Before The User Clicks Anything
 

@@ -808,6 +808,7 @@ def build_codex_setup(root: Path) -> str:
         lines.append("- If this export repo later adopts the optional `codex-review-gate` workflow, wait for that gate before merging.")
     lines.append("- Trigger Codex review through exactly one supported GitHub flow for each head: repository auto review, reviewer request, or one manual `@codex review` request. Do not stack multiple trigger paths on the same head.")
     lines.append("- Treat the resulting current-head Codex pull-request review as the gate input; a standalone issue comment is not enough to satisfy the merge gate.")
+    lines.append("- If Codex leaves inline findings on the current head, resolve or fix them and then request one fresh current-head review; the gate does not clear from thread resolution alone.")
     lines.append("- If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback` or an explicit `@codex fix ... update this existing PR branch` request.")
     lines.append("- For writeback requests, prefer explicit wording such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.`")
     lines.append("- Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.")

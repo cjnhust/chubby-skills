@@ -41,6 +41,7 @@ If the repository is already intentionally public and stable:
 - prefer Codex review on pull requests first
 - trigger Codex review only once per PR head: use repository auto review or reviewer request when available, and keep one manual `@codex review` request as the fallback instead of stacking both
 - treat the resulting current-head Codex pull-request review as the hard-gate input; do not count a standalone issue comment as proof that the gate should pass
+- if Codex leaves inline findings on the current head, resolve or fix them and then request one fresh current-head review; the gate does not clear from thread resolution alone
 - if the repo later installs Codex hard-gate auto-merge, limit direct auto-merge to trusted-maintainer-only submissions and require a current-head approval from the repository owner or another configured admin for anything else
 - if the repo later installs a Codex hard gate, prefer a gate that requires a current-head Codex review and pair it with GitHub's native conversation-resolution rule instead of assuming every review must end in a clean approval state
 - if Codex leaves findings, let a trusted maintainer manually decide whether to comment `@codex address that feedback`; do not auto-wire recurring self-fix loops from workflows
