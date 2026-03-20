@@ -44,7 +44,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--reuse-branch",
         action="store_true",
-        help="Reuse an existing branch instead of failing when the branch already exists.",
+        help="Reuse an existing branch name by resetting it to the refreshed base before syncing.",
     )
     parser.add_argument(
         "--allow-review-required",
@@ -202,7 +202,7 @@ def main() -> int:
             raise SystemExit(
                 f"branch '{branch}' already exists; pass --reuse-branch to continue on it or choose a new branch name"
             )
-        git_run(publish_repo, "switch", branch, dry_run=args.dry_run)
+        git_run(publish_repo, "switch", "-C", branch, start_ref, dry_run=args.dry_run)
     else:
         git_run(publish_repo, "switch", "-c", branch, start_ref, dry_run=args.dry_run)
 

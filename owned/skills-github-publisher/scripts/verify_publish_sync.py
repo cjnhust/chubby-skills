@@ -5,13 +5,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
 sys.dont_write_bytecode = True
 
 from publish_sync_manifest import (
+    ALLOWED_SIGNERS_PATH,
+    DEFAULT_SIGNER_IDENTITY,
     MANIFEST_PATH,
+    MANIFEST_SIGNATURE_PATH,
+    SIGNING_NAMESPACE,
     collect_changed_skill_paths,
     path_from_text,
     sha256_file,
@@ -28,6 +33,21 @@ def parse_args() -> argparse.Namespace:
         "--manifest-path",
         default=str(MANIFEST_PATH),
         help="Manifest path relative to the repo root.",
+    )
+    parser.add_argument(
+        "--signature-path",
+        default=str(MANIFEST_SIGNATURE_PATH),
+        help="Manifest signature path relative to the repo root.",
+    )
+    parser.add_argument(
+        "--allowed-signers-path",
+        default=str(ALLOWED_SIGNERS_PATH),
+        help="Allowed signers file used to verify the signed manifest.",
+    )
+    parser.add_argument(
+        "--signer-identity",
+        default=DEFAULT_SIGNER_IDENTITY,
+        help="Signer identity expected in the allowed signers file.",
     )
     return parser.parse_args()
 
@@ -48,10 +68,62 @@ def load_manifest(repo: Path, manifest_path: Path) -> dict:
     return payload
 
 
+def verify_manifest_signature(
+    repo: Path,
+    manifest_path: Path,
+    signature_path: Path,
+    allowed_signers_path: Path,
+    signer_identity: str,
+) -> None:
+    target_signature = repo / signature_path
+    if not target_signature.exists():
+        raise SystemExit(
+            f"publish sync signature is missing: {signature_path}. "
+            "Use the local sync helper instead of editing publish-repo skill content directly."
+        )
+
+    target_allowed_signers = repo / allowed_signers_path
+    if not target_allowed_signers.exists():
+        raise SystemExit(f"allowed signers file is missing: {allowed_signers_path}")
+
+    with (repo / manifest_path).open("rb") as handle:
+        result = subprocess.run(
+            [
+                "ssh-keygen",
+                "-Y",
+                "verify",
+                "-f",
+                str(target_allowed_signers),
+                "-I",
+                signer_identity,
+                "-n",
+                SIGNING_NAMESPACE,
+                "-s",
+                str(target_signature),
+            ],
+            stdin=handle,
+            capture_output=True,
+            check=False,
+        )
+
+    if result.returncode == 0:
+        return
+
+    details = (result.stderr or result.stdout).decode("utf-8", errors="replace").strip()
+    suffix = f" ({details})" if details else ""
+    raise SystemExit(
+        "publish sync manifest signature is invalid. "
+        "Rerun the local sync helper instead of editing the publish repo directly."
+        + suffix
+    )
+
+
 def main() -> int:
     args = parse_args()
     repo = Path(args.root).expanduser().resolve()
     manifest_path = Path(args.manifest_path)
+    signature_path = Path(args.signature_path)
+    allowed_signers_path = Path(args.allowed_signers_path)
     if not (repo / ".git").exists():
         raise SystemExit(f"not a git repo: {repo}")
 
@@ -75,7 +147,23 @@ def main() -> int:
             "Use the local sync helper instead of editing publish-repo skill files directly."
         )
 
+    signature_relative = signature_path.as_posix()
+    signature_updated = signature_relative in all_paths
+    if not signature_updated and args.head_sha is None and (repo / signature_path).exists():
+        signature_updated = True
+    if not signature_updated:
+        raise SystemExit(
+            f"managed skill content changed but {signature_relative} was not updated. "
+            "Use the local sync helper instead of editing publish-repo skill files directly."
+        )
+
     manifest = load_manifest(repo, manifest_path)
+    manifest_signer_identity = manifest.get("signer_identity")
+    if manifest_signer_identity != args.signer_identity:
+        raise SystemExit(
+            f"publish sync manifest signer identity {manifest_signer_identity!r} does not match expected {args.signer_identity!r}"
+        )
+    verify_manifest_signature(repo, manifest_path, signature_path, allowed_signers_path, args.signer_identity)
     manifest_files = manifest.get("files", [])
     manifest_deleted = set(manifest.get("deleted_files", []))
     manifest_roots = set(manifest.get("synchronized_skill_roots", []))
@@ -119,7 +207,7 @@ def main() -> int:
             )
 
     print(
-        "publish-sync-guard: verified "
+        "publish-sync-guard: verified signed manifest for "
         f"{len(changed_paths)} changed managed file(s), "
         f"{len(deleted_paths)} deleted managed file(s), "
         f"{len(changed_roots)} changed skill root(s)"

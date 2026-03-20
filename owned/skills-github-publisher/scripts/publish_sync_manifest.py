@@ -12,9 +12,15 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 
+from sync_incremental_update import load_local_config
+
 
 MANIFEST_PATH = Path(".publish-sync/manifest.json")
+MANIFEST_SIGNATURE_PATH = Path(".publish-sync/manifest.json.sig")
+ALLOWED_SIGNERS_PATH = Path(".publish-sync/allowed_signers")
 MANAGED_GROUPS = {"owned", "third-party"}
+SIGNING_NAMESPACE = "file"
+DEFAULT_SIGNER_IDENTITY = "publish-sync"
 
 
 def git_output(repo: Path, *args: str) -> str:
@@ -34,6 +40,19 @@ def parse_args() -> argparse.Namespace:
         "--manifest-path",
         default=str(MANIFEST_PATH),
         help="Manifest path relative to the repo root.",
+    )
+    parser.add_argument(
+        "--signature-path",
+        default=str(MANIFEST_SIGNATURE_PATH),
+        help="Signature path relative to the repo root.",
+    )
+    parser.add_argument(
+        "--signing-key",
+        help="Private signing key used to sign the manifest. Defaults to local config default_publish_signing_key.",
+    )
+    parser.add_argument(
+        "--signer-identity",
+        help="Signer identity used with the allowed signers file. Defaults to local config default_publish_signing_identity.",
     )
     return parser.parse_args()
 
@@ -63,17 +82,14 @@ def collect_changed_skill_paths(
     cmd = ["diff", "--name-status", "-M", base_ref]
     if head_ref:
         cmd.append(head_ref)
-    cmd.extend(["--", "owned", "third-party", str(MANIFEST_PATH)])
+    cmd.extend(["--", "owned", "third-party", str(MANIFEST_PATH), str(MANIFEST_SIGNATURE_PATH)])
     output = git_output(repo, *cmd)
 
     changed_paths: set[str] = set()
     deleted_paths: set[str] = set()
     all_paths: set[str] = set()
 
-    if not output:
-        return [], [], []
-
-    for raw_line in output.splitlines():
+    for raw_line in filter(None, output.splitlines()):
         parts = raw_line.split("\t")
         if not parts:
             continue
@@ -121,6 +137,7 @@ def collect_changed_skill_paths(
             "owned",
             "third-party",
             str(MANIFEST_PATH),
+            str(MANIFEST_SIGNATURE_PATH),
         )
         for relative_path in filter(None, untracked_output.splitlines()):
             all_paths.add(relative_path)
@@ -166,6 +183,7 @@ def build_manifest(
     base_ref: str,
     skill_roots: list[str],
     deleted_files: list[str],
+    signer_identity: str,
 ) -> dict:
     files: list[dict[str, str]] = []
     for skill_root in skill_roots:
@@ -176,22 +194,88 @@ def build_manifest(
         "generator": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
         "mode": "local-sync-only",
         "base_ref": base_ref,
+        "signer_identity": signer_identity,
         "synchronized_skill_roots": skill_roots,
         "deleted_files": sorted(deleted_files),
         "files": files,
     }
 
 
-def write_manifest(repo: Path, base_ref: str, manifest_path: Path) -> Path | None:
+def resolve_signing_key(explicit_signing_key: str | None) -> Path:
+    if explicit_signing_key:
+        return Path(explicit_signing_key).expanduser().resolve()
+
+    config = load_local_config()
+    signing_key = config.get("default_publish_signing_key")
+    if isinstance(signing_key, str) and signing_key:
+        return Path(signing_key).expanduser().resolve()
+
+    raise SystemExit(
+        "publish signing key is not configured; set default_publish_signing_key in local config or pass --signing-key"
+    )
+
+
+def resolve_signer_identity(explicit_signer_identity: str | None) -> str:
+    if explicit_signer_identity:
+        return explicit_signer_identity
+
+    config = load_local_config()
+    signer_identity = config.get("default_publish_signing_identity")
+    if isinstance(signer_identity, str) and signer_identity:
+        return signer_identity
+    return DEFAULT_SIGNER_IDENTITY
+
+
+def sign_manifest(manifest_path: Path, signature_path: Path, signing_key: Path) -> Path:
+    generated_signature = manifest_path.with_name(f"{manifest_path.name}.sig")
+    if generated_signature.exists():
+        generated_signature.unlink()
+
+    subprocess.run(
+        [
+            "ssh-keygen",
+            "-q",
+            "-Y",
+            "sign",
+            "-f",
+            str(signing_key),
+            "-n",
+            SIGNING_NAMESPACE,
+            str(manifest_path),
+        ],
+        check=True,
+    )
+    if not generated_signature.exists():
+        raise SystemExit(f"ssh-keygen did not produce a signature for {manifest_path}")
+
+    signature_path.parent.mkdir(parents=True, exist_ok=True)
+    if generated_signature != signature_path:
+        generated_signature.replace(signature_path)
+    return signature_path
+
+
+def write_manifest(
+    repo: Path,
+    base_ref: str,
+    manifest_path: Path,
+    signature_path: Path | None = None,
+    signing_key: Path | None = None,
+    signer_identity: str | None = None,
+) -> Path | None:
     changed_paths, deleted_paths, _ = collect_changed_skill_paths(repo, base_ref)
     skill_roots = changed_skill_roots(repo, base_ref)
     if not changed_paths and not deleted_paths and not skill_roots:
         return None
 
-    payload = build_manifest(repo, base_ref, skill_roots, deleted_paths)
+    effective_signature_path = signature_path or MANIFEST_SIGNATURE_PATH
+    effective_signing_key = signing_key or resolve_signing_key(None)
+    effective_signer_identity = resolve_signer_identity(signer_identity)
+
+    payload = build_manifest(repo, base_ref, skill_roots, deleted_paths, effective_signer_identity)
     target = repo / manifest_path
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(payload, ensure_ascii=True, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    sign_manifest(target, repo / effective_signature_path, effective_signing_key)
     return target
 
 
@@ -201,7 +285,14 @@ def main() -> int:
     if not (repo / ".git").exists():
         raise SystemExit(f"not a git repo: {repo}")
 
-    manifest = write_manifest(repo, args.base_ref, Path(args.manifest_path))
+    manifest = write_manifest(
+        repo,
+        args.base_ref,
+        Path(args.manifest_path),
+        signature_path=Path(args.signature_path),
+        signing_key=resolve_signing_key(args.signing_key),
+        signer_identity=resolve_signer_identity(args.signer_identity),
+    )
     if manifest is None:
         print("publish-sync-manifest: no changed skill roots")
         return 0

@@ -9,7 +9,7 @@ Use this checklist before creating the public GitHub repository or pushing from 
 - Keep `owned/` and `third-party/` boundaries explicit; do not fold imported skills into `owned/`.
 - Re-run the strict preflight scan from the repository root.
 - Verify the effective Git author identity is public-safe before committing or pushing.
-- If managed skill bundle files changed, regenerate `.publish-sync/manifest.json` from the local sync flow before committing.
+- If managed skill bundle files changed, regenerate the signed `.publish-sync/manifest.json` and `.publish-sync/manifest.json.sig` from the local sync flow before committing.
 - Keep maintainer-specific sensitive scan inputs only in a local private policy file, not in committed commands or repo docs.
 - Review `git status --short` and make sure ignored junk such as `node_modules/` is not part of the final handoff.
 - Verify `.system/` and `danger-*` skills are still excluded unless you intentionally reviewed them for publication.
@@ -20,7 +20,7 @@ Use this checklist before creating the public GitHub repository or pushing from 
 ```bash
 python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file "$CODEX_HOME/private/publish-policy.json"
 python3 owned/skills-github-publisher/scripts/check_git_identity.py --root . --strict --local-policy-file "$CODEX_HOME/private/publish-policy.json"
-python3 owned/skills-github-publisher/scripts/publish_sync_manifest.py --root . --base-ref origin/main  # only when using the low-level sync path instead of prepare_incremental_pr.py
+python3 owned/skills-github-publisher/scripts/publish_sync_manifest.py --root . --base-ref origin/main  # only when using the low-level sync path instead of prepare_incremental_pr.py; signs the manifest with the configured local key
 git config user.name "<public-name>"  # if the effective identity is still private
 git config user.email "<public-email-or-github-noreply>"  # if the effective identity is still private
 git status --short

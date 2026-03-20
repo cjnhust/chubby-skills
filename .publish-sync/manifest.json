@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "owned/skills-github-publisher/SKILL.md",
-      "sha256": "ca0e5424c8e77ae1b9ee76de044dc27c29d37ca19dbc2e37abf2ab5d3fb6a577"
+      "sha256": "3921c4212547795fe7e45eddc64a1411000bfe122a39205c9da597f0c9300607"
     },
     {
       "path": "owned/skills-github-publisher/agents/openai.yaml",
@@ -28,7 +28,7 @@
     },
     {
       "path": "owned/skills-github-publisher/references/local-config.md",
-      "sha256": "67138c30e7ec7ff9f3dc4b96678f193228bcf5d7f4c0f446b963c783c8509602"
+      "sha256": "a28b35db46419a75e97f2397c250f69e9186539788061967da18baba752f090a"
     },
     {
       "path": "owned/skills-github-publisher/references/path-and-ignore-rules.md",
@@ -56,11 +56,11 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/prepare_incremental_pr.py",
-      "sha256": "7dfb87a322ffb22cfa8c9fbea227815cf0bea83a8599d14903b8ee1da3f4fb2f"
+      "sha256": "d4d84392196fd03ec4025facc052193f4ef5d24997fc80e820c8f4069ff1cfcd"
     },
     {
       "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
-      "sha256": "fa4e838f6269a28338cf26bd1337b330b3ae1ebf1f5306d4eb05d1562bc278f7"
+      "sha256": "7b7c478528a82bebb474db2d16ffaf498f55d1d5bca18192fed3b3f676c5b180"
     },
     {
       "path": "owned/skills-github-publisher/scripts/push_pr_handoff.py",
@@ -80,12 +80,13 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/verify_publish_sync.py",
-      "sha256": "c3da051cfa813e4190e5286821dfcf83f55a10e0901b8186512567b74610d373"
+      "sha256": "cc4bd15c0e9198ce539f811c4133818cd25e98ad6b98e5a7cdce4c0ce006a9c6"
     }
   ],
   "generator": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
   "mode": "local-sync-only",
   "schema_version": 1,
+  "signer_identity": "publish-sync",
   "synchronized_skill_roots": [
     "owned/skills-github-publisher"
   ]

@@ -17,6 +17,10 @@ Keep this file outside the publish repo.
   - absolute path to the repo's `owned/` directory when incremental skill updates should land there
 - `default_local_policy_file`
   - absolute path to the local private scan policy file, usually `$CODEX_HOME/private/publish-policy.json`
+- `default_publish_signing_key`
+  - absolute path to the local private key used to sign `.publish-sync/manifest.json`
+- `default_publish_signing_identity`
+  - signer identity expected by `.publish-sync/allowed_signers`, default `publish-sync`
 
 ## Example
 
@@ -24,7 +28,9 @@ Keep this file outside the publish repo.
 {
   "default_publish_repo": "/path/to/chubby-skills",
   "default_owned_root": "/path/to/chubby-skills/owned",
-  "default_local_policy_file": "/path/to/.codex/private/publish-policy.json"
+  "default_local_policy_file": "/path/to/.codex/private/publish-policy.json",
+  "default_publish_signing_key": "/path/to/.codex/private/chubby-skills-publish-sync",
+  "default_publish_signing_identity": "publish-sync"
 }
 ```
 
@@ -33,6 +39,7 @@ Keep this file outside the publish repo.
 - Do not commit this file.
 - Do not copy these absolute paths into `SKILL.md`, `README.md`, release docs, or shared shell snippets.
 - Use it only to resolve local defaults for one maintainer machine.
+- Keep the publish signing private key local-only. Commit only the matching public verification material such as `.publish-sync/allowed_signers`.
 - Incremental update flows should prefer syncing into the configured publish repo working copy instead of creating a new ad hoc staging tree each time.
 - For repeat work on one publish repo, treat `default_publish_repo` as the fixed working copy and branch from there instead of creating a new sibling directory for every run.
 - Treat that fixed publish repo as a mirror, not the authoring source of truth for skill bundle content.
