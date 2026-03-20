@@ -83,7 +83,7 @@ See [`THIRD_PARTY_ACKNOWLEDGEMENTS.md`](THIRD_PARTY_ACKNOWLEDGEMENTS.md) for the
 - Keep the initial sanitization and first public release local-first.
 - If you later want Codex on GitHub, prefer PR review on this already public repository before broader cloud-side edit flows.
 - Trigger Codex review exactly once per PR head: use repository auto review or reviewer request when available, and keep `@codex review` as the manual fallback instead of stacking both.
-- Resolve Codex review threads before merge; if the head changes, wait for a fresh current-head review rather than relying on an older clean result.
+- Keep GitHub conversation resolution enabled so unresolved review threads block merge; if the head changes, wait for a fresh current-head review rather than relying on an older review result.
 - If a trusted maintainer later wants Codex to write back to an existing PR branch, make that an explicit minimal-scope request on an already public PR branch rather than an automatic workflow loop.
 - Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.
 

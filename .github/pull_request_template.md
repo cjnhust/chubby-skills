@@ -19,7 +19,7 @@
 ## Codex Review
 
 - [ ] Current head has received a Codex review
-- [ ] All Codex review threads on the current head are resolved before merge
+- [ ] All review threads are resolved before merge through GitHub conversation resolution
 - Use one trigger path per head: repository auto review / reviewer request, or the manual fallback comment below. Do not stack both on the same head.
 - If you push another commit, wait for a fresh current-head review before merge.
 

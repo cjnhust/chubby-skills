@@ -46,7 +46,7 @@ git ls-remote --heads origin codex/<change-name>
 - Prefer GitHub CLI login or another OS-keychain-backed HTTPS credential flow over typing PATs into terminal prompts.
 - Enable Secret Scanning and Push Protection before the first public push.
 - For normal updates to an already public repo, push a PR branch and merge through pull request review rather than pushing directly to `main`.
-- Treat `publish-sync-guard` as the source-of-truth gate for managed skill content and `codex-review-gate` as the review gate.
+- Treat `publish-sync-guard` as the source-of-truth gate for managed skill content, `codex-review-gate` as the review gate, and GitHub conversation resolution as the thread-resolution gate.
 - If `gh` is not installed locally, use the helper script's printed compare URL and open the PR in the browser manually.
 - Push only after the license decision, third-party manifests, and security scan are all in the expected state.
 - If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.

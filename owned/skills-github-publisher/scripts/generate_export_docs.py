@@ -795,7 +795,8 @@ def build_codex_setup(root: Path) -> str:
     lines.append("")
     lines.append("- Use a small docs-only pull request.")
     if review_gate_enabled:
-        lines.append("- Keep the `codex-review-gate` workflow green; that gate should require a current-head Codex review, all Codex review threads resolved, and any required trusted approval.")
+        lines.append("- Keep the `codex-review-gate` workflow green; that gate should require a current-head Codex review and any required trusted approval.")
+        lines.append("- Keep GitHub conversation resolution enabled so unresolved review threads still block merge.")
         lines.append("- Only a trusted-maintainer-only submission can skip an extra human approval: the pull request must be opened by the repository owner or another configured admin profile, and every commit on the current head must resolve to that same trusted maintainer set.")
         lines.append("- If the PR is opened by someone else or includes any commit not attributed to that trusted maintainer set, keep the gate blocked until the repository owner or another configured admin approves the current head.")
         if auto_merge_enabled:
@@ -811,7 +812,7 @@ def build_codex_setup(root: Path) -> str:
     lines.append("- Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.")
     lines.append("- Treat the latest PR head SHA as the only proof that a Codex fix landed; do not trust a task summary that claims it committed a change unless the PR head actually moved on GitHub.")
     lines.append("- If Codex follow-up tasks expose a manual `Update branch` action, treat that as a required maintainer confirmation step rather than as automatic branch writeback.")
-    lines.append("- If a finding is already fixed on the latest head but the old review thread stays open, resolve that thread manually and request one fresh current-head review through the same single trigger path already in use for the PR.")
+    lines.append("- If a finding is already fixed on the latest head but the old review thread stays open, resolve that thread manually. If the head changed, request one fresh current-head review through the same single trigger path already in use for the PR.")
     lines.append("- If a review run fails with a missing PR ref such as `refs/pull/<n>/head`, push a fresh branch head and recheck the PR ref before changing repository policy or the merge gate.")
     lines.append("- Keep the review focus narrow:")
     lines.append("  - secret leakage or local-path regressions")

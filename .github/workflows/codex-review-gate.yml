@@ -13,10 +13,6 @@ on:
   pull_request_review:
     types:
       - submitted
-  pull_request_review_thread:
-    types:
-      - resolved
-      - unresolved
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
@@ -146,69 +142,6 @@ jobs:
               });
             }
 
-            async function listCodexUnresolvedThreads(pullNumber) {
-              const unresolved = [];
-              let after = null;
-
-              while (true) {
-                const response = await github.graphql(
-                  `
-                    query($owner: String!, $repo: String!, $pullNumber: Int!, $after: String) {
-                      repository(owner: $owner, name: $repo) {
-                        pullRequest(number: $pullNumber) {
-                          reviewThreads(first: 100, after: $after) {
-                            nodes {
-                              isResolved
-                              comments(first: 100) {
-                                nodes {
-                                  author {
-                                    login
-                                  }
-                                  url
-                                }
-                              }
-                            }
-                            pageInfo {
-                              hasNextPage
-                              endCursor
-                            }
-                          }
-                        }
-                      }
-                    }
-                  `,
-                  {
-                    owner,
-                    repo,
-                    pullNumber,
-                    after,
-                  },
-                );
-
-                const reviewThreads = response.repository.pullRequest?.reviewThreads;
-                if (!reviewThreads) {
-                  return unresolved;
-                }
-
-                for (const thread of reviewThreads.nodes) {
-                  if (thread.isResolved) {
-                    continue;
-                  }
-                  const codexComment = thread.comments.nodes.find((comment) =>
-                    codexActors.has(comment.author?.login || ""),
-                  );
-                  if (codexComment?.url) {
-                    unresolved.push(codexComment.url);
-                  }
-                }
-
-                if (!reviewThreads.pageInfo.hasNextPage) {
-                  return unresolved;
-                }
-                after = reviewThreads.pageInfo.endCursor;
-              }
-            }
-
             async function currentHeadCodexReview(pullNumber, headSha) {
               const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
               for (const review of reviews) {
@@ -256,20 +189,6 @@ jobs:
                 return;
               }
 
-              const unresolvedThreadUrls = await listCodexUnresolvedThreads(pr.number);
-              if (unresolvedThreadUrls.length > 0) {
-                await setStatus(
-                  headSha,
-                  "failure",
-                  "Resolve all Codex review threads before merge",
-                  unresolvedThreadUrls[0] || codexReview.targetUrl || fallbackTargetUrl || pr.html_url,
-                );
-                core.info(
-                  `Set ${gateContext}=failure on ${headSha} because ${unresolvedThreadUrls.length} Codex review thread(s) remain unresolved`,
-                );
-                return;
-              }
-
               const trustedSubmission = await currentHeadIsTrustedSubmission(pr);
               const trustedApproval = trustedSubmission
                 ? true
@@ -290,8 +209,8 @@ jobs:
                 headSha,
                 "success",
                 trustedSubmission
-                  ? "Codex review completed and threads are resolved"
-                  : "Codex review completed, threads resolved, and trusted approval present",
+                  ? "Current head has a Codex review"
+                  : "Current head has a Codex review and trusted approval",
                 codexReview.targetUrl || fallbackTargetUrl || pr.html_url,
               );
               core.info(`Set ${gateContext}=success on ${headSha}`);
@@ -354,14 +273,4 @@ jobs:
                 return;
               }
               await evaluateGate(pr, review.html_url || pr.html_url);
-              return;
-            }
-
-            if (context.eventName === "pull_request_review_thread") {
-              const pr = context.payload.pull_request;
-              if (!pr || pr.draft || !isSameRepoPullRequest(pr)) {
-                core.info("Skipping thread event for draft or external PR.");
-                return;
-              }
-              await evaluateGate(pr, pr.html_url);
             }

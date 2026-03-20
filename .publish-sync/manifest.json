@@ -4,7 +4,7 @@
   "files": [
     {
       "path": "owned/skills-github-publisher/SKILL.md",
-      "sha256": "a5b82283b21f2ba81072d0139ab1e129beb1491063bde2388103ca2cb8778cab"
+      "sha256": "ca0e5424c8e77ae1b9ee76de044dc27c29d37ca19dbc2e37abf2ab5d3fb6a577"
     },
     {
       "path": "owned/skills-github-publisher/agents/openai.yaml",
@@ -20,7 +20,7 @@
     },
     {
       "path": "owned/skills-github-publisher/references/codex-github-maintenance.md",
-      "sha256": "3b6b4998449f88514413166975c3437d9fa9c1758e4a0a86d58cbfae4b1a4eef"
+      "sha256": "87afcbe640dd4b2531678e64dd3f453f5db0b1e78cd7cc18958fcec9cf3ae7bb"
     },
     {
       "path": "owned/skills-github-publisher/references/codex-github-smoke-test.md",
@@ -48,7 +48,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/generate_export_docs.py",
-      "sha256": "60420005b35ba073cb5b8b0e99feae24776dde80f35619c99c582ec384b5b5f6"
+      "sha256": "0a9bf27ffc7519c0a17b6716240495ffdd2d6e5fc75ce368d79752719b426562"
     },
     {
       "path": "owned/skills-github-publisher/scripts/preflight_scan.py",
