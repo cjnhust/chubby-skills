@@ -157,6 +157,11 @@ jobs:
                     description: "Current-head Codex review still has inline findings",
                   };
                 }
+                if (state === "APPROVED") {
+                  return {
+                    acceptable: true,
+                  };
+                }
                 if (!bodyLooksClean(review.body || "")) {
                   return {
                     acceptable: false,

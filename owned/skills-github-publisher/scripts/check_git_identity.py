@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Check git identity metadata before publishing.")
     parser.add_argument(
         "--root",
-        help="Git repository root. Defaults to the current git repo or local default_publish_repo.",
+        help="Git repository root. Defaults to local default_publish_repo, or the current git repo when no publish repo is configured.",
     )
     parser.add_argument("--strict", action="store_true", help="Exit non-zero if blocked identity data is found.")
     parser.add_argument(
@@ -57,6 +57,11 @@ def resolve_repo_root(explicit_root: str | None) -> Path:
     if explicit_root:
         return Path(explicit_root).expanduser().resolve()
 
+    config = load_local_config()
+    publish_repo = config.get("default_publish_repo")
+    if isinstance(publish_repo, str) and publish_repo:
+        return Path(publish_repo).expanduser().resolve()
+
     cwd = Path.cwd().resolve()
     try:
         root = subprocess.check_output(
@@ -68,11 +73,6 @@ def resolve_repo_root(explicit_root: str | None) -> Path:
         root = ""
     if root:
         return Path(root).resolve()
-
-    config = load_local_config()
-    publish_repo = config.get("default_publish_repo")
-    if isinstance(publish_repo, str) and publish_repo:
-        return Path(publish_repo).expanduser().resolve()
 
     raise SystemExit("publish repo is not configured; pass --root or set default_publish_repo in local config")
 

@@ -183,6 +183,12 @@ jobs:
                     targetUrl: review.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
                   };
                 }
+                if (state === "APPROVED") {
+                  return {
+                    acceptable: true,
+                    targetUrl: review.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
+                  };
+                }
                 if (!bodyLooksClean(review.body || "")) {
                   return {
                     acceptable: false,
