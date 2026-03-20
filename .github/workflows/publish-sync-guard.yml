@@ -23,8 +23,25 @@ jobs:
         with:
           python-version: "3.x"
 
+      - name: Materialize trusted allowed signers
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUBLISH_SYNC_ALLOWED_SIGNERS_B64: ${{ vars.PUBLISH_SYNC_ALLOWED_SIGNERS_B64 }}
+        run: |
+          trusted_signers_path=".publish-sync/.trusted-allowed-signers"
+          mkdir -p "$(dirname "$trusted_signers_path")"
+          if git cat-file -e "${BASE_SHA}:.publish-sync/allowed_signers" 2>/dev/null; then
+            git show "${BASE_SHA}:.publish-sync/allowed_signers" > "$trusted_signers_path"
+          elif [ -n "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" ]; then
+            printf '%s' "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" | base64 --decode > "$trusted_signers_path"
+          else
+            echo "Missing trusted allowed signers in the base branch and PUBLISH_SYNC_ALLOWED_SIGNERS_B64 is unset." >&2
+            exit 1
+          fi
+
       - run: |
           python3 owned/skills-github-publisher/scripts/verify_publish_sync.py \
             --root . \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
-            --head-sha "${{ github.event.pull_request.head.sha }}"
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --allowed-signers-path .publish-sync/.trusted-allowed-signers

@@ -1,9 +1,6 @@
 name: Codex Auto Merge Controller
 
 on:
-  issue_comment:
-    types:
-      - created
   pull_request_review:
     types:
       - submitted
@@ -34,25 +31,11 @@ jobs:
               "chatgpt-codex-connector[bot]",
               "chatgpt-codex-connector",
             ]);
-            const cleanBodyPatterns = [
-              /didn't find any major issues/i,
-              /did not find any major issues/i,
-              /\bbreezy\b/i,
-            ];
             const trustedActors = new Set(
               [owner, ...(process.env.CODEX_TRUSTED_MAINTAINERS || "").split(/[\s,]+/)]
                 .map((value) => value.trim())
                 .filter(Boolean),
             );
-
-            function bodyLooksClean(body) {
-              return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
-            }
-
-            function extractReviewedCommit(body) {
-              const match = (body || "").match(/Reviewed commit:\s*`([0-9a-f]{7,40})`/i);
-              return match ? match[1].toLowerCase() : null;
-            }
 
             function reviewedCommitMatchesHead(reviewedCommit, headSha) {
               if (!reviewedCommit || !headSha) {
@@ -76,15 +59,6 @@ jobs:
                 owner,
                 repo,
                 pull_number: pullNumber,
-                per_page: 100,
-              });
-            }
-
-            async function listIssueComments(issueNumber) {
-              return github.paginate(github.rest.issues.listComments, {
-                owner,
-                repo,
-                issue_number: issueNumber,
                 per_page: 100,
               });
             }
@@ -137,17 +111,7 @@ jobs:
                 if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
                   continue;
                 }
-                return true;
-              }
-
-              const comments = (await listIssueComments(pullNumber)).slice().reverse();
-              for (const comment of comments) {
-                const login = comment.user?.login || "";
-                if (!codexActors.has(login)) {
-                  continue;
-                }
-                const reviewedCommit = extractReviewedCommit(comment.body || "");
-                if (!reviewedCommitMatchesHead(reviewedCommit, headSha)) {
+                if (String(review.state || "").toUpperCase() === "DISMISSED") {
                   continue;
                 }
                 return true;
@@ -198,31 +162,7 @@ jobs:
             }
 
             let pr = null;
-            if (context.eventName === "issue_comment") {
-              const issue = context.payload.issue;
-              const comment = context.payload.comment;
-              if (!issue?.pull_request || !comment || !codexActors.has(comment.user?.login || "")) {
-                core.info("Ignoring non-PR comment or non-Codex actor.");
-                return;
-              }
-              if (!bodyLooksClean(comment.body || "")) {
-                core.info("Codex comment did not indicate a clean review; not arming auto-merge.");
-                return;
-              }
-              const response = await github.rest.pulls.get({
-                owner,
-                repo,
-                pull_number: issue.number,
-              });
-              pr = response.data;
-              const reviewedCommit = extractReviewedCommit(comment.body || "");
-              if (!reviewedCommitMatchesHead(reviewedCommit, pr.head?.sha || "")) {
-                core.info(
-                  `Ignoring Codex comment for reviewed commit ${reviewedCommit || "<missing>"} because current head is ${pr.head?.sha || "<missing>"}`,
-                );
-                return;
-              }
-            } else if (context.eventName === "pull_request_review") {
+            if (context.eventName === "pull_request_review") {
               const review = context.payload.review;
               const incomingPr = context.payload.pull_request;
               if (!review || !incomingPr || !actorCanTriggerEvaluation(review.user?.login || "")) {

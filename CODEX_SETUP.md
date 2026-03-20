@@ -38,7 +38,8 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 - If the PR is opened by someone else or includes any commit not attributed to that trusted maintainer set, keep the gate blocked until the repository owner or another configured admin approves the current head.
 - Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.
 - If you are introducing the hard-gate workflows for the first time, the bootstrap PR that lands them may need a one-time manual exception.
-- Trigger Codex review through exactly one supported GitHub flow for each head: repository auto review, reviewer request, or a manual `@codex review` fallback. Do not stack multiple trigger paths on the same head.
+- Trigger Codex review through exactly one supported GitHub flow for each head: repository auto review, reviewer request, or one manual `@codex review` request. Do not stack multiple trigger paths on the same head.
+- Treat the resulting current-head Codex pull-request review as the gate input; a standalone issue comment is not enough to satisfy the merge gate.
 - If Codex reports findings and you want one follow-up fix pass, have a trusted maintainer manually comment `@codex address that feedback` or an explicit `@codex fix ... update this existing PR branch` request.
 - For writeback requests, prefer explicit wording such as `@codex fix the latest review feedback on this existing PR branch. Update this PR branch directly with the minimal patch and do not widen scope.`
 - Do not auto-trigger `@codex address that feedback` from GitHub Actions or bots; keep it human-invoked to avoid review-fix-review loops.

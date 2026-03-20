@@ -82,7 +82,8 @@ See [`THIRD_PARTY_ACKNOWLEDGEMENTS.md`](THIRD_PARTY_ACKNOWLEDGEMENTS.md) for the
 
 - Keep the initial sanitization and first public release local-first.
 - If you later want Codex on GitHub, prefer PR review on this already public repository before broader cloud-side edit flows.
-- Trigger Codex review exactly once per PR head: use repository auto review or reviewer request when available, and keep `@codex review` as the manual fallback instead of stacking both.
+- Trigger Codex review exactly once per PR head: use repository auto review or reviewer request when available, and keep one manual `@codex review` request as the fallback instead of stacking both.
+- Treat the resulting current-head Codex pull-request review as the gate input; a standalone issue comment is not enough to satisfy the merge gate.
 - Keep GitHub conversation resolution enabled so unresolved review threads block merge; if the head changes, wait for a fresh current-head review rather than relying on an older review result.
 - If a trusted maintainer later wants Codex to write back to an existing PR branch, make that an explicit minimal-scope request on an already public PR branch rather than an automatic workflow loop.
 - Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.
@@ -95,3 +96,4 @@ See [`THIRD_PARTY_ACKNOWLEDGEMENTS.md`](THIRD_PARTY_ACKNOWLEDGEMENTS.md) for the
 - Start repeated syncs with `python3 owned/skills-github-publisher/scripts/prepare_incremental_pr.py --skill-root /absolute/path/to/skill`, which refreshes the base branch, creates or reuses a PR branch, syncs the skill roots, writes a signed `.publish-sync/manifest.json` plus `.publish-sync/manifest.json.sig`, and reruns local checks.
 - After reviewing and committing, use `python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --base main` to inspect the push and PR handoff from the same fixed publish repo.
 - PRs that change managed skill content now have to pass `publish-sync-guard`, which rejects direct edits that do not match the recorded signed sync manifest.
+- If you rotate the publish-sync signing key, update both `.publish-sync/allowed_signers` and the repository-level `PUBLISH_SYNC_ALLOWED_SIGNERS_B64` variable before relying on the guard.

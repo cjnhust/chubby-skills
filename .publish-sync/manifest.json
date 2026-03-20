@@ -1,10 +1,10 @@
 {
-  "base_ref": "HEAD",
+  "base_ref": "origin/main",
   "deleted_files": [],
   "files": [
     {
       "path": "owned/skills-github-publisher/SKILL.md",
-      "sha256": "3921c4212547795fe7e45eddc64a1411000bfe122a39205c9da597f0c9300607"
+      "sha256": "e2a7cea07d65aebd8ffe2a4069ff2d4bba9ace8373f015be9753227bf9ce65c1"
     },
     {
       "path": "owned/skills-github-publisher/agents/openai.yaml",
@@ -20,11 +20,11 @@
     },
     {
       "path": "owned/skills-github-publisher/references/codex-github-maintenance.md",
-      "sha256": "87afcbe640dd4b2531678e64dd3f453f5db0b1e78cd7cc18958fcec9cf3ae7bb"
+      "sha256": "74fba61ae8fcc13344ee7df94b9cb29e231dedf0f45f45a396f6e37904389b05"
     },
     {
       "path": "owned/skills-github-publisher/references/codex-github-smoke-test.md",
-      "sha256": "fc2f7a1a9e0d5717e21585545d10036be836f921e32b544609a261bac162511e"
+      "sha256": "9a973c280fdd8dec5604b2e9b22e87939947c3a80e358cbaf00a5cb4d0aedf24"
     },
     {
       "path": "owned/skills-github-publisher/references/local-config.md",
@@ -48,7 +48,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/generate_export_docs.py",
-      "sha256": "0a9bf27ffc7519c0a17b6716240495ffdd2d6e5fc75ce368d79752719b426562"
+      "sha256": "021dcf3838f5e2ec0fa0dc7725e2b4b26e1d308bdd86030842b02d80de81cd7f"
     },
     {
       "path": "owned/skills-github-publisher/scripts/preflight_scan.py",
