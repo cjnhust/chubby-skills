@@ -31,11 +31,20 @@ jobs:
               "chatgpt-codex-connector[bot]",
               "chatgpt-codex-connector",
             ]);
+            const cleanBodyPatterns = [
+              /didn't find any major issues/i,
+              /did not find any major issues/i,
+              /\bbreezy\b/i,
+            ];
             const trustedActors = new Set(
               [owner, ...(process.env.CODEX_TRUSTED_MAINTAINERS || "").split(/[\s,]+/)]
                 .map((value) => value.trim())
                 .filter(Boolean),
             );
+
+            function bodyLooksClean(body) {
+              return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
+            }
 
             function reviewedCommitMatchesHead(reviewedCommit, headSha) {
               if (!reviewedCommit || !headSha) {
@@ -56,6 +65,15 @@ jobs:
 
             async function listPullRequestReviews(pullNumber) {
               return github.paginate(github.rest.pulls.listReviews, {
+                owner,
+                repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              });
+            }
+
+            async function listPullRequestReviewComments(pullNumber) {
+              return github.paginate(github.rest.pulls.listReviewComments, {
                 owner,
                 repo,
                 pull_number: pullNumber,
@@ -101,7 +119,17 @@ jobs:
               });
             }
 
-            async function currentHeadHasCodexReview(pullNumber, headSha) {
+            async function currentHeadCodexReview(pullNumber, headSha) {
+              const reviewComments = await listPullRequestReviewComments(pullNumber);
+              const reviewCommentCounts = new Map();
+              for (const comment of reviewComments) {
+                const reviewId = comment.pull_request_review_id;
+                if (!reviewId) {
+                  continue;
+                }
+                reviewCommentCounts.set(reviewId, (reviewCommentCounts.get(reviewId) || 0) + 1);
+              }
+
               const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
               for (const review of reviews) {
                 const login = review.user?.login || "";
@@ -111,13 +139,31 @@ jobs:
                 if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
                   continue;
                 }
-                if (String(review.state || "").toUpperCase() === "DISMISSED") {
+                const state = String(review.state || "").toUpperCase();
+                if (state === "DISMISSED") {
                   continue;
                 }
-                return true;
+                if (state === "CHANGES_REQUESTED") {
+                  return {
+                    acceptable: false,
+                    description: "Current-head Codex review requested changes",
+                  };
+                }
+
+                const hasInlineComments = (reviewCommentCounts.get(review.id) || 0) > 0;
+                if (!hasInlineComments && !bodyLooksClean(review.body || "")) {
+                  return {
+                    acceptable: false,
+                    description: "Current-head Codex review still has summary-only findings",
+                  };
+                }
+
+                return {
+                  acceptable: true,
+                };
               }
 
-              return false;
+              return null;
             }
 
             async function enableWithRetry(pr) {
@@ -183,9 +229,13 @@ jobs:
               return;
             }
 
-            const hasCodexReview = await currentHeadHasCodexReview(pr.number, pr.head.sha);
-            if (!hasCodexReview) {
+            const codexReview = await currentHeadCodexReview(pr.number, pr.head.sha);
+            if (!codexReview) {
               core.info("Current head does not yet have a Codex review; not arming auto-merge.");
+              return;
+            }
+            if (!codexReview.acceptable) {
+              core.info(`${codexReview.description}; not arming auto-merge.`);
               return;
             }
 

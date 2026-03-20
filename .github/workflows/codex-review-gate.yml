@@ -39,6 +39,11 @@ jobs:
               "chatgpt-codex-connector[bot]",
               "chatgpt-codex-connector",
             ]);
+            const cleanBodyPatterns = [
+              /didn't find any major issues/i,
+              /did not find any major issues/i,
+              /\bbreezy\b/i,
+            ];
             const trustedActors = new Set(
               [owner, ...(process.env.CODEX_TRUSTED_MAINTAINERS || "").split(/[\s,]+/)]
                 .map((value) => value.trim())
@@ -61,6 +66,10 @@ jobs:
               return pr?.head?.repo?.full_name === repoFullName;
             }
 
+            function bodyLooksClean(body) {
+              return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
+            }
+
             function reviewedCommitMatchesHead(reviewedCommit, headSha) {
               if (!reviewedCommit || !headSha) {
                 return false;
@@ -80,6 +89,15 @@ jobs:
 
             async function listPullRequestReviews(pullNumber) {
               return github.paginate(github.rest.pulls.listReviews, {
+                owner,
+                repo,
+                pull_number: pullNumber,
+                per_page: 100,
+              });
+            }
+
+            async function listPullRequestReviewComments(pullNumber) {
+              return github.paginate(github.rest.pulls.listReviewComments, {
                 owner,
                 repo,
                 pull_number: pullNumber,
@@ -126,6 +144,16 @@ jobs:
             }
 
             async function currentHeadCodexReview(pullNumber, headSha) {
+              const reviewComments = await listPullRequestReviewComments(pullNumber);
+              const reviewCommentCounts = new Map();
+              for (const comment of reviewComments) {
+                const reviewId = comment.pull_request_review_id;
+                if (!reviewId) {
+                  continue;
+                }
+                reviewCommentCounts.set(reviewId, (reviewCommentCounts.get(reviewId) || 0) + 1);
+              }
+
               const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
               for (const review of reviews) {
                 const login = review.user?.login || "";
@@ -135,10 +163,29 @@ jobs:
                 if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
                   continue;
                 }
-                if (String(review.state || "").toUpperCase() === "DISMISSED") {
+                const state = String(review.state || "").toUpperCase();
+                if (state === "DISMISSED") {
                   continue;
                 }
+                if (state === "CHANGES_REQUESTED") {
+                  return {
+                    acceptable: false,
+                    description: "Current-head Codex review requested changes",
+                    targetUrl: review.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
+                  };
+                }
+
+                const hasInlineComments = (reviewCommentCounts.get(review.id) || 0) > 0;
+                if (!hasInlineComments && !bodyLooksClean(review.body || "")) {
+                  return {
+                    acceptable: false,
+                    description: "Current-head Codex review still has summary-only findings",
+                    targetUrl: review.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
+                  };
+                }
+
                 return {
+                  acceptable: true,
                   targetUrl: review.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
                 };
               }
@@ -157,6 +204,17 @@ jobs:
                   pr.html_url,
                 );
                 core.info(`Set ${gateContext}=pending on ${headSha} because no current-head Codex review exists yet`);
+                return;
+              }
+
+              if (!codexReview.acceptable) {
+                await setStatus(
+                  headSha,
+                  "failure",
+                  codexReview.description,
+                  codexReview.targetUrl || pr.html_url,
+                );
+                core.info(`Set ${gateContext}=failure on ${headSha} because ${codexReview.description}`);
                 return;
               }
 

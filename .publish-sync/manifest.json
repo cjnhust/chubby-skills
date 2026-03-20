@@ -60,7 +60,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
-      "sha256": "7b7c478528a82bebb474db2d16ffaf498f55d1d5bca18192fed3b3f676c5b180"
+      "sha256": "baab18c43e37366a018ae01c9bc95b17a4e35bdcc021ed2f40c483097c61ec74"
     },
     {
       "path": "owned/skills-github-publisher/scripts/push_pr_handoff.py",

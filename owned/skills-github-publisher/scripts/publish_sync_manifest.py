@@ -74,12 +74,17 @@ def skill_root_for_relative_path(relative_path: str) -> str | None:
     return relative_posix(Path(parts[0]) / parts[1])
 
 
+def diff_base_ref(repo: Path, base_ref: str, head_ref: str | None = None) -> str:
+    target_ref = head_ref or "HEAD"
+    return git_output(repo, "merge-base", base_ref, target_ref)
+
+
 def collect_changed_skill_paths(
     repo: Path,
     base_ref: str,
     head_ref: str | None = None,
 ) -> tuple[list[str], list[str], list[str]]:
-    cmd = ["diff", "--name-status", "-M", base_ref]
+    cmd = ["diff", "--name-status", "-M", diff_base_ref(repo, base_ref, head_ref)]
     if head_ref:
         cmd.append(head_ref)
     cmd.extend(["--", "owned", "third-party", str(MANIFEST_PATH), str(MANIFEST_SIGNATURE_PATH)])
