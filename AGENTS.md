@@ -28,12 +28,15 @@ python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --stric
 
 - Prefer small, reviewable changes.
 - Keep initial sanitization and sensitive cleanup local-first.
+- Treat this publish repo as a mirror, not the editing source of truth for skill bundles.
+- Do not edit files under `owned/<skill>/` or `third-party/<skill>/` directly in the publish repo; make the change in the local source skill and sync it out.
 - If using Codex on GitHub, prefer PR review before broader cloud-side edit flows.
 
 ## Codex Review Mode
 
 - Default to review-only usage on GitHub for this repository.
 - Prefer `@codex review` on public pull requests rather than cloud-side code generation by default.
+- Treat `publish-sync-guard` as the hard source-of-truth gate when the workflow is present.
 - Treat `codex-review-gate` as the hard merge gate when the workflow is present.
 - Keep `main` in PR-only mode and let GitHub auto-merge after the gate succeeds.
 - Review focus should stay on:

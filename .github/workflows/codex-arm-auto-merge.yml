@@ -1,261 +1,177 @@
 name: Codex Auto Merge Controller
 
 on:
-  issue_comment:
+  pull_request:
     types:
-      - created
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  pull_request_target:
+    types:
+      - reopened
+      - synchronize
+      - ready_for_review
   pull_request_review:
     types:
       - submitted
+      - dismissed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
+  checks: read
   contents: write
   issues: read
   pull-requests: write
+  statuses: read
 
 env:
   CODEX_TRUSTED_MAINTAINERS: ${{ vars.CODEX_TRUSTED_MAINTAINERS }}
 
 jobs:
   codex-arm-auto-merge-controller:
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          path: trusted
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: pr
+          persist-credentials: false
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/github-script@v7
         with:
           script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const repoFullName = `${owner}/${repo}`;
-            const codexActors = new Set([
-              "chatgpt-codex-connector[bot]",
-              "chatgpt-codex-connector",
-            ]);
-            const cleanBodyPatterns = [
-              /didn't find any major issues/i,
-              /did not find any major issues/i,
-              /\bbreezy\b/i,
-            ];
-            const trustedActors = new Set(
-              [owner, ...(process.env.CODEX_TRUSTED_MAINTAINERS || "").split(/[\s,]+/)]
-                .map((value) => value.trim())
-                .filter(Boolean),
+            const fs = require("fs");
+            const path = require("path");
+            const scriptPath = path.join(
+              process.env.GITHUB_WORKSPACE,
+              "trusted",
+              "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
             );
-
-            function bodyLooksClean(body) {
-              return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
-            }
-
-            function extractReviewedCommit(body) {
-              const match = (body || "").match(/Reviewed commit:\s*`([0-9a-f]{7,40})`/i);
-              return match ? match[1].toLowerCase() : null;
-            }
-
-            function reviewedCommitMatchesHead(reviewedCommit, headSha) {
-              if (!reviewedCommit || !headSha) {
-                return false;
-              }
-              const normalizedReviewed = reviewedCommit.toLowerCase();
-              const normalizedHead = headSha.toLowerCase();
-              return (
-                normalizedReviewed === normalizedHead ||
-                normalizedHead.startsWith(normalizedReviewed) ||
-                normalizedReviewed.startsWith(normalizedHead)
-              );
-            }
-
-            function actorCanTriggerEvaluation(login) {
-              return codexActors.has(login || "") || trustedActors.has(login || "");
-            }
-
-            async function listPullRequestReviews(pullNumber) {
-              return github.paginate(github.rest.pulls.listReviews, {
-                owner,
-                repo,
-                pull_number: pullNumber,
-                per_page: 100,
-              });
-            }
-
-            async function listIssueComments(issueNumber) {
-              return github.paginate(github.rest.issues.listComments, {
-                owner,
-                repo,
-                issue_number: issueNumber,
-                per_page: 100,
-              });
-            }
-
-            async function listPullRequestCommits(pullNumber) {
-              return github.paginate(github.rest.pulls.listCommits, {
-                owner,
-                repo,
-                pull_number: pullNumber,
-                per_page: 100,
-              });
-            }
-
-            async function currentHeadHasTrustedApproval(pullNumber, headSha) {
-              const reviews = await listPullRequestReviews(pullNumber);
-              const latestTrustedReviewByActor = new Map();
-              for (const review of reviews) {
-                const login = review.user?.login || "";
-                if (!trustedActors.has(login)) {
-                  continue;
-                }
-                if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
-                  continue;
-                }
-                latestTrustedReviewByActor.set(login, review);
-              }
-              return [...latestTrustedReviewByActor.values()].some(
-                (review) => String(review.state || "").toUpperCase() === "APPROVED",
-              );
-            }
-
-            async function currentHeadIsTrustedSubmission(pr) {
-              if (!trustedActors.has(pr.user?.login || "")) {
-                return false;
-              }
-              const commits = await listPullRequestCommits(pr.number);
-              return commits.every((commit) => {
-                const candidateLogins = [commit.author?.login, commit.committer?.login].filter(Boolean);
-                return candidateLogins.length > 0 && candidateLogins.every((login) => trustedActors.has(login));
-              });
-            }
-
-            async function currentHeadCodexResult(pullNumber, headSha) {
-              const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
-              for (const review of reviews) {
-                const login = review.user?.login || "";
-                if (!codexActors.has(login)) {
-                  continue;
-                }
-                if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
-                  continue;
-                }
-                const state = String(review.state || "").toUpperCase();
-                const clean =
-                  state === "APPROVED" ||
-                  (state === "COMMENTED" && bodyLooksClean(review.body || ""));
-                return clean;
-              }
-
-              const comments = (await listIssueComments(pullNumber)).slice().reverse();
-              for (const comment of comments) {
-                const login = comment.user?.login || "";
-                if (!codexActors.has(login)) {
-                  continue;
-                }
-                const reviewedCommit = extractReviewedCommit(comment.body || "");
-                if (!reviewedCommitMatchesHead(reviewedCommit, headSha)) {
-                  continue;
-                }
-                return bodyLooksClean(comment.body || "");
-              }
-
-              return false;
-            }
-
-            async function enableWithRetry(pr) {
-              for (let attempt = 1; attempt <= 6; attempt += 1) {
-                try {
-                  await github.graphql(
-                    `
-                      mutation EnableAutoMerge($pullRequestId: ID!) {
-                        enablePullRequestAutoMerge(
-                          input: {
-                            pullRequestId: $pullRequestId
-                            mergeMethod: SQUASH
-                          }
-                        ) {
-                          pullRequest {
-                            number
-                            autoMergeRequest {
-                              enabledAt
-                            }
-                          }
-                        }
-                      }
-                    `,
-                    { pullRequestId: pr.node_id },
-                  );
-                  core.info(`Enabled auto-merge for PR #${pr.number}`);
-                  return;
-                } catch (error) {
-                  const message = String(error.message || error);
-                  if (message.includes("is already enabled for auto-merge")) {
-                    core.info(`Auto-merge already enabled for PR #${pr.number}`);
-                    return;
-                  }
-                  if (message.includes("unstable status") && attempt < 6) {
-                    core.info(`PR #${pr.number} still unstable; retrying in 5s (attempt ${attempt}/6)`);
-                    await new Promise((resolve) => setTimeout(resolve, 5000));
-                    continue;
-                  }
-                  throw error;
-                }
-              }
-            }
-
-            let pr = null;
-            if (context.eventName === "issue_comment") {
-              const issue = context.payload.issue;
-              const comment = context.payload.comment;
-              if (!issue?.pull_request || !comment || !codexActors.has(comment.user?.login || "")) {
-                core.info("Ignoring non-PR comment or non-Codex actor.");
-                return;
-              }
-              if (!bodyLooksClean(comment.body || "")) {
-                core.info("Codex comment did not indicate a clean review; not arming auto-merge.");
-                return;
-              }
-              const response = await github.rest.pulls.get({
-                owner,
-                repo,
-                pull_number: issue.number,
-              });
-              pr = response.data;
-              const reviewedCommit = extractReviewedCommit(comment.body || "");
-              if (!reviewedCommitMatchesHead(reviewedCommit, pr.head?.sha || "")) {
-                core.info(
-                  `Ignoring Codex comment for reviewed commit ${reviewedCommit || "<missing>"} because current head is ${pr.head?.sha || "<missing>"}`,
-                );
-                return;
-              }
-            } else if (context.eventName === "pull_request_review") {
-              const review = context.payload.review;
-              const incomingPr = context.payload.pull_request;
-              if (!review || !incomingPr || !actorCanTriggerEvaluation(review.user?.login || "")) {
-                core.info("Ignoring unrelated review event.");
-                return;
-              }
-              if (codexActors.has(review.user?.login || "") && !reviewedCommitMatchesHead(review.commit_id || "", incomingPr.head?.sha || "")) {
-                core.info(
-                  `Ignoring Codex review for commit ${review.commit_id || "<missing>"} because current head is ${incomingPr.head?.sha || "<missing>"}`,
-                );
-                return;
-              }
-              pr = incomingPr;
-            }
-
-            if (!pr || pr.draft || pr.base?.ref !== "main" || pr.head?.repo?.full_name !== repoFullName) {
-              core.info("Skipping draft, external, or non-main PR.");
+            if (!fs.existsSync(scriptPath)) {
+              core.info(`Trusted auto-merge controller is not on the base branch yet: ${scriptPath}`);
+              core.info("Skipping privileged auto-merge evaluation; PR-side controller execution is covered by codex-arm-auto-merge-wrapper-validation.");
               return;
             }
+            core.info(`Using trusted Codex auto-merge controller from ${scriptPath}`);
+            const trustedScript = require(scriptPath);
+            await trustedScript.run({
+              github,
+              context,
+              core,
+              trustedMaintainers: process.env.CODEX_TRUSTED_MAINTAINERS || "",
+            });
 
-            const cleanCodex = await currentHeadCodexResult(pr.number, pr.head.sha);
-            if (!cleanCodex) {
-              core.info("Current head does not yet have a clean Codex result; not arming auto-merge.");
+  codex-arm-auto-merge-wrapper-validation:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate auto-merge workflow wrapper invariants
+        run: |
+          ruby <<'RUBY'
+          require "yaml"
+          require "tempfile"
+
+          workflow_path = ".github/workflows/codex-arm-auto-merge.yml"
+          raw = File.read(workflow_path)
+          workflow = YAML.safe_load(raw, permitted_classes: [], aliases: true)
+          triggers = workflow["on"] || workflow[true] || {}
+          %w[pull_request pull_request_target pull_request_review].each do |event_name|
+            raise "#{workflow_path} must trigger on #{event_name}" unless triggers.key?(event_name)
+          end
+
+          jobs = workflow["jobs"] || {}
+          controller_job = jobs["codex-arm-auto-merge-controller"]
+          raise "codex-arm-auto-merge-controller job is missing" unless controller_job.is_a?(Hash)
+          wrapper_job = jobs["codex-arm-auto-merge-wrapper-validation"]
+          raise "codex-arm-auto-merge-wrapper-validation job is missing" unless wrapper_job.is_a?(Hash)
+
+          expected_controller_if = "${" + "{ github.event_name != 'pull_request' }}"
+          expected_wrapper_if = "${" + "{ github.event_name == 'pull_request' }}"
+          raise "codex-arm-auto-merge-controller must not run on pull_request" unless raw.include?("codex-arm-auto-merge-controller:\n    if: #{expected_controller_if}")
+          raise "codex-arm-auto-merge-wrapper-validation must stay limited to pull_request" unless raw.include?("codex-arm-auto-merge-wrapper-validation:\n    if: #{expected_wrapper_if}")
+
+          script = controller_job.fetch("steps").last.fetch("with").fetch("script")
+          [
+            "codex_arm_auto_merge_controller.cjs",
+            "Using trusted Codex auto-merge controller",
+          ].each do |snippet|
+            raise "auto-merge wrapper is missing required snippet: #{snippet}" unless script.include?(snippet)
+          end
+          [
+            "bootstrapScriptPath",
+            "pullRequestTouchesAnyFile",
+            "publishSyncGuardPassed",
+          ].each do |snippet|
+            raise "auto-merge wrapper must not execute PR-controlled code in privileged context: #{snippet}" if script.include?(snippet)
+          end
+
+          Tempfile.create(["codex-arm-auto-merge", ".js"]) do |handle|
+            handle.write("async function __wrapper(){\n#{script}\n}\n")
+            handle.flush
+            raise "auto-merge wrapper javascript is invalid" unless system("node", "--check", handle.path)
+          end
+
+          wrapper_scripts = wrapper_job.fetch("steps", []).filter_map do |step|
+            next unless step.is_a?(Hash)
+            step.dig("with", "script")
+          end
+          dry_run_script = wrapper_scripts.find { |candidate| candidate.include?("validationOnly: true") }
+          raise "auto-merge wrapper validation must dry-run the PR controller" unless dry_run_script
+          raise "auto-merge wrapper validation must load the PR controller module" unless dry_run_script.include?("codex_arm_auto_merge_controller.cjs")
+
+          puts "wrapper_ok #{workflow_path}"
+          RUBY
+      - name: Exercise PR auto-merge wrapper
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const path = require("path");
+            const controllerPath = path.join(
+              process.env.GITHUB_WORKSPACE,
+              "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
+            );
+            if (!fs.existsSync(controllerPath)) {
+              core.setFailed(`PR auto-merge controller is missing: ${controllerPath}`);
               return;
             }
-
-            const trustedSubmission = await currentHeadIsTrustedSubmission(pr);
-            const trustedApproval = trustedSubmission
-              ? true
-              : await currentHeadHasTrustedApproval(pr.number, pr.head.sha);
-            if (!trustedApproval) {
-              core.info("Current head is not trusted and lacks trusted approval; not arming auto-merge.");
-              return;
-            }
-
-            await enableWithRetry(pr);
+            core.info(`Exercising PR auto-merge wrapper with ${controllerPath}`);
+            const controller = require(controllerPath);
+            const validationContext = {
+              ...context,
+              repo: context.repo,
+              payload: {
+                ...context.payload,
+                pull_request: {
+                  ...context.payload.pull_request,
+                  head: {
+                    ...context.payload.pull_request?.head,
+                    repo: {
+                      ...context.payload.pull_request?.head?.repo,
+                      full_name: `${context.repo.owner}/${context.repo.repo}`,
+                    },
+                  },
+                },
+              },
+            };
+            await controller.run({
+              github,
+              context: validationContext,
+              core,
+              trustedMaintainers: process.env.CODEX_TRUSTED_MAINTAINERS || "",
+              validationOnly: true,
+            });

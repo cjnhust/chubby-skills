@@ -37,9 +37,11 @@ The same release flow should also cover the local publish handoff:
 
 - review `git remote -v`
 - add `origin` only after the target GitHub repository exists
+- treat the publish repo as a mirror of the local source skills, not as the editing source of truth for managed skill content
 - prefer an `https://github.com/...` remote, or an explicit GitHub-only SSH alias, when the machine also carries internal SSH identities
 - for HTTPS remotes, prefer `gh auth login` or another OS-keychain-backed credential flow instead of pasting PATs into terminal prompts
 - for updates to an existing public repo, create or reuse a PR branch such as `codex/<change-name>` before committing
+- if managed skill bundle files changed, require a sync manifest such as `.publish-sync/manifest.json` produced by the local sync helper instead of accepting direct edits in the publish repo
 - prefer a helper such as `python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --root . --base main` to standardize the final local handoff
 - push that PR branch with `git push -u origin <branch>` only after local scans and provenance checks are clean
 - open a pull request into the protected default branch instead of treating direct `main` push as the normal update path

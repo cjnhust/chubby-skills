@@ -12,6 +12,9 @@ Prepare everything locally so the maintainer only needs to do the account-side G
 - Do not start with cloud-side code generation or broad write permissions.
 - Do not authorize internal repositories, mixed public/private trees, or repos that still depend on local private policy files.
 - If you later test Codex writeback, keep it to one trusted-maintainer-only follow-up on an already-public PR branch and require minimal patch scope.
+- Trigger Codex review only once per PR head. Use repository auto review or reviewer request when available, and keep one manual `@codex review` request as the fallback instead of stacking both.
+- Treat the resulting current-head Codex pull-request review as the gate input; a standalone issue comment is not enough to satisfy the merge gate.
+- If Codex leaves inline findings on the current head, resolve or fix them and then request one fresh current-head review; the gate does not clear from thread resolution alone.
 
 ## Prepare In The Repo Before The User Clicks Anything
 
@@ -66,5 +69,5 @@ When Codex leaves findings on a PR and the maintainer pushes a fix:
 - if Codex claims it committed a change but the PR head did not move, treat that as a task summary, not as a real GitHub writeback
 - if the Codex UI shows a manual `Update branch` action, treat that as a required maintainer confirmation step
 - if a previously reported finding is fixed on the latest head but the review thread stays open, manually resolve the thread
-- after resolving stale threads, trigger a fresh `@codex review` against the latest head
+- after resolving stale threads, trigger one fresh current-head review through the same single trigger path already in use for the PR
 - if GitHub reports a missing pull ref such as `refs/pull/<n>/head`, push a fresh branch head and recheck that ref before blaming repository policy or the review gate

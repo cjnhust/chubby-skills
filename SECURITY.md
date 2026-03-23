@@ -15,6 +15,7 @@ This repository publishes Codex skills and helper scripts. It is prepared for so
 - Keep maintainer-specific sensitive scan inputs in a local private policy file such as `$CODEX_HOME/private/publish-policy.json`, not in committed docs or shared shell snippets.
 - Prefer redacted examples such as `your_token_here` instead of live values.
 - Keep the first sanitization and publication pass local-first. Do not hand unpublished branches, local private policy files, or internal-only skill trees to Codex cloud or GitHub-side Codex flows from this repo workflow.
+- Treat the publish repo as a mirror of local source skills. Managed skill bundle edits should originate in the local source tree and be synced out, not authored directly in the public mirror.
 
 ## Reporting
 

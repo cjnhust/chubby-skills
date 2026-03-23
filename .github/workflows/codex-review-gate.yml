@@ -7,14 +7,23 @@ on:
       - reopened
       - synchronize
       - ready_for_review
-  issue_comment:
+  pull_request_target:
     types:
-      - created
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   pull_request_review:
     types:
       - submitted
+      - dismissed
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
 
 permissions:
+  checks: read
   contents: read
   issues: read
   pull-requests: read
@@ -25,274 +34,145 @@ env:
 
 jobs:
   codex-review-gate-controller:
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          path: trusted
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: pr
+          persist-credentials: false
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/github-script@v7
         with:
           script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const repoFullName = `${owner}/${repo}`;
-            const gateContext = "codex-review-gate";
-            const codexActors = new Set([
-              "chatgpt-codex-connector[bot]",
-              "chatgpt-codex-connector",
-            ]);
-            const cleanBodyPatterns = [
-              /didn't find any major issues/i,
-              /did not find any major issues/i,
-              /\bbreezy\b/i,
-            ];
-            const trustedActors = new Set(
-              [owner, ...(process.env.CODEX_TRUSTED_MAINTAINERS || "").split(/[\s,]+/)]
-                .map((value) => value.trim())
-                .filter(Boolean),
+            const fs = require("fs");
+            const path = require("path");
+            const scriptPath = path.join(
+              process.env.GITHUB_WORKSPACE,
+              "trusted",
+              "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
             );
-
-            async function setStatus(sha, state, description, targetUrl) {
-              await github.rest.repos.createCommitStatus({
-                owner,
-                repo,
-                sha,
-                state,
-                context: gateContext,
-                description,
-                target_url: targetUrl,
-              });
-            }
-
-            function isSameRepoPullRequest(pr) {
-              return pr?.head?.repo?.full_name === repoFullName;
-            }
-
-            function bodyLooksClean(body) {
-              return cleanBodyPatterns.some((pattern) => pattern.test(body || ""));
-            }
-
-            function extractReviewedCommit(body) {
-              const match = (body || "").match(/Reviewed commit:\s*`([0-9a-f]{7,40})`/i);
-              return match ? match[1].toLowerCase() : null;
-            }
-
-            function reviewedCommitMatchesHead(reviewedCommit, headSha) {
-              if (!reviewedCommit || !headSha) {
-                return false;
-              }
-              const normalizedReviewed = reviewedCommit.toLowerCase();
-              const normalizedHead = headSha.toLowerCase();
-              return (
-                normalizedReviewed === normalizedHead ||
-                normalizedHead.startsWith(normalizedReviewed) ||
-                normalizedReviewed.startsWith(normalizedHead)
-              );
-            }
-
-            function actorIsRelevantForGate(login) {
-              return codexActors.has(login || "") || trustedActors.has(login || "");
-            }
-
-            async function listPullRequestReviews(pullNumber) {
-              return github.paginate(github.rest.pulls.listReviews, {
-                owner,
-                repo,
-                pull_number: pullNumber,
-                per_page: 100,
-              });
-            }
-
-            async function listIssueComments(issueNumber) {
-              return github.paginate(github.rest.issues.listComments, {
-                owner,
-                repo,
-                issue_number: issueNumber,
-                per_page: 100,
-              });
-            }
-
-            async function listPullRequestCommits(pullNumber) {
-              return github.paginate(github.rest.pulls.listCommits, {
-                owner,
-                repo,
-                pull_number: pullNumber,
-                per_page: 100,
-              });
-            }
-
-            async function currentHeadHasTrustedApproval(pullNumber, headSha) {
-              const reviews = await listPullRequestReviews(pullNumber);
-              const latestTrustedReviewByActor = new Map();
-              for (const review of reviews) {
-                const login = review.user?.login || "";
-                if (!trustedActors.has(login)) {
-                  continue;
-                }
-                if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
-                  continue;
-                }
-                latestTrustedReviewByActor.set(login, review);
-              }
-              return [...latestTrustedReviewByActor.values()].some(
-                (review) => String(review.state || "").toUpperCase() === "APPROVED",
-              );
-            }
-
-            async function currentHeadIsTrustedSubmission(pr) {
-              if (!trustedActors.has(pr.user?.login || "")) {
-                return false;
-              }
-              const commits = await listPullRequestCommits(pr.number);
-              return commits.every((commit) => {
-                const candidateLogins = [commit.author?.login, commit.committer?.login].filter(Boolean);
-                return candidateLogins.length > 0 && candidateLogins.every((login) => trustedActors.has(login));
-              });
-            }
-
-            async function currentHeadCodexResult(pullNumber, headSha) {
-              const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
-              for (const review of reviews) {
-                const login = review.user?.login || "";
-                if (!codexActors.has(login)) {
-                  continue;
-                }
-                if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
-                  continue;
-                }
-                const state = String(review.state || "").toUpperCase();
-                const clean =
-                  state === "APPROVED" ||
-                  (state === "COMMENTED" && bodyLooksClean(review.body || ""));
-                return {
-                  clean,
-                  targetUrl: review.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
-                };
-              }
-
-              const comments = (await listIssueComments(pullNumber)).slice().reverse();
-              for (const comment of comments) {
-                const login = comment.user?.login || "";
-                if (!codexActors.has(login)) {
-                  continue;
-                }
-                const reviewedCommit = extractReviewedCommit(comment.body || "");
-                if (!reviewedCommitMatchesHead(reviewedCommit, headSha)) {
-                  continue;
-                }
-                return {
-                  clean: bodyLooksClean(comment.body || ""),
-                  targetUrl: comment.html_url,
-                };
-              }
-
-              return null;
-            }
-
-            async function evaluateGate(pr, fallbackTargetUrl) {
-              const headSha = pr.head.sha;
-              const codexResult = await currentHeadCodexResult(pr.number, headSha);
-              if (!codexResult) {
-                await setStatus(
-                  headSha,
-                  "pending",
-                  "Waiting for Codex review to finish",
-                  pr.html_url,
-                );
-                core.info(`Set ${gateContext}=pending on ${headSha} because no current-head Codex result exists yet`);
-                return;
-              }
-
-              if (!codexResult.clean) {
-                await setStatus(
-                  headSha,
-                  "failure",
-                  "Codex review requires follow-up",
-                  codexResult.targetUrl || fallbackTargetUrl || pr.html_url,
-                );
-                core.info(`Set ${gateContext}=failure on ${headSha} because current-head Codex reported findings`);
-                return;
-              }
-
-              const trustedSubmission = await currentHeadIsTrustedSubmission(pr);
-              const trustedApproval = trustedSubmission
-                ? true
-                : await currentHeadHasTrustedApproval(pr.number, headSha);
-
-              if (!trustedApproval) {
-                await setStatus(
-                  headSha,
-                  "failure",
-                  "Current head still needs trusted owner/admin approval",
-                  pr.html_url,
-                );
-                core.info(`Set ${gateContext}=failure on ${headSha} because current-head trusted approval is still missing`);
-                return;
-              }
-
-              await setStatus(
-                headSha,
-                "success",
-                trustedSubmission
-                  ? "Codex review finished without major issues"
-                  : "Codex review clean and trusted approval present",
-                codexResult.targetUrl || fallbackTargetUrl || pr.html_url,
-              );
-              core.info(`Set ${gateContext}=success on ${headSha}`);
-            }
-
-            if (context.eventName === "pull_request") {
-              const pr = context.payload.pull_request;
-              if (!pr || pr.draft || !isSameRepoPullRequest(pr)) {
-                core.info("Skipping pending gate update for draft or external PR.");
-                return;
-              }
-              await setStatus(
-                pr.head.sha,
-                "pending",
-                "Waiting for Codex review to finish",
-                pr.html_url,
-              );
-              core.info(`Set ${gateContext}=pending on ${pr.head.sha}`);
+            if (!fs.existsSync(scriptPath)) {
+              core.info(`Trusted review gate controller is not on the base branch yet: ${scriptPath}`);
+              core.info("Skipping privileged gate evaluation; PR-side controller execution is covered by codex-review-gate-wrapper-validation.");
               return;
             }
+            core.info(`Using trusted Codex review gate controller from ${scriptPath}`);
+            const trustedScript = require(scriptPath);
+            await trustedScript.run({
+              github,
+              context,
+              core,
+              trustedMaintainers: process.env.CODEX_TRUSTED_MAINTAINERS || "",
+            });
 
-            if (context.eventName === "issue_comment") {
-              const issue = context.payload.issue;
-              const comment = context.payload.comment;
-              if (!issue?.pull_request || !comment || !codexActors.has(comment.user?.login || "")) {
-                core.info("Ignoring non-PR comment or non-Codex actor.");
-                return;
-              }
-              const pr = await github.rest.pulls.get({
-                owner,
-                repo,
-                pull_number: issue.number,
-              });
-              if (!isSameRepoPullRequest(pr.data)) {
-                core.info("Ignoring external PR comment event.");
-                return;
-              }
-              const reviewedCommit = extractReviewedCommit(comment.body || "");
-              if (!reviewedCommitMatchesHead(reviewedCommit, pr.data.head.sha)) {
-                core.info(
-                  `Ignoring Codex comment for reviewed commit ${reviewedCommit || "<missing>"} because current head is ${pr.data.head.sha}`,
-                );
-                return;
-              }
-              await evaluateGate(pr.data, comment.html_url);
+  codex-review-gate-wrapper-validation:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate review gate workflow wrapper invariants
+        run: |
+          ruby <<'RUBY'
+          require "yaml"
+          require "tempfile"
+
+          workflow_path = ".github/workflows/codex-review-gate.yml"
+          raw = File.read(workflow_path)
+          workflow = YAML.safe_load(raw, permitted_classes: [], aliases: true)
+          triggers = workflow["on"] || workflow[true] || {}
+          %w[pull_request pull_request_target pull_request_review].each do |event_name|
+            raise "#{workflow_path} must trigger on #{event_name}" unless triggers.key?(event_name)
+          end
+
+          jobs = workflow["jobs"] || {}
+          controller_job = jobs["codex-review-gate-controller"]
+          raise "codex-review-gate-controller job is missing" unless controller_job.is_a?(Hash)
+          wrapper_job = jobs["codex-review-gate-wrapper-validation"]
+          raise "codex-review-gate-wrapper-validation job is missing" unless wrapper_job.is_a?(Hash)
+
+          expected_controller_if = "${" + "{ github.event_name != 'pull_request' }}"
+          expected_wrapper_if = "${" + "{ github.event_name == 'pull_request' }}"
+          raise "codex-review-gate-controller must not run on pull_request" unless raw.include?("codex-review-gate-controller:\n    if: #{expected_controller_if}")
+          raise "codex-review-gate-wrapper-validation must stay limited to pull_request" unless raw.include?("codex-review-gate-wrapper-validation:\n    if: #{expected_wrapper_if}")
+
+          script = controller_job.fetch("steps").last.fetch("with").fetch("script")
+          [
+            "codex_review_gate_controller.cjs",
+            "Using trusted Codex review gate controller",
+          ].each do |snippet|
+            raise "review gate wrapper is missing required snippet: #{snippet}" unless script.include?(snippet)
+          end
+          [
+            "bootstrapScriptPath",
+            "pullRequestTouchesAnyFile",
+            "publishSyncGuardPassed",
+          ].each do |snippet|
+            raise "review gate wrapper must not execute PR-controlled code in privileged context: #{snippet}" if script.include?(snippet)
+          end
+
+          Tempfile.create(["codex-review-gate", ".js"]) do |handle|
+            handle.write("async function __wrapper(){\n#{script}\n}\n")
+            handle.flush
+            raise "review gate wrapper javascript is invalid" unless system("node", "--check", handle.path)
+          end
+
+          wrapper_scripts = wrapper_job.fetch("steps", []).filter_map do |step|
+            next unless step.is_a?(Hash)
+            step.dig("with", "script")
+          end
+          dry_run_script = wrapper_scripts.find { |candidate| candidate.include?("validationOnly: true") }
+          raise "review gate wrapper validation must dry-run the PR controller" unless dry_run_script
+          raise "review gate wrapper validation must load the PR controller module" unless dry_run_script.include?("codex_review_gate_controller.cjs")
+
+          puts "wrapper_ok #{workflow_path}"
+          RUBY
+      - name: Exercise PR review gate wrapper
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require("fs");
+            const path = require("path");
+            const controllerPath = path.join(
+              process.env.GITHUB_WORKSPACE,
+              "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
+            );
+            if (!fs.existsSync(controllerPath)) {
+              core.setFailed(`PR review gate controller is missing: ${controllerPath}`);
               return;
             }
-
-            if (context.eventName === "pull_request_review") {
-              const review = context.payload.review;
-              const pr = context.payload.pull_request;
-              if (!review || !pr || !isSameRepoPullRequest(pr) || !actorIsRelevantForGate(review.user?.login || "")) {
-                core.info("Ignoring unrelated pull_request_review event.");
-                return;
-              }
-              if (codexActors.has(review.user?.login || "") && !reviewedCommitMatchesHead(review.commit_id || "", pr.head.sha)) {
-                core.info(
-                  `Ignoring Codex review for commit ${review.commit_id || "<missing>"} because current head is ${pr.head.sha}`,
-                );
-                return;
-              }
-              await evaluateGate(pr, review.html_url || pr.html_url);
-            }
+            core.info(`Exercising PR review gate wrapper with ${controllerPath}`);
+            const controller = require(controllerPath);
+            const validationContext = {
+              ...context,
+              repo: context.repo,
+              payload: {
+                ...context.payload,
+                pull_request: {
+                  ...context.payload.pull_request,
+                  head: {
+                    ...context.payload.pull_request?.head,
+                    repo: {
+                      ...context.payload.pull_request?.head?.repo,
+                      full_name: `${context.repo.owner}/${context.repo.repo}`,
+                    },
+                  },
+                },
+              },
+            };
+            await controller.run({
+              github,
+              context: validationContext,
+              core,
+              trustedMaintainers: process.env.CODEX_TRUSTED_MAINTAINERS || "",
+              validationOnly: true,
+            });
