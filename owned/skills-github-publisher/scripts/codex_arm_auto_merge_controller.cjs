@@ -1,11 +1,12 @@
 const { buildRuntime } = require("./codex_review_common.cjs");
 
-async function run({ github, context, core, trustedMaintainers }) {
+async function run({ github, context, core, trustedMaintainers, validationOnly = false }) {
   const runtime = buildRuntime({
     github,
     context,
     core,
     trustedMaintainers,
+    validationOnly,
   });
 
   let pr = null;

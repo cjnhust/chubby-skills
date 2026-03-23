@@ -53,79 +53,17 @@ jobs:
           script: |
             const fs = require("fs");
             const path = require("path");
-            async function pullRequestTouchesAnyFile(pr, pathsToMatch) {
-              const files = await github.paginate(github.rest.pulls.listFiles, {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                per_page: 100,
-              });
-              return files.some((file) => pathsToMatch.has(file.filename));
-            }
-            async function publishSyncGuardPassed(pr) {
-              const owner = context.repo.owner;
-              const repo = context.repo.repo;
-              const [combined, checks] = await Promise.all([
-                github.rest.repos.getCombinedStatusForRef({
-                  owner,
-                  repo,
-                  ref: pr.head.sha,
-                }),
-                github.rest.checks.listForRef({
-                  owner,
-                  repo,
-                  ref: pr.head.sha,
-                  per_page: 100,
-                }),
-              ]);
-              const publishSyncStatus = combined.data.statuses.find(
-                (status) => status.context === "publish-sync-guard" && status.state === "success"
-              );
-              const publishSyncCheck = checks.data.check_runs.find(
-                (checkRun) => checkRun.name === "publish-sync-guard" && checkRun.conclusion === "success"
-              );
-              return Boolean(publishSyncStatus || publishSyncCheck);
-            }
-            const trustedScriptPath = path.join(
+            const scriptPath = path.join(
               process.env.GITHUB_WORKSPACE,
               "trusted",
               "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
             );
-            const bootstrapScriptPath = path.join(
-              process.env.GITHUB_WORKSPACE,
-              "pr",
-              "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
-            );
-            const prControlledControllerPaths = new Set([
-              "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
-              "owned/skills-github-publisher/scripts/codex_review_common.cjs",
-            ]);
-            let scriptPath = trustedScriptPath;
-            const pr = context.payload.pull_request;
-            const sameRepoPr = pr && pr.head?.repo?.full_name === `${context.repo.owner}/${context.repo.repo}`;
-            const controllerChangedInPr = sameRepoPr
-              ? await pullRequestTouchesAnyFile(pr, prControlledControllerPaths)
-              : false;
-            if (!fs.existsSync(scriptPath) || controllerChangedInPr) {
-              if (!sameRepoPr) {
-                core.setFailed(
-                  "Trusted controller script is missing or PR-controlled controller changes were detected, but PR-side loading is only allowed for same-repo PRs.",
-                );
-                return;
-              }
-              if (!(await publishSyncGuardPassed(pr))) {
-                core.setFailed(
-                  "PR-side controller loading requires publish-sync-guard to be successful on the current head.",
-                );
-                return;
-              }
-              scriptPath = bootstrapScriptPath;
-            }
             if (!fs.existsSync(scriptPath)) {
-              core.setFailed(`Controller script is missing: ${scriptPath}`);
+              core.info(`Trusted auto-merge controller is not on the base branch yet: ${scriptPath}`);
+              core.info("Skipping privileged auto-merge evaluation; PR-side controller execution is covered by codex-arm-auto-merge-wrapper-validation.");
               return;
             }
-            core.info(`Using Codex auto-merge controller from ${scriptPath}`);
+            core.info(`Using trusted Codex auto-merge controller from ${scriptPath}`);
             const trustedScript = require(scriptPath);
             await trustedScript.run({
               github,
@@ -169,11 +107,16 @@ jobs:
           script = controller_job.fetch("steps").last.fetch("with").fetch("script")
           [
             "codex_arm_auto_merge_controller.cjs",
-            "codex_review_common.cjs",
+            "Using trusted Codex auto-merge controller",
+          ].each do |snippet|
+            raise "auto-merge wrapper is missing required snippet: #{snippet}" unless script.include?(snippet)
+          end
+          [
+            "bootstrapScriptPath",
             "pullRequestTouchesAnyFile",
             "publishSyncGuardPassed",
           ].each do |snippet|
-            raise "auto-merge wrapper is missing required snippet: #{snippet}" unless script.include?(snippet)
+            raise "auto-merge wrapper must not execute PR-controlled code in privileged context: #{snippet}" if script.include?(snippet)
           end
 
           Tempfile.create(["codex-arm-auto-merge", ".js"]) do |handle|
@@ -182,5 +125,46 @@ jobs:
             raise "auto-merge wrapper javascript is invalid" unless system("node", "--check", handle.path)
           end
 
+          wrapper_scripts = wrapper_job.fetch("steps", []).filter_map do |step|
+            next unless step.is_a?(Hash)
+            step.dig("with", "script")
+          end
+          dry_run_script = wrapper_scripts.find { |candidate| candidate.include?("validationOnly: true") }
+          raise "auto-merge wrapper validation must dry-run the PR controller" unless dry_run_script
+          raise "auto-merge wrapper validation must load the PR controller module" unless dry_run_script.include?("codex_arm_auto_merge_controller.cjs")
+
           puts "wrapper_ok #{workflow_path}"
           RUBY
+      - name: Dry-run PR auto-merge controller
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const path = require("path");
+            const scriptPath = path.join(
+              process.env.GITHUB_WORKSPACE,
+              "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
+            );
+            const controller = require(scriptPath);
+            const validationContext = {
+              ...context,
+              payload: {
+                ...context.payload,
+                pull_request: {
+                  ...context.payload.pull_request,
+                  head: {
+                    ...context.payload.pull_request?.head,
+                    repo: {
+                      ...context.payload.pull_request?.head?.repo,
+                      full_name: `${context.repo.owner}/${context.repo.repo}`,
+                    },
+                  },
+                },
+              },
+            };
+            await controller.run({
+              github,
+              context: validationContext,
+              core,
+              trustedMaintainers: process.env.CODEX_TRUSTED_MAINTAINERS || "",
+              validationOnly: true,
+            });

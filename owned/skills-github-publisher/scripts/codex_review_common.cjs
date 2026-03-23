@@ -6,7 +6,7 @@ function buildTrustedActors(owner, trustedMaintainers) {
   );
 }
 
-function buildRuntime({ github, context, core, trustedMaintainers, gateContext }) {
+function buildRuntime({ github, context, core, trustedMaintainers, gateContext, validationOnly = false }) {
   const owner = context.repo.owner;
   const repo = context.repo.repo;
   const repoFullName = `${owner}/${repo}`;
@@ -24,6 +24,12 @@ function buildRuntime({ github, context, core, trustedMaintainers, gateContext }
   async function setStatus(sha, state, description, targetUrl) {
     if (!gateContext) {
       throw new Error("gateContext is required to set commit statuses");
+    }
+    if (validationOnly) {
+      core.info(
+        `[validation] Would set ${gateContext}=${state} on ${sha}: ${description} (${targetUrl || "no target url"})`,
+      );
+      return;
     }
     await github.rest.repos.createCommitStatus({
       owner,
@@ -292,6 +298,10 @@ function buildRuntime({ github, context, core, trustedMaintainers, gateContext }
   }
 
   async function enableWithRetry(pr) {
+    if (validationOnly) {
+      core.info(`[validation] Would enable auto-merge for PR #${pr.number}`);
+      return;
+    }
     for (let attempt = 1; attempt <= 6; attempt += 1) {
       try {
         await github.graphql(
