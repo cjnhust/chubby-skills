@@ -28,6 +28,10 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUBLISH_SYNC_ALLOWED_SIGNERS_B64: ${{ vars.PUBLISH_SYNC_ALLOWED_SIGNERS_B64 }}
+          PR_AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
+          REPO_OWNER: ${{ github.repository_owner }}
+          PR_HEAD_REPO_FULL_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO_FULL_NAME: ${{ github.repository }}
         run: |
           trusted_signers_path=".publish-sync/.trusted-allowed-signers"
           repo_variable_signers_path=".publish-sync/.repo-variable-allowed-signers"
@@ -47,10 +51,11 @@ jobs:
             cp "$base_signers_path" "$trusted_signers_path"
           elif [ -f "$repo_variable_signers_path" ]; then
             cp "$repo_variable_signers_path" "$trusted_signers_path"
-          elif [ -f "$pr_signers_path" ]; then
+          elif [ -f "$pr_signers_path" ] && [ "${PR_AUTHOR_LOGIN}" = "${REPO_OWNER}" ] && [ "${PR_HEAD_REPO_FULL_NAME}" = "${REPO_FULL_NAME}" ]; then
             cp "$pr_signers_path" "$trusted_signers_path"
           else
             echo "Missing trusted allowed signers in the base branch and PUBLISH_SYNC_ALLOWED_SIGNERS_B64 is unset." >&2
+            echo "Bootstrap from the PR head is only allowed for same-repo PRs opened by the repository owner." >&2
             exit 1
           fi
 
