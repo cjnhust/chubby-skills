@@ -8,11 +8,12 @@ import hashlib
 import json
 import subprocess
 import sys
+from fnmatch import fnmatch
 from pathlib import Path
 
 sys.dont_write_bytecode = True
 
-from sync_incremental_update import load_local_config
+from sync_incremental_update import RSYNC_EXCLUDES, REVIEW_REQUIRED_BOUNDARIES, load_local_config
 
 
 MANIFEST_PATH = Path(".publish-sync/manifest.json")
@@ -166,6 +167,27 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def manifest_excludes_path(relative_to_skill_root: Path) -> bool:
+    parts = relative_to_skill_root.parts
+    if any(part in REVIEW_REQUIRED_BOUNDARIES or part.startswith("danger-") for part in parts):
+        return True
+
+    relative_path = relative_posix(relative_to_skill_root)
+    for pattern in RSYNC_EXCLUDES:
+        normalized_pattern = pattern.rstrip("/")
+        if pattern.endswith("/"):
+            if any(part == normalized_pattern for part in parts):
+                return True
+            continue
+        if "/" in normalized_pattern:
+            if fnmatch(relative_path, normalized_pattern):
+                return True
+            continue
+        if any(fnmatch(part, normalized_pattern) for part in parts):
+            return True
+    return False
+
+
 def collect_skill_files(repo: Path, skill_root: str) -> list[dict[str, str]]:
     root = repo / skill_root
     if not root.exists():
@@ -173,6 +195,9 @@ def collect_skill_files(repo: Path, skill_root: str) -> list[dict[str, str]]:
 
     entries: list[dict[str, str]] = []
     for path in sorted(candidate for candidate in root.rglob("*") if candidate.is_file()):
+        relative_to_skill_root = path.relative_to(root)
+        if manifest_excludes_path(relative_to_skill_root):
+            continue
         relative_path = relative_posix(path.relative_to(repo))
         entries.append(
             {

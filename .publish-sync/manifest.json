@@ -43,10 +43,6 @@
       "sha256": "bc27dffcede63b956a379570aaafe51494711208e2f9c5226ae2c6ba7934182c"
     },
     {
-      "path": "owned/skills-github-publisher/scripts/__pycache__/push_pr_handoff.cpython-313.pyc",
-      "sha256": "0889b0728d7eda500a8f64a4030280f72b98c2e21132751bae0d02c8a398a125"
-    },
-    {
       "path": "owned/skills-github-publisher/scripts/check_git_identity.py",
       "sha256": "2be0cf5b9cfbd00d7d5dc55a4fef524f1890a1f834c5ef330e07bec477ac95c4"
     },
@@ -64,11 +60,11 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
-      "sha256": "baab18c43e37366a018ae01c9bc95b17a4e35bdcc021ed2f40c483097c61ec74"
+      "sha256": "952a22f85b50c8677275ac92a4b78af63bbf3695922cc501853740b0329ffc01"
     },
     {
       "path": "owned/skills-github-publisher/scripts/push_pr_handoff.py",
-      "sha256": "a6994b9007f6eda99331e8918b500cf22e623ecf4597476e0f26fb09bf312af8"
+      "sha256": "42d60f789edd8880d665ade0364db1143f2cc792f66b893cac6224e5e31c1a6f"
     },
     {
       "path": "owned/skills-github-publisher/scripts/resolve_local_publish_config.py",

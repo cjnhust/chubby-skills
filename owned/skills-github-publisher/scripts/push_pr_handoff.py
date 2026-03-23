@@ -69,7 +69,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate and execute push/PR handoff for a publish repo.")
     parser.add_argument(
         "--root",
-        help="Publish repo working copy. Defaults to local default_publish_repo, or the current git repo when no publish repo is configured.",
+        help="Publish repo working copy. Defaults to local default_publish_repo.",
     )
     parser.add_argument("--base", default="main", help="PR base branch. Defaults to main.")
     parser.add_argument("--branch", help="PR branch. Defaults to the current branch.")
@@ -89,18 +89,6 @@ def resolve_repo_root(explicit_root: str | None) -> Path:
     publish_repo = config.get("default_publish_repo")
     if isinstance(publish_repo, str) and publish_repo:
         return Path(publish_repo).expanduser().resolve()
-
-    cwd = Path.cwd().resolve()
-    try:
-        root = subprocess.check_output(
-            ["git", "-C", str(cwd), "rev-parse", "--show-toplevel"],
-            text=True,
-            stderr=subprocess.DEVNULL,
-        ).strip()
-    except subprocess.CalledProcessError:
-        root = ""
-    if root:
-        return Path(root).resolve()
 
     raise SystemExit("publish repo is not configured; pass --root or set default_publish_repo in local config")
 

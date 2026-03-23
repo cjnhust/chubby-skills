@@ -105,6 +105,53 @@ jobs:
               });
             }
 
+            async function listReviewThreads(pullNumber) {
+              const threads = [];
+              let cursor = null;
+              while (true) {
+                const result = await github.graphql(
+                  `
+                    query($owner: String!, $repo: String!, $pullNumber: Int!, $cursor: String) {
+                      repository(owner: $owner, name: $repo) {
+                        pullRequest(number: $pullNumber) {
+                          reviewThreads(first: 100, after: $cursor) {
+                            nodes {
+                              isResolved
+                              comments(first: 100) {
+                                nodes {
+                                  author {
+                                    login
+                                  }
+                                  pullRequestReview {
+                                    url
+                                    commit {
+                                      oid
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                            pageInfo {
+                              hasNextPage
+                              endCursor
+                            }
+                          }
+                        }
+                      }
+                    }
+                  `,
+                  { owner, repo, pullNumber, cursor },
+                );
+
+                const connection = result.repository.pullRequest.reviewThreads;
+                threads.push(...connection.nodes);
+                if (!connection.pageInfo.hasNextPage) {
+                  return threads;
+                }
+                cursor = connection.pageInfo.endCursor;
+              }
+            }
+
             async function listPullRequestCommits(pullNumber) {
               return github.paginate(github.rest.pulls.listCommits, {
                 owner,
@@ -155,6 +202,7 @@ jobs:
               }
 
               const reviews = (await listPullRequestReviews(pullNumber)).slice().reverse();
+              const currentHeadReviews = [];
               for (const review of reviews) {
                 const login = review.user?.login || "";
                 if (!codexActors.has(login)) {
@@ -163,6 +211,38 @@ jobs:
                 if (!reviewedCommitMatchesHead(review.commit_id || "", headSha)) {
                   continue;
                 }
+                currentHeadReviews.push(review);
+              }
+
+              if (currentHeadReviews.length === 0) {
+                return null;
+              }
+
+              const unresolvedThread = (await listReviewThreads(pullNumber)).find((thread) => {
+                if (thread.isResolved) {
+                  return false;
+                }
+                return thread.comments.nodes.some((comment) => {
+                  const login = comment.author?.login || "";
+                  const reviewedCommit = comment.pullRequestReview?.commit?.oid || "";
+                  return codexActors.has(login) && reviewedCommitMatchesHead(reviewedCommit, headSha);
+                });
+              });
+              if (unresolvedThread) {
+                const targetUrl =
+                  unresolvedThread.comments.nodes.find((comment) => {
+                    const login = comment.author?.login || "";
+                    const reviewedCommit = comment.pullRequestReview?.commit?.oid || "";
+                    return codexActors.has(login) && reviewedCommitMatchesHead(reviewedCommit, headSha);
+                  })?.pullRequestReview?.url || `https://github.com/${repoFullName}/pull/${pullNumber}`;
+                return {
+                  acceptable: false,
+                  description: "Current-head Codex review still has unresolved inline findings",
+                  targetUrl,
+                };
+              }
+
+              for (const review of currentHeadReviews) {
                 const state = String(review.state || "").toUpperCase();
                 if (state === "DISMISSED") {
                   continue;
@@ -179,7 +259,7 @@ jobs:
                 if (hasInlineComments) {
                   return {
                     acceptable: false,
-                    description: "Current-head Codex review still has inline findings",
+                    description: "Current-head Codex review still has inline findings; rerun review after resolving them",
                     targetUrl: review.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
                   };
                 }
