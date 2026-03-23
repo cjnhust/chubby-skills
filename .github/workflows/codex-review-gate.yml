@@ -17,6 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  checks: read
   contents: read
   issues: read
   pull-requests: read
@@ -63,13 +64,28 @@ jobs:
                 core.setFailed("Trusted controller script is missing and bootstrap loading is only allowed for same-repo PRs.");
                 return;
               }
-              const combined = await github.rest.repos.getCombinedStatusForRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: pr.head.sha,
-              });
-              const publishSyncGuard = combined.data.statuses.find((status) => status.context === "publish-sync-guard");
-              if (!publishSyncGuard || publishSyncGuard.state !== "success") {
+              const owner = context.repo.owner;
+              const repo = context.repo.repo;
+              const [combined, checks] = await Promise.all([
+                github.rest.repos.getCombinedStatusForRef({
+                  owner,
+                  repo,
+                  ref: pr.head.sha,
+                }),
+                github.rest.checks.listForRef({
+                  owner,
+                  repo,
+                  ref: pr.head.sha,
+                  per_page: 100,
+                }),
+              ]);
+              const publishSyncStatus = combined.data.statuses.find(
+                (status) => status.context === "publish-sync-guard" && status.state === "success"
+              );
+              const publishSyncCheck = checks.data.check_runs.find(
+                (checkRun) => checkRun.name === "publish-sync-guard" && checkRun.conclusion === "success"
+              );
+              if (!publishSyncStatus && !publishSyncCheck) {
                 core.setFailed("Trusted controller script is missing and publish-sync-guard is not successful on the current head.");
                 return;
               }
