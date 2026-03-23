@@ -18,6 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - uses: actions/setup-python@v5
         with:
@@ -30,10 +31,10 @@ jobs:
         run: |
           trusted_signers_path=".publish-sync/.trusted-allowed-signers"
           mkdir -p "$(dirname "$trusted_signers_path")"
-          if git cat-file -e "${BASE_SHA}:.publish-sync/allowed_signers" 2>/dev/null; then
-            git show "${BASE_SHA}:.publish-sync/allowed_signers" > "$trusted_signers_path"
-          elif [ -n "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" ]; then
+          if [ -n "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" ]; then
             printf '%s' "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" | base64 --decode > "$trusted_signers_path"
+          elif git cat-file -e "${BASE_SHA}:.publish-sync/allowed_signers" 2>/dev/null; then
+            git show "${BASE_SHA}:.publish-sync/allowed_signers" > "$trusted_signers_path"
           elif [ -f .publish-sync/allowed_signers ]; then
             cp .publish-sync/allowed_signers "$trusted_signers_path"
           else
