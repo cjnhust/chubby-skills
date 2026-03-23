@@ -117,6 +117,28 @@ def verify_manifest_signature(
     )
 
 
+def verify_allowed_signers_update(
+    repo: Path,
+    repo_allowed_signers_path: Path,
+    trusted_allowed_signers_path: Path,
+) -> None:
+    target_allowed_signers = repo / repo_allowed_signers_path
+    if not target_allowed_signers.exists():
+        raise SystemExit(f"publish repo allowed signers file is missing: {repo_allowed_signers_path}")
+
+    trusted_allowed_signers = repo / trusted_allowed_signers_path
+    if not trusted_allowed_signers.exists():
+        raise SystemExit(f"trusted allowed signers file is missing: {trusted_allowed_signers_path}")
+
+    if sha256_file(target_allowed_signers) == sha256_file(trusted_allowed_signers):
+        return
+
+    raise SystemExit(
+        "publish repo allowed signers file does not match the trusted signer set for this run. "
+        "Bootstrap or rotate the signer out of band before changing .publish-sync/allowed_signers."
+    )
+
+
 def main() -> int:
     args = parse_args()
     repo = Path(args.root).expanduser().resolve()
@@ -132,24 +154,39 @@ def main() -> int:
         head_ref=args.head_sha,
     )
     changed_skill_paths = sorted(set(changed_paths + deleted_paths))
-    if not changed_skill_paths:
-        print("publish-sync-guard: no managed skill content changes")
-        return 0
 
     manifest_relative = manifest_path.as_posix()
     manifest_updated = manifest_relative in all_paths
     if not manifest_updated and args.head_sha is None and (repo / manifest_path).exists():
         manifest_updated = True
-    if not manifest_updated:
-        raise SystemExit(
-            f"managed skill content changed but {manifest_relative} was not updated. "
-            "Use the local sync helper instead of editing publish-repo skill files directly."
-        )
 
     signature_relative = signature_path.as_posix()
     signature_updated = signature_relative in all_paths
     if not signature_updated and args.head_sha is None and (repo / signature_path).exists():
         signature_updated = True
+    allowed_signers_relative = ALLOWED_SIGNERS_PATH.as_posix()
+    allowed_signers_updated = allowed_signers_relative in all_paths
+
+    if allowed_signers_updated:
+        verify_allowed_signers_update(repo, ALLOWED_SIGNERS_PATH, allowed_signers_path)
+
+    if not changed_skill_paths:
+        if manifest_updated or signature_updated:
+            raise SystemExit(
+                "publish sync manifest metadata changed without any managed skill content changes. "
+                "Only update manifest.json and manifest.json.sig together with a local skill sync."
+            )
+        if allowed_signers_updated:
+            print("publish-sync-guard: verified trusted allowed_signers update")
+            return 0
+        print("publish-sync-guard: no managed skill content changes")
+        return 0
+
+    if not manifest_updated:
+        raise SystemExit(
+            f"managed skill content changed but {manifest_relative} was not updated. "
+            "Use the local sync helper instead of editing publish-repo skill files directly."
+        )
     if not signature_updated:
         raise SystemExit(
             f"managed skill content changed but {signature_relative} was not updated. "

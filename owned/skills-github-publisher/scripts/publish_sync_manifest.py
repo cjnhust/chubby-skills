@@ -88,7 +88,16 @@ def collect_changed_skill_paths(
     cmd = ["diff", "--name-status", "-M", diff_base_ref(repo, base_ref, head_ref)]
     if head_ref:
         cmd.append(head_ref)
-    cmd.extend(["--", "owned", "third-party", str(MANIFEST_PATH), str(MANIFEST_SIGNATURE_PATH)])
+    cmd.extend(
+        [
+            "--",
+            "owned",
+            "third-party",
+            str(MANIFEST_PATH),
+            str(MANIFEST_SIGNATURE_PATH),
+            str(ALLOWED_SIGNERS_PATH),
+        ]
+    )
     output = git_output(repo, *cmd)
 
     changed_paths: set[str] = set()
@@ -144,6 +153,7 @@ def collect_changed_skill_paths(
             "third-party",
             str(MANIFEST_PATH),
             str(MANIFEST_SIGNATURE_PATH),
+            str(ALLOWED_SIGNERS_PATH),
         )
         for relative_path in filter(None, untracked_output.splitlines()):
             all_paths.add(relative_path)

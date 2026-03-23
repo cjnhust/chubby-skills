@@ -56,11 +56,11 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/prepare_incremental_pr.py",
-      "sha256": "e051560c96d4ecaa9f2fb19b94d2099fad2d425992973678a02c3dd8b3e4166d"
+      "sha256": "69f50fc161a4fe41d59d41ada09533ab41623a83d664c67de36ced21fee8e119"
     },
     {
       "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
-      "sha256": "6a37756caab425b1c3738f38d9dab221882bca12d83590e92fa431d1fe7e8bd7"
+      "sha256": "0e21ad357caf00c46120700c1d34ac8a44402cd2f3d994be377ebaa4fdac4d70"
     },
     {
       "path": "owned/skills-github-publisher/scripts/push_pr_handoff.py",
@@ -76,11 +76,11 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/sync_incremental_update.py",
-      "sha256": "c5ba5c41bac5f3dfd0dffec342a63652a3ab32a217d49d90d43ff81d94ebf085"
+      "sha256": "2353c8554761803c9366e23f4744e8f6d4293d46f2376d0f7200e66babed9f6c"
     },
     {
       "path": "owned/skills-github-publisher/scripts/verify_publish_sync.py",
-      "sha256": "7689ec2b0290429e99a6e3531f675b5c4a4cfb5dd5475de73c32f3c383d67b40"
+      "sha256": "1972b56f9d935bcd7b97f3bdcf2e90f07710dda0a1aec412a7106314acfd365f"
     }
   ],
   "generator": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",

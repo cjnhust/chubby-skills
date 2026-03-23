@@ -15,7 +15,7 @@ sys.dont_write_bytecode = True
 
 from preflight_scan import LOCAL_POLICY_FILE_ENV, default_local_policy_path
 from publish_sync_manifest import resolve_signer_identity, resolve_signing_key, write_manifest
-from sync_incremental_update import load_local_config, resolve_destination_root, sync_one
+from sync_incremental_update import load_local_config, resolve_destination_root, sync_one, validate_sync_roots
 
 
 def parse_args() -> argparse.Namespace:
@@ -221,6 +221,7 @@ def main() -> int:
         raise SystemExit("publish repo working tree is not clean; commit or stash before starting a new incremental PR")
 
     src_roots = [Path(raw_path).expanduser().resolve() for raw_path in args.skill_root]
+    validate_sync_roots(src_roots, args.allow_review_required)
     dest_group_root = resolve_destination_root(args, config, src_roots)
     ensure_within_repo(dest_group_root, publish_repo)
 

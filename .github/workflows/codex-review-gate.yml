@@ -124,6 +124,8 @@ jobs:
                                     login
                                   }
                                   pullRequestReview {
+                                    id
+                                    state
                                     url
                                     commit {
                                       oid
@@ -219,22 +221,37 @@ jobs:
                 return null;
               }
 
+              const activeCurrentHeadReviewIds = new Set(
+                currentHeadReviews
+                  .filter((review) => String(review.state || "").toUpperCase() !== "DISMISSED")
+                  .map((review) => String(review.id)),
+              );
               const unresolvedThread = (await listReviewThreads(pullNumber)).find((thread) => {
                 if (thread.isResolved) {
                   return false;
                 }
                 return thread.comments.nodes.some((comment) => {
                   const login = comment.author?.login || "";
+                  const reviewId = String(comment.pullRequestReview?.id || "");
                   const reviewedCommit = comment.pullRequestReview?.commit?.oid || "";
-                  return codexActors.has(login) && reviewedCommitMatchesHead(reviewedCommit, headSha);
+                  return (
+                    codexActors.has(login) &&
+                    activeCurrentHeadReviewIds.has(reviewId) &&
+                    reviewedCommitMatchesHead(reviewedCommit, headSha)
+                  );
                 });
               });
               if (unresolvedThread) {
                 const targetUrl =
                   unresolvedThread.comments.nodes.find((comment) => {
                     const login = comment.author?.login || "";
+                    const reviewId = String(comment.pullRequestReview?.id || "");
                     const reviewedCommit = comment.pullRequestReview?.commit?.oid || "";
-                    return codexActors.has(login) && reviewedCommitMatchesHead(reviewedCommit, headSha);
+                    return (
+                      codexActors.has(login) &&
+                      activeCurrentHeadReviewIds.has(reviewId) &&
+                      reviewedCommitMatchesHead(reviewedCommit, headSha)
+                    );
                   })?.pullRequestReview?.url || `https://github.com/${repoFullName}/pull/${pullNumber}`;
                 return {
                   acceptable: false,
