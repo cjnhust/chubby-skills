@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shlex
 import subprocess
@@ -12,6 +13,7 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 
+from preflight_scan import LOCAL_POLICY_FILE_ENV, default_local_policy_path
 from publish_sync_manifest import write_manifest
 from sync_incremental_update import load_local_config, resolve_destination_root, sync_one
 
@@ -162,18 +164,47 @@ def select_start_ref(repo: Path, base: str, skip_fetch: bool, dry_run: bool) -> 
     raise SystemExit(f"base branch '{base}' is missing locally and on origin")
 
 
+def resolve_required_local_policy_file(config: dict) -> Path:
+    configured_policy = config.get("default_local_policy_file")
+    if isinstance(configured_policy, str) and configured_policy:
+        candidate = Path(configured_policy).expanduser()
+        if not candidate.exists():
+            raise SystemExit(
+                "default_local_policy_file does not exist; update local config or create "
+                f"the file first: {candidate}"
+            )
+        return candidate.resolve()
+
+    env_policy = os.environ.get(LOCAL_POLICY_FILE_ENV, "").strip()
+    if env_policy:
+        candidate = Path(env_policy).expanduser()
+        if not candidate.exists():
+            raise SystemExit(
+                f"{LOCAL_POLICY_FILE_ENV} points to a missing file; fix it before running prepare_incremental_pr: {candidate}"
+            )
+        return candidate.resolve()
+
+    default_policy = default_local_policy_path()
+    if default_policy is not None:
+        return default_policy.resolve()
+
+    raise SystemExit(
+        "prepare_incremental_pr requires a local private publish policy file for strict checks; "
+        "set default_local_policy_file in local config, set "
+        f"{LOCAL_POLICY_FILE_ENV}, or create $CODEX_HOME/private/publish-policy.json"
+    )
+
+
 def run_local_check(
     script_name: str,
     repo: Path,
-    config: dict,
+    local_policy_file: Path,
     extra_args: list[str],
     dry_run: bool,
 ) -> None:
     script_path = Path(__file__).with_name(script_name)
     cmd = ["python3", str(script_path), "--root", str(repo), *extra_args]
-    local_policy = config.get("default_local_policy_file")
-    if isinstance(local_policy, str) and local_policy:
-        cmd.extend(["--local-policy-file", local_policy])
+    cmd.extend(["--local-policy-file", str(local_policy_file)])
     if dry_run:
         print(shlex.join(cmd))
         return
@@ -232,13 +263,17 @@ def main() -> int:
     else:
         manifest_path = write_manifest(publish_repo, start_ref, Path(".publish-sync/manifest.json"))
 
+    local_policy_file = None
+    if not args.skip_git_identity or not args.skip_preflight:
+        local_policy_file = resolve_required_local_policy_file(config)
+
     if not args.skip_git_identity:
-        run_local_check("check_git_identity.py", publish_repo, config, ["--strict"], args.dry_run)
+        run_local_check("check_git_identity.py", publish_repo, local_policy_file, ["--strict"], args.dry_run)
     if not args.skip_preflight:
         run_local_check(
             "preflight_scan.py",
             publish_repo,
-            config,
+            local_policy_file,
             ["--strict", "--strict-provenance"],
             args.dry_run,
         )

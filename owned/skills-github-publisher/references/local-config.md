@@ -17,6 +17,7 @@ Keep this file outside the publish repo.
   - absolute path to the repo's `owned/` directory when incremental skill updates should land there
 - `default_local_policy_file`
   - absolute path to the local private scan policy file, usually `$CODEX_HOME/private/publish-policy.json`
+  - `prepare_incremental_pr.py` expects this or the default private policy path to exist when strict local checks are enabled
 - `default_publish_signing_key`
   - absolute path to the local private key used to sign `.publish-sync/manifest.json`
 - `default_publish_signing_identity`

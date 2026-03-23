@@ -39,9 +39,31 @@ jobs:
             exit 1
           fi
 
+      - name: Resolve manifest signer identity
+        id: signer_identity
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest_path = Path(".publish-sync/manifest.json")
+          signer_identity = "publish-sync"
+          if manifest_path.exists():
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+            raw_identity = payload.get("signer_identity")
+            if not isinstance(raw_identity, str) or not raw_identity.strip():
+              raise SystemExit("publish sync manifest signer identity is missing")
+            signer_identity = raw_identity.strip()
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            handle.write(f"signer_identity={signer_identity}\n")
+          PY
+
       - run: |
           python3 owned/skills-github-publisher/scripts/verify_publish_sync.py \
             --root . \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
             --head-sha "${{ github.event.pull_request.head.sha }}" \
-            --allowed-signers-path .publish-sync/.trusted-allowed-signers
+            --allowed-signers-path .publish-sync/.trusted-allowed-signers \
+            --signer-identity "${{ steps.signer_identity.outputs.signer_identity }}"

@@ -46,8 +46,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--signer-identity",
-        default=DEFAULT_SIGNER_IDENTITY,
-        help="Signer identity expected in the allowed signers file.",
+        help="Optional signer identity override. Defaults to the manifest signer_identity.",
     )
     return parser.parse_args()
 
@@ -159,11 +158,21 @@ def main() -> int:
 
     manifest = load_manifest(repo, manifest_path)
     manifest_signer_identity = manifest.get("signer_identity")
-    if manifest_signer_identity != args.signer_identity:
+    if not isinstance(manifest_signer_identity, str) or not manifest_signer_identity.strip():
+        raise SystemExit("publish sync manifest signer identity is missing")
+    expected_signer_identity = args.signer_identity or manifest_signer_identity
+    if manifest_signer_identity != expected_signer_identity:
         raise SystemExit(
-            f"publish sync manifest signer identity {manifest_signer_identity!r} does not match expected {args.signer_identity!r}"
+            "publish sync manifest signer identity "
+            f"{manifest_signer_identity!r} does not match expected {expected_signer_identity!r}"
         )
-    verify_manifest_signature(repo, manifest_path, signature_path, allowed_signers_path, args.signer_identity)
+    verify_manifest_signature(
+        repo,
+        manifest_path,
+        signature_path,
+        allowed_signers_path,
+        expected_signer_identity,
+    )
     manifest_files = manifest.get("files", [])
     manifest_deleted = set(manifest.get("deleted_files", []))
     manifest_roots = set(manifest.get("synchronized_skill_roots", []))
