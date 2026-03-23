@@ -148,6 +148,7 @@ jobs:
             const controller = require(scriptPath);
             const validationContext = {
               ...context,
+              repo: context.repo,
               payload: {
                 ...context.payload,
                 pull_request: {

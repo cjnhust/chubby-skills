@@ -48,15 +48,15 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
-      "sha256": "959f0644e4aa8fbb855896c67430c87ac2bef69b209b097dfa048847247378ea"
+      "sha256": "a6c2a48e4971e8de1969d276265695eceda8bcea727bf455d4ba82f3f8f832e7"
     },
     {
       "path": "owned/skills-github-publisher/scripts/codex_review_common.cjs",
-      "sha256": "bbc1b3a176e0d24e9437957ee0c9cdae967ed5c1eea058a8a91e7f0288b9efa5"
+      "sha256": "064b3f2544329dff330c1bbbee1806694effee245483bed82394c4c505b04a54"
     },
     {
       "path": "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
-      "sha256": "194faf736973b272f5a75cf5ed880a9174c89d2f6833ac2634c7d763f13b5d9f"
+      "sha256": "9479ecbfee29aaf132e9f872a1418b8d07f0592509baeef0b70923f997e7af7b"
     },
     {
       "path": "owned/skills-github-publisher/scripts/generate_export_docs.py",
