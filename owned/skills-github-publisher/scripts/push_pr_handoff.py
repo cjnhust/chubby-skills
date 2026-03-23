@@ -85,16 +85,20 @@ def branch_is_descendant(repo: Path, ancestor_ref: str, branch: str) -> bool:
 
 
 def push_command(repo: Path, branch: str) -> list[str]:
-    cmd = ["git", "-C", str(repo), "push", "-u", "origin", branch]
+    return ["git", "-C", str(repo), "push", "-u", "origin", branch]
+
+
+def force_with_lease_required(repo: Path, branch: str) -> tuple[bool, list[str] | None]:
+    cmd = push_command(repo, branch)
     if not remote_branch_exists(repo, branch):
-        return cmd
+        return False, cmd
 
     remote_ref = fetch_remote_branch_ref(repo, branch)
     if branch_is_descendant(repo, remote_ref, branch):
-        return cmd
+        return False, cmd
 
     remote_oid = git_output(repo, "rev-parse", remote_ref)
-    return [
+    return True, [
         "git",
         "-C",
         str(repo),
@@ -129,6 +133,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--draft", action="store_true", help="Create the PR as a draft when using gh.")
     parser.add_argument("--push", action="store_true", help="Run git push -u origin <branch>.")
     parser.add_argument("--create-pr", action="store_true", help="Create the PR via gh after push.")
+    parser.add_argument(
+        "--force-with-lease",
+        action="store_true",
+        help="Allow force-with-lease when the remote PR branch diverged and you intend to replace it.",
+    )
     return parser.parse_args()
 
 
@@ -164,7 +173,10 @@ def main() -> int:
     web_origin = normalize_origin_url(remote_url)
     base_branch_exists = remote_branch_exists(repo, args.base)
     bootstrap_base_push = branch == args.base and not base_branch_exists
+    requires_force_with_lease, force_with_lease_command = force_with_lease_required(repo, branch)
     effective_push_command = push_command(repo, branch)
+    if requires_force_with_lease and force_with_lease_command is not None:
+        effective_push_command = force_with_lease_command if args.force_with_lease else ["git", "-C", str(repo), "push", "-u", "origin", branch]
 
     if branch == args.base and not bootstrap_base_push:
         raise SystemExit(f"refusing PR handoff from base branch '{args.base}'; create or switch to a PR branch first")
@@ -176,6 +188,9 @@ def main() -> int:
     print(f"base: {args.base}")
     print(f"origin: {remote_url}")
     print(f"push_command: {shlex.join(effective_push_command)}")
+    if requires_force_with_lease and force_with_lease_command is not None:
+        print("push_requires_force_with_lease: true")
+        print(f"force_with_lease_command: {shlex.join(force_with_lease_command)}")
     if bootstrap_base_push:
         print("handoff_mode: bootstrap-base-push")
     if web_origin:
@@ -184,6 +199,11 @@ def main() -> int:
         print("compare_url: unavailable (non-GitHub remote or unsupported remote format)")
 
     if args.push:
+        if requires_force_with_lease and not args.force_with_lease:
+            raise SystemExit(
+                f"origin/{branch} contains commits that are not present locally; rerun with --force-with-lease only after "
+                "verifying you intend to replace the remote PR branch"
+            )
         subprocess.run(effective_push_command, check=True)
 
     if args.create_pr:

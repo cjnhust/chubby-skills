@@ -64,16 +64,10 @@ async function run({ github, context, core, trustedMaintainers }) {
   if (context.eventName === "pull_request_target" || context.eventName === "pull_request") {
     const pr = context.payload.pull_request;
     if (!pr || pr.draft || !runtime.isSameRepoPullRequest(pr)) {
-      core.info("Skipping pending gate update for draft or external PR.");
+      core.info("Skipping gate evaluation for draft or external PR.");
       return;
     }
-    await runtime.setStatus(
-      pr.head.sha,
-      "pending",
-      "Waiting for current-head Codex review",
-      pr.html_url,
-    );
-    core.info(`Set codex-review-gate=pending on ${pr.head.sha}`);
+    await evaluateGate(pr, pr.html_url);
     return;
   }
 

@@ -56,7 +56,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
-      "sha256": "0627237a448881a9a8fe3432ce8f4b9e45600cbd2e6a396004e82e1ac3ef99c3"
+      "sha256": "194faf736973b272f5a75cf5ed880a9174c89d2f6833ac2634c7d763f13b5d9f"
     },
     {
       "path": "owned/skills-github-publisher/scripts/generate_export_docs.py",
@@ -76,7 +76,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/push_pr_handoff.py",
-      "sha256": "e0d6df256542f683ae7ec52a1a77dfe3e08466cb7d5cc463f1201e5540ab26cd"
+      "sha256": "a0735bdbc39dfeb17e0e993f325092695ba804241dd7946c1d9b6225498ff87e"
     },
     {
       "path": "owned/skills-github-publisher/scripts/resolve_local_publish_config.py",
