@@ -142,45 +142,39 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
       - name: Validate publish-sync workflow wrapper invariants
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import yaml
+          ruby <<'RUBY'
+          require "yaml"
 
-          workflow_path = Path(".github/workflows/publish-sync-guard.yml")
-          workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
-          triggers = workflow.get("on", {})
-          for event_name in ("pull_request", "pull_request_target"):
-            if event_name not in triggers:
-              raise SystemExit(f"{workflow_path} must trigger on {event_name}")
+          workflow_path = ".github/workflows/publish-sync-guard.yml"
+          raw = File.read(workflow_path)
+          workflow = YAML.safe_load(raw, permitted_classes: [], aliases: true)
+          triggers = workflow["on"] || workflow[true] || {}
+          %w[pull_request pull_request_target].each do |event_name|
+            raise "#{workflow_path} must trigger on #{event_name}" unless triggers.key?(event_name)
+          end
 
-          jobs = workflow.get("jobs", {})
-          main_job = jobs.get("publish-sync-guard")
-          if not isinstance(main_job, dict):
-            raise SystemExit("publish-sync-guard job is missing")
-          if main_job.get("if") != "${{ github.event_name == 'pull_request_target' }}":
-            raise SystemExit("publish-sync-guard job must stay limited to pull_request_target")
+          jobs = workflow["jobs"] || {}
+          main_job = jobs["publish-sync-guard"]
+          raise "publish-sync-guard job is missing" unless main_job.is_a?(Hash)
+          wrapper_job = jobs["publish-sync-guard-wrapper-validation"]
+          raise "publish-sync-guard-wrapper-validation job is missing" unless wrapper_job.is_a?(Hash)
 
-          wrapper_job = jobs.get("publish-sync-guard-wrapper-validation")
-          if not isinstance(wrapper_job, dict):
-            raise SystemExit("publish-sync-guard-wrapper-validation job is missing")
-          if wrapper_job.get("if") != "${{ github.event_name == 'pull_request' }}":
-            raise SystemExit("publish-sync-guard-wrapper-validation must stay limited to pull_request")
+          expected_main_if = "${" + "{ github.event_name == 'pull_request_target' }}"
+          expected_wrapper_if = "${" + "{ github.event_name == 'pull_request' }}"
+          raise "publish-sync-guard job must stay limited to pull_request_target" unless raw.include?("publish-sync-guard:\n    if: #{expected_main_if}")
+          raise "publish-sync-guard-wrapper-validation must stay limited to pull_request" unless raw.include?("publish-sync-guard-wrapper-validation:\n    if: #{expected_wrapper_if}")
 
-          run_blocks = "\n\n".join(step.get("run", "") for step in main_job.get("steps", []) if isinstance(step, dict))
-          required_snippets = [
+          run_blocks = main_job.fetch("steps", []).filter_map { |step| step.is_a?(Hash) ? step["run"] : nil }.join("\n\n")
+          [
             "trusted/owned/skills-github-publisher/scripts/verify_publish_sync.py",
             "owned/skills-github-publisher/scripts/verify_publish_sync.py",
             "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
             "owned/skills-github-publisher/scripts/sync_incremental_update.py",
-          ]
-          for snippet in required_snippets:
-            if snippet not in run_blocks:
-              raise SystemExit(f"publish-sync-guard wrapper is missing required path: {snippet}")
+          ].each do |snippet|
+            raise "publish-sync-guard wrapper is missing required path: #{snippet}" unless run_blocks.include?(snippet)
+          end
 
-          print(f"wrapper_ok {workflow_path}")
-          PY
+          puts "wrapper_ok #{workflow_path}"
+          RUBY

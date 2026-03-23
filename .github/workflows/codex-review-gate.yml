@@ -142,56 +142,46 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
       - name: Validate review gate workflow wrapper invariants
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import subprocess
-          import tempfile
-          import yaml
+          ruby <<'RUBY'
+          require "yaml"
+          require "tempfile"
 
-          workflow_path = Path(".github/workflows/codex-review-gate.yml")
-          workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
-          triggers = workflow.get("on", {})
-          for event_name in ("pull_request", "pull_request_target", "pull_request_review"):
-            if event_name not in triggers:
-              raise SystemExit(f"{workflow_path} must trigger on {event_name}")
+          workflow_path = ".github/workflows/codex-review-gate.yml"
+          raw = File.read(workflow_path)
+          workflow = YAML.safe_load(raw, permitted_classes: [], aliases: true)
+          triggers = workflow["on"] || workflow[true] || {}
+          %w[pull_request pull_request_target pull_request_review].each do |event_name|
+            raise "#{workflow_path} must trigger on #{event_name}" unless triggers.key?(event_name)
+          end
 
-          jobs = workflow.get("jobs", {})
-          controller_job = jobs.get("codex-review-gate-controller")
-          if not isinstance(controller_job, dict):
-            raise SystemExit("codex-review-gate-controller job is missing")
-          if controller_job.get("if") != "${{ github.event_name != 'pull_request' }}":
-            raise SystemExit("codex-review-gate-controller must not run on pull_request")
+          jobs = workflow["jobs"] || {}
+          controller_job = jobs["codex-review-gate-controller"]
+          raise "codex-review-gate-controller job is missing" unless controller_job.is_a?(Hash)
+          wrapper_job = jobs["codex-review-gate-wrapper-validation"]
+          raise "codex-review-gate-wrapper-validation job is missing" unless wrapper_job.is_a?(Hash)
 
-          wrapper_job = jobs.get("codex-review-gate-wrapper-validation")
-          if not isinstance(wrapper_job, dict):
-            raise SystemExit("codex-review-gate-wrapper-validation job is missing")
-          if wrapper_job.get("if") != "${{ github.event_name == 'pull_request' }}":
-            raise SystemExit("codex-review-gate-wrapper-validation must stay limited to pull_request")
+          expected_controller_if = "${" + "{ github.event_name != 'pull_request' }}"
+          expected_wrapper_if = "${" + "{ github.event_name == 'pull_request' }}"
+          raise "codex-review-gate-controller must not run on pull_request" unless raw.include?("codex-review-gate-controller:\n    if: #{expected_controller_if}")
+          raise "codex-review-gate-wrapper-validation must stay limited to pull_request" unless raw.include?("codex-review-gate-wrapper-validation:\n    if: #{expected_wrapper_if}")
 
-          script = controller_job["steps"][-1]["with"]["script"]
-          required_snippets = [
+          script = controller_job.fetch("steps").last.fetch("with").fetch("script")
+          [
             "codex_review_gate_controller.cjs",
             "codex_review_common.cjs",
             "pullRequestTouchesAnyFile",
             "publishSyncGuardPassed",
-          ]
-          for snippet in required_snippets:
-            if snippet not in script:
-              raise SystemExit(f"review gate wrapper is missing required snippet: {snippet}")
+          ].each do |snippet|
+            raise "review gate wrapper is missing required snippet: #{snippet}" unless script.include?(snippet)
+          end
 
-          wrapped = "async function __wrapper(){\n" + script + "\n}\n"
-          with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as handle:
-            handle.write(wrapped)
-            temp_path = handle.name
-          try:
-            subprocess.run(["node", "--check", temp_path], check=True)
-          finally:
-            Path(temp_path).unlink(missing_ok=True)
+          Tempfile.create(["codex-review-gate", ".js"]) do |handle|
+            handle.write("async function __wrapper(){\n#{script}\n}\n")
+            handle.flush
+            raise "review gate wrapper javascript is invalid" unless system("node", "--check", handle.path)
+          end
 
-          print(f"wrapper_ok {workflow_path}")
-          PY
+          puts "wrapper_ok #{workflow_path}"
+          RUBY
