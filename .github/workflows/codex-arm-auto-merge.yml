@@ -100,7 +100,7 @@ jobs:
                                     login
                                   }
                                   pullRequestReview {
-                                    id
+                                    databaseId
                                     state
                                     commit {
                                       oid
@@ -207,7 +207,7 @@ jobs:
                 }
                 return thread.comments.nodes.some((comment) => {
                   const login = comment.author?.login || "";
-                  const reviewId = String(comment.pullRequestReview?.id || "");
+                  const reviewId = String(comment.pullRequestReview?.databaseId || "");
                   const reviewedCommit = comment.pullRequestReview?.commit?.oid || "";
                   return (
                     codexActors.has(login) &&

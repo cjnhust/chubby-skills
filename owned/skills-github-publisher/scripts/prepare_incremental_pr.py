@@ -120,14 +120,17 @@ def resolve_publish_repo(args: argparse.Namespace, config: dict) -> Path:
     if args.publish_repo:
         return Path(args.publish_repo).expanduser().resolve()
 
-    publish_repo = config.get("default_publish_repo")
-    if isinstance(publish_repo, str) and publish_repo:
-        return Path(publish_repo).expanduser().resolve()
-
     if args.owned_root:
         owned_root = Path(args.owned_root).expanduser().resolve()
         if owned_root.name in {"owned", "third-party"}:
             return owned_root.parent
+        raise SystemExit(
+            f"--owned-root must point to an owned/ or third-party/ directory: {owned_root}"
+        )
+
+    publish_repo = config.get("default_publish_repo")
+    if isinstance(publish_repo, str) and publish_repo:
+        return Path(publish_repo).expanduser().resolve()
 
     raise SystemExit("publish repo is not configured; pass --publish-repo or set default_publish_repo in local config")
 

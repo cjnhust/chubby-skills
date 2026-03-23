@@ -56,7 +56,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/prepare_incremental_pr.py",
-      "sha256": "69f50fc161a4fe41d59d41ada09533ab41623a83d664c67de36ced21fee8e119"
+      "sha256": "8c55df0782563594ba85aad3575d75d4054630bece689a5a37b63dd729ae6663"
     },
     {
       "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
