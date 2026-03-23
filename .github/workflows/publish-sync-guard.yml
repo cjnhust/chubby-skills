@@ -34,6 +34,8 @@ jobs:
             git show "${BASE_SHA}:.publish-sync/allowed_signers" > "$trusted_signers_path"
           elif [ -n "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" ]; then
             printf '%s' "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" | base64 --decode > "$trusted_signers_path"
+          elif [ -f .publish-sync/allowed_signers ]; then
+            cp .publish-sync/allowed_signers "$trusted_signers_path"
           else
             echo "Missing trusted allowed signers in the base branch and PUBLISH_SYNC_ALLOWED_SIGNERS_B64 is unset." >&2
             exit 1
