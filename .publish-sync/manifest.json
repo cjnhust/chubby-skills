@@ -3,101 +3,124 @@
   "deleted_files": [],
   "files": [
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/SKILL.md",
       "sha256": "cc5c1df58c6f4963b8b25d0928834471d024286731384205362129f5377abcfb"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/agents/openai.yaml",
       "sha256": "3670f00291e10fc3d11bb60f9b9f754b5ad9bef56a44c12e6a618370783cb096"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/classification-and-structure.md",
       "sha256": "887c03387c3687bca7ad09324ba9733b5f0d388aac7476aa00867939c2ed46bd"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/codex-github-browser-troubleshooting.md",
       "sha256": "e1e47c7a5b5b92fff6ac632fd16157bea37abac9e8b9c5b804c2734155c5c186"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/codex-github-maintenance.md",
       "sha256": "1aa63d1102e6198caaa07c1976aeabfa5a3e4fb118344a5d84b74dd92145cf99"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/codex-github-smoke-test.md",
       "sha256": "3cf2f463c15d7245f6e8f7701d274ef2f84a05a120328007d53d61072e9af915"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/local-config.md",
       "sha256": "034175651306e5d047bd6e3df31fb965fe57d9ee50f6025c2eac08cf936687dc"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/path-and-ignore-rules.md",
       "sha256": "e4c5b245387d3d33760a77fe0138b59fb06ace3493d63a34d9bf107f1759f233"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/repo-docs-and-attribution.md",
       "sha256": "7e8b9ed20e2044cd37070224714bc8a7785537c816d10467c2a9ebc01e596908"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/security-baseline.md",
       "sha256": "bc27dffcede63b956a379570aaafe51494711208e2f9c5226ae2c6ba7934182c"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/check_git_identity.py",
       "sha256": "230fa7ac9a63ca36003378764e6548e475a9116584b022474c6f76bd8a21e567"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
       "sha256": "a6c2a48e4971e8de1969d276265695eceda8bcea727bf455d4ba82f3f8f832e7"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/codex_review_common.cjs",
       "sha256": "064b3f2544329dff330c1bbbee1806694effee245483bed82394c4c505b04a54"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
       "sha256": "9479ecbfee29aaf132e9f872a1418b8d07f0592509baeef0b70923f997e7af7b"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/generate_export_docs.py",
       "sha256": "5252d07c397a8c69858cca867d2e107937e22cb7997a429f1073dc8a61831a59"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/preflight_scan.py",
       "sha256": "13596e0b4a7aca6d6b98ffd0846c135d26da1543c02bb37cf5f6e6413178f9f4"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/prepare_incremental_pr.py",
       "sha256": "9111da3f06d6f811301fdb48297d978c94a0257f67b1cfed785f271458d13e93"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
-      "sha256": "d3d6bcb16d096f0d7e2856106e3623c789eb19aba8fa7c25be4b570af035d37a"
+      "sha256": "3f45b7ee06ea9f4a88a373522d7938ec9f122476ca136653a9129866ee41fdea"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/push_pr_handoff.py",
       "sha256": "a0735bdbc39dfeb17e0e993f325092695ba804241dd7946c1d9b6225498ff87e"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/resolve_local_publish_config.py",
       "sha256": "b0b967d4f3c2580f20c1848625c15910e09870085eadf95dacbdc91b557631ad"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/safe_py_compile.py",
       "sha256": "eb8a6b989baa09f916de7e032ae5a37d099d1f32e003d6ebc37a2f40bc853e67"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/sync_incremental_update.py",
       "sha256": "2353c8554761803c9366e23f4744e8f6d4293d46f2376d0f7200e66babed9f6c"
     },
     {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/verify_publish_sync.py",
-      "sha256": "3c762f64152c372ced5377c5ea6a90a001023295c5c98305422a064d9c3936b0"
+      "sha256": "421db0bf19cca767c3250694761e9e15de703acceffc1a109e83636b50c04267"
     }
   ],
   "generator": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
   "mode": "local-sync-only",
-  "schema_version": 1,
+  "schema_version": 2,
   "signer_identity": "publish-sync",
   "synchronized_skill_roots": [
     "owned/skills-github-publisher"

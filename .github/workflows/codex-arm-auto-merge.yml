@@ -135,16 +135,22 @@ jobs:
 
           puts "wrapper_ok #{workflow_path}"
           RUBY
-      - name: Dry-run PR auto-merge controller
+      - name: Exercise PR auto-merge wrapper
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require("fs");
             const path = require("path");
-            const scriptPath = path.join(
+            const controllerPath = path.join(
               process.env.GITHUB_WORKSPACE,
               "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
             );
-            const controller = require(scriptPath);
+            if (!fs.existsSync(controllerPath)) {
+              core.setFailed(`PR auto-merge controller is missing: ${controllerPath}`);
+              return;
+            }
+            core.info(`Exercising PR auto-merge wrapper with ${controllerPath}`);
+            const controller = require(controllerPath);
             const validationContext = {
               ...context,
               repo: context.repo,

@@ -18,6 +18,7 @@ from publish_sync_manifest import (
     MANIFEST_SIGNATURE_PATH,
     SIGNING_NAMESPACE,
     collect_changed_skill_paths,
+    git_file_mode,
     path_from_text,
     sha256_file,
     skill_root_for_relative_path,
@@ -222,11 +223,19 @@ def main() -> int:
     manifest_files = manifest.get("files", [])
     manifest_deleted = set(manifest.get("deleted_files", []))
     manifest_roots = set(manifest.get("synchronized_skill_roots", []))
-    file_hashes = {
-        item.get("path"): item.get("sha256")
-        for item in manifest_files
-        if isinstance(item, dict) and isinstance(item.get("path"), str) and isinstance(item.get("sha256"), str)
-    }
+    file_metadata = {}
+    for item in manifest_files:
+        if not isinstance(item, dict):
+            continue
+        path = item.get("path")
+        content_hash = item.get("sha256")
+        git_mode = item.get("git_mode")
+        if not isinstance(path, str) or not isinstance(content_hash, str):
+            continue
+        file_metadata[path] = {
+            "sha256": content_hash,
+            "git_mode": git_mode if isinstance(git_mode, str) else None,
+        }
 
     changed_roots = {skill_root_for_relative_path(path) for path in changed_skill_paths}
     changed_roots.discard(None)
@@ -244,8 +253,8 @@ def main() -> int:
             )
 
     for relative_path in changed_paths:
-        expected_hash = file_hashes.get(relative_path)
-        if expected_hash is None:
+        expected_entry = file_metadata.get(relative_path)
+        if expected_entry is None:
             raise SystemExit(
                 f"changed managed file {relative_path} is missing from publish sync manifest"
             )
@@ -254,10 +263,23 @@ def main() -> int:
         if not absolute_path.exists():
             raise SystemExit(f"changed managed file is missing from HEAD: {relative_path}")
 
+        expected_mode = expected_entry.get("git_mode")
+        if not isinstance(expected_mode, str):
+            raise SystemExit(
+                f"changed managed file {relative_path} is missing git_mode metadata in publish sync manifest"
+            )
+
         actual_hash = sha256_file(absolute_path)
+        actual_mode = git_file_mode(absolute_path)
+        expected_hash = expected_entry["sha256"]
         if actual_hash != expected_hash:
             raise SystemExit(
                 f"publish sync manifest hash mismatch for {relative_path}. "
+                "Rerun the local sync helper instead of editing the publish repo directly."
+            )
+        if actual_mode != expected_mode:
+            raise SystemExit(
+                f"publish sync manifest metadata mismatch for {relative_path}. "
                 "Rerun the local sync helper instead of editing the publish repo directly."
             )
 

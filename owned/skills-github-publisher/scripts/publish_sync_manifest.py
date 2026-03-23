@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import stat
 import subprocess
 import sys
 from fnmatch import fnmatch
@@ -194,6 +195,15 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def git_file_mode(path: Path) -> str:
+    metadata = path.lstat()
+    if stat.S_ISLNK(metadata.st_mode):
+        raise SystemExit(f"publish sync manifest does not allow symlinks: {path}")
+    if not stat.S_ISREG(metadata.st_mode):
+        raise SystemExit(f"publish sync manifest only supports regular files: {path}")
+    return "100755" if (metadata.st_mode & 0o111) else "100644"
+
+
 def manifest_excludes_path(relative_to_skill_root: Path) -> bool:
     parts = relative_to_skill_root.parts
     if any(part in REVIEW_REQUIRED_BOUNDARIES or part.startswith("danger-") for part in parts):
@@ -221,7 +231,7 @@ def collect_skill_files(repo: Path, skill_root: str) -> list[dict[str, str]]:
         return []
 
     entries: list[dict[str, str]] = []
-    for path in sorted(candidate for candidate in root.rglob("*") if candidate.is_file()):
+    for path in sorted(candidate for candidate in root.rglob("*") if not candidate.is_dir()):
         relative_to_skill_root = path.relative_to(root)
         if manifest_excludes_path(relative_to_skill_root):
             continue
@@ -230,6 +240,7 @@ def collect_skill_files(repo: Path, skill_root: str) -> list[dict[str, str]]:
             {
                 "path": relative_path,
                 "sha256": sha256_file(path),
+                "git_mode": git_file_mode(path),
             }
         )
     return entries
@@ -247,7 +258,7 @@ def build_manifest(
         files.extend(collect_skill_files(repo, skill_root))
 
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "generator": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
         "mode": "local-sync-only",
         "base_ref": base_ref,
