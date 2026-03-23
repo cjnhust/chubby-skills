@@ -241,6 +241,12 @@ def main() -> int:
     branch = resolve_branch_name(args, src_roots)
     start_ref = select_start_ref(publish_repo, args.base, args.skip_fetch, args.dry_run)
     local_branch_ref = f"refs/heads/{branch}"
+    target_remote_branch_exists = remote_branch_exists(publish_repo, branch)
+
+    if target_remote_branch_exists and not args.reuse_branch:
+        raise SystemExit(
+            f"origin/{branch} already exists; pass --reuse-branch to continue on it or choose a new branch name"
+        )
 
     if git_ref_exists(publish_repo, local_branch_ref):
         if not args.reuse_branch:

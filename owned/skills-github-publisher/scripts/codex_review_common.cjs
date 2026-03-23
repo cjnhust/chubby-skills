@@ -198,6 +198,16 @@ function buildRuntime({ github, context, core, trustedMaintainers, gateContext }
       return null;
     }
 
+    const latestCurrentHeadReview = currentHeadReviews[0];
+    const latestCurrentHeadReviewState = String(latestCurrentHeadReview.state || "").toUpperCase();
+    if (latestCurrentHeadReviewState === "DISMISSED") {
+      return {
+        acceptable: false,
+        description: "Latest current-head Codex review was dismissed; rerun review on the current head",
+        targetUrl: latestCurrentHeadReview.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
+      };
+    }
+
     const activeCurrentHeadReviewIds = new Set(
       currentHeadReviews
         .filter((review) => String(review.state || "").toUpperCase() !== "DISMISSED")

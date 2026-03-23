@@ -52,7 +52,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/codex_review_common.cjs",
-      "sha256": "60f8a6989f3224fbf2e7e4fdee849780bb1463aeddc34fc1520991fbade89d87"
+      "sha256": "bbc1b3a176e0d24e9437957ee0c9cdae967ed5c1eea058a8a91e7f0288b9efa5"
     },
     {
       "path": "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
@@ -68,7 +68,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/prepare_incremental_pr.py",
-      "sha256": "8c55df0782563594ba85aad3575d75d4054630bece689a5a37b63dd729ae6663"
+      "sha256": "9111da3f06d6f811301fdb48297d978c94a0257f67b1cfed785f271458d13e93"
     },
     {
       "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
