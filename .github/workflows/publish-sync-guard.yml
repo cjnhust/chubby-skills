@@ -30,13 +30,25 @@ jobs:
           PUBLISH_SYNC_ALLOWED_SIGNERS_B64: ${{ vars.PUBLISH_SYNC_ALLOWED_SIGNERS_B64 }}
         run: |
           trusted_signers_path=".publish-sync/.trusted-allowed-signers"
+          repo_variable_signers_path=".publish-sync/.repo-variable-allowed-signers"
+          base_signers_path=".publish-sync/.base-allowed-signers"
+          pr_signers_path=".publish-sync/allowed_signers"
           mkdir -p "$(dirname "$trusted_signers_path")"
           if [ -n "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" ]; then
-            printf '%s' "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" | base64 --decode > "$trusted_signers_path"
-          elif git cat-file -e "${BASE_SHA}:.publish-sync/allowed_signers" 2>/dev/null; then
-            git show "${BASE_SHA}:.publish-sync/allowed_signers" > "$trusted_signers_path"
-          elif [ -f .publish-sync/allowed_signers ]; then
-            cp .publish-sync/allowed_signers "$trusted_signers_path"
+            printf '%s' "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" | base64 --decode > "$repo_variable_signers_path"
+          fi
+          if git cat-file -e "${BASE_SHA}:.publish-sync/allowed_signers" 2>/dev/null; then
+            git show "${BASE_SHA}:.publish-sync/allowed_signers" > "$base_signers_path"
+          fi
+
+          if [ -f "$repo_variable_signers_path" ] && [ -f "$pr_signers_path" ] && cmp -s "$repo_variable_signers_path" "$pr_signers_path"; then
+            cp "$repo_variable_signers_path" "$trusted_signers_path"
+          elif [ -f "$base_signers_path" ]; then
+            cp "$base_signers_path" "$trusted_signers_path"
+          elif [ -f "$repo_variable_signers_path" ]; then
+            cp "$repo_variable_signers_path" "$trusted_signers_path"
+          elif [ -f "$pr_signers_path" ]; then
+            cp "$pr_signers_path" "$trusted_signers_path"
           else
             echo "Missing trusted allowed signers in the base branch and PUBLISH_SYNC_ALLOWED_SIGNERS_B64 is unset." >&2
             exit 1

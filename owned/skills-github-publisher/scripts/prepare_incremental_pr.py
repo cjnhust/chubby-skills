@@ -224,6 +224,10 @@ def main() -> int:
     dest_group_root = resolve_destination_root(args, config, src_roots)
     ensure_within_repo(dest_group_root, publish_repo)
 
+    local_policy_file = None
+    if not args.skip_git_identity or not args.skip_preflight:
+        local_policy_file = resolve_required_local_policy_file(config)
+
     branch = resolve_branch_name(args, src_roots)
     start_ref = select_start_ref(publish_repo, args.base, args.skip_fetch, args.dry_run)
     local_branch_ref = f"refs/heads/{branch}"
@@ -263,10 +267,6 @@ def main() -> int:
     else:
         manifest_path = write_manifest(publish_repo, start_ref, Path(".publish-sync/manifest.json"))
 
-    local_policy_file = None
-    if not args.skip_git_identity or not args.skip_preflight:
-        local_policy_file = resolve_required_local_policy_file(config)
-
     if not args.skip_git_identity:
         run_local_check("check_git_identity.py", publish_repo, local_policy_file, ["--strict"], args.dry_run)
     if not args.skip_preflight:
@@ -296,9 +296,10 @@ def main() -> int:
     print("next_steps:")
     print(f"1. Review the diff in {publish_repo}")
     print("2. Commit the intended changes on the PR branch")
+    quoted_publish_repo = shlex.quote(str(publish_repo))
     print(
-        "3. Run `python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --base "
-        f"{args.base}` to inspect the push and PR handoff"
+        "3. Run `python3 owned/skills-github-publisher/scripts/push_pr_handoff.py "
+        f"--root {quoted_publish_repo} --base {args.base}` to inspect the push and PR handoff"
     )
     return 0
 
