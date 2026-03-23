@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--allowed-signers-path",
         default=str(ALLOWED_SIGNERS_PATH),
-        help="Allowed signers file used to verify the signed manifest.",
+        help="Trusted allowed signers file used to verify the signed manifest.",
     )
     parser.add_argument(
         "--signer-identity",
@@ -144,7 +144,8 @@ def main() -> int:
     repo = Path(args.root).expanduser().resolve()
     manifest_path = Path(args.manifest_path)
     signature_path = Path(args.signature_path)
-    allowed_signers_path = Path(args.allowed_signers_path)
+    trusted_allowed_signers_path = Path(args.allowed_signers_path)
+    repo_allowed_signers_path = ALLOWED_SIGNERS_PATH
     if not (repo / ".git").exists():
         raise SystemExit(f"not a git repo: {repo}")
 
@@ -152,6 +153,9 @@ def main() -> int:
         repo,
         args.base_sha,
         head_ref=args.head_sha,
+        manifest_path=manifest_path,
+        signature_path=signature_path,
+        repo_allowed_signers_path=repo_allowed_signers_path,
     )
     changed_skill_paths = sorted(set(changed_paths + deleted_paths))
 
@@ -164,11 +168,16 @@ def main() -> int:
     signature_updated = signature_relative in all_paths
     if not signature_updated and args.head_sha is None and (repo / signature_path).exists():
         signature_updated = True
-    allowed_signers_relative = ALLOWED_SIGNERS_PATH.as_posix()
+    allowed_signers_relative = repo_allowed_signers_path.as_posix()
     allowed_signers_updated = allowed_signers_relative in all_paths
 
     if allowed_signers_updated:
-        verify_allowed_signers_update(repo, ALLOWED_SIGNERS_PATH, allowed_signers_path)
+        if trusted_allowed_signers_path.as_posix() == repo_allowed_signers_path.as_posix():
+            raise SystemExit(
+                "publish repo allowed_signers changed but verification still points at the PR copy. "
+                "Pass --allowed-signers-path to a trusted baseline file for signer rotations."
+            )
+        verify_allowed_signers_update(repo, repo_allowed_signers_path, trusted_allowed_signers_path)
 
     if not changed_skill_paths:
         if manifest_updated or signature_updated:
@@ -207,7 +216,7 @@ def main() -> int:
         repo,
         manifest_path,
         signature_path,
-        allowed_signers_path,
+        trusted_allowed_signers_path,
         expected_signer_identity,
     )
     manifest_files = manifest.get("files", [])

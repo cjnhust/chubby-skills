@@ -84,6 +84,9 @@ def collect_changed_skill_paths(
     repo: Path,
     base_ref: str,
     head_ref: str | None = None,
+    manifest_path: Path = MANIFEST_PATH,
+    signature_path: Path = MANIFEST_SIGNATURE_PATH,
+    repo_allowed_signers_path: Path = ALLOWED_SIGNERS_PATH,
 ) -> tuple[list[str], list[str], list[str]]:
     cmd = ["diff", "--name-status", "-M", diff_base_ref(repo, base_ref, head_ref)]
     if head_ref:
@@ -93,9 +96,9 @@ def collect_changed_skill_paths(
             "--",
             "owned",
             "third-party",
-            str(MANIFEST_PATH),
-            str(MANIFEST_SIGNATURE_PATH),
-            str(ALLOWED_SIGNERS_PATH),
+            str(manifest_path),
+            str(signature_path),
+            str(repo_allowed_signers_path),
         ]
     )
     output = git_output(repo, *cmd)
@@ -151,9 +154,9 @@ def collect_changed_skill_paths(
             "--",
             "owned",
             "third-party",
-            str(MANIFEST_PATH),
-            str(MANIFEST_SIGNATURE_PATH),
-            str(ALLOWED_SIGNERS_PATH),
+            str(manifest_path),
+            str(signature_path),
+            str(repo_allowed_signers_path),
         )
         for relative_path in filter(None, untracked_output.splitlines()):
             all_paths.add(relative_path)
@@ -163,8 +166,22 @@ def collect_changed_skill_paths(
     return sorted(changed_paths), sorted(deleted_paths), sorted(all_paths)
 
 
-def changed_skill_roots(repo: Path, base_ref: str, head_ref: str | None = None) -> list[str]:
-    changed_paths, deleted_paths, _ = collect_changed_skill_paths(repo, base_ref, head_ref=head_ref)
+def changed_skill_roots(
+    repo: Path,
+    base_ref: str,
+    head_ref: str | None = None,
+    manifest_path: Path = MANIFEST_PATH,
+    signature_path: Path = MANIFEST_SIGNATURE_PATH,
+    repo_allowed_signers_path: Path = ALLOWED_SIGNERS_PATH,
+) -> list[str]:
+    changed_paths, deleted_paths, _ = collect_changed_skill_paths(
+        repo,
+        base_ref,
+        head_ref=head_ref,
+        manifest_path=manifest_path,
+        signature_path=signature_path,
+        repo_allowed_signers_path=repo_allowed_signers_path,
+    )
     roots = {skill_root_for_relative_path(path) for path in [*changed_paths, *deleted_paths]}
     return sorted(root for root in roots if root)
 
@@ -310,12 +327,24 @@ def write_manifest(
     signing_key: Path | None = None,
     signer_identity: str | None = None,
 ) -> Path | None:
-    changed_paths, deleted_paths, _ = collect_changed_skill_paths(repo, base_ref)
-    skill_roots = changed_skill_roots(repo, base_ref)
+    effective_signature_path = signature_path or MANIFEST_SIGNATURE_PATH
+    changed_paths, deleted_paths, _ = collect_changed_skill_paths(
+        repo,
+        base_ref,
+        manifest_path=manifest_path,
+        signature_path=effective_signature_path,
+        repo_allowed_signers_path=ALLOWED_SIGNERS_PATH,
+    )
+    skill_roots = changed_skill_roots(
+        repo,
+        base_ref,
+        manifest_path=manifest_path,
+        signature_path=effective_signature_path,
+        repo_allowed_signers_path=ALLOWED_SIGNERS_PATH,
+    )
     if not changed_paths and not deleted_paths and not skill_roots:
         return None
 
-    effective_signature_path = signature_path or MANIFEST_SIGNATURE_PATH
     effective_signing_key = signing_key or resolve_signing_key(None)
     effective_signer_identity = resolve_signer_identity(signer_identity)
 

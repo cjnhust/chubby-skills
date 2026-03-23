@@ -68,11 +68,9 @@ jobs:
             cp "$base_signers_path" "$trusted_signers_path"
           elif [ -f "$repo_variable_signers_path" ]; then
             cp "$repo_variable_signers_path" "$trusted_signers_path"
-          elif [ -f "$pr_signers_path" ] && [ "${PR_HEAD_REPO_FULL_NAME}" = "${REPO_FULL_NAME}" ]; then
-            cp "$pr_signers_path" "$trusted_signers_path"
           else
             echo "Missing trusted allowed signers in the base branch and PUBLISH_SYNC_ALLOWED_SIGNERS_B64 is unset." >&2
-            echo "Bootstrap from the PR head is only allowed for same-repo PRs." >&2
+            echo "Preseed PUBLISH_SYNC_ALLOWED_SIGNERS_B64 or merge a trusted base-branch signer set before enabling publish-sync-guard bootstrap." >&2
             exit 1
           fi
 
