@@ -124,7 +124,7 @@ jobs:
                                     login
                                   }
                                   pullRequestReview {
-                                    databaseId
+                                    fullDatabaseId
                                     state
                                     url
                                     commit {
@@ -232,7 +232,7 @@ jobs:
                 }
                 return thread.comments.nodes.some((comment) => {
                   const login = comment.author?.login || "";
-                  const reviewId = String(comment.pullRequestReview?.databaseId || "");
+                  const reviewId = String(comment.pullRequestReview?.fullDatabaseId || "");
                   const reviewedCommit = comment.pullRequestReview?.commit?.oid || "";
                   return (
                     codexActors.has(login) &&
@@ -245,7 +245,7 @@ jobs:
                 const targetUrl =
                   unresolvedThread.comments.nodes.find((comment) => {
                     const login = comment.author?.login || "";
-                    const reviewId = String(comment.pullRequestReview?.databaseId || "");
+                    const reviewId = String(comment.pullRequestReview?.fullDatabaseId || "");
                     const reviewedCommit = comment.pullRequestReview?.commit?.oid || "";
                     return (
                       codexActors.has(login) &&
