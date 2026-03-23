@@ -68,7 +68,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/prepare_incremental_pr.py",
-      "sha256": "a48e1144a213b1deacbba2db6a307289ff29798eadc6547de8a0d59e2bbf7db7"
+      "sha256": "9111da3f06d6f811301fdb48297d978c94a0257f67b1cfed785f271458d13e93"
     },
     {
       "path": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
@@ -76,7 +76,7 @@
     },
     {
       "path": "owned/skills-github-publisher/scripts/push_pr_handoff.py",
-      "sha256": "42d60f789edd8880d665ade0364db1143f2cc792f66b893cac6224e5e31c1a6f"
+      "sha256": "e0d6df256542f683ae7ec52a1a77dfe3e08466cb7d5cc463f1201e5540ab26cd"
     },
     {
       "path": "owned/skills-github-publisher/scripts/resolve_local_publish_config.py",

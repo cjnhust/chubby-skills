@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import shlex
 import shutil
 import subprocess
 import sys
@@ -53,6 +54,56 @@ def remote_branch_exists(repo: Path, branch: str) -> bool:
     if result.returncode == 2:
         return False
     raise SystemExit(f"could not verify whether origin/{branch} exists; check remote connectivity and authentication first")
+
+
+def fetch_remote_branch_ref(repo: Path, branch: str) -> str:
+    subprocess.run(["git", "-C", str(repo), "fetch", "--no-tags", "origin", branch], check=True)
+    remote_ref = f"refs/remotes/origin/{branch}"
+    result = subprocess.run(
+        ["git", "-C", str(repo), "show-ref", "--verify", "--quiet", remote_ref],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise SystemExit(f"origin/{branch} exists but could not be fetched into the local remote-tracking refs")
+    return f"origin/{branch}"
+
+
+def branch_is_descendant(repo: Path, ancestor_ref: str, branch: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(repo), "merge-base", "--is-ancestor", ancestor_ref, branch],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
+    raise SystemExit(f"could not compare {branch} against {ancestor_ref}")
+
+
+def push_command(repo: Path, branch: str) -> list[str]:
+    cmd = ["git", "-C", str(repo), "push", "-u", "origin", branch]
+    if not remote_branch_exists(repo, branch):
+        return cmd
+
+    remote_ref = fetch_remote_branch_ref(repo, branch)
+    if branch_is_descendant(repo, remote_ref, branch):
+        return cmd
+
+    remote_oid = git_output(repo, "rev-parse", remote_ref)
+    return [
+        "git",
+        "-C",
+        str(repo),
+        "push",
+        f"--force-with-lease=refs/heads/{branch}:{remote_oid}",
+        "-u",
+        "origin",
+        branch,
+    ]
 
 
 def resolve_gh() -> str | None:
@@ -113,6 +164,7 @@ def main() -> int:
     web_origin = normalize_origin_url(remote_url)
     base_branch_exists = remote_branch_exists(repo, args.base)
     bootstrap_base_push = branch == args.base and not base_branch_exists
+    effective_push_command = push_command(repo, branch)
 
     if branch == args.base and not bootstrap_base_push:
         raise SystemExit(f"refusing PR handoff from base branch '{args.base}'; create or switch to a PR branch first")
@@ -123,7 +175,7 @@ def main() -> int:
     print(f"branch: {branch}")
     print(f"base: {args.base}")
     print(f"origin: {remote_url}")
-    print(f"push_command: git -C {repo} push -u origin {branch}")
+    print(f"push_command: {shlex.join(effective_push_command)}")
     if bootstrap_base_push:
         print("handoff_mode: bootstrap-base-push")
     if web_origin:
@@ -132,7 +184,7 @@ def main() -> int:
         print("compare_url: unavailable (non-GitHub remote or unsupported remote format)")
 
     if args.push:
-        subprocess.run(["git", "-C", str(repo), "push", "-u", "origin", branch], check=True)
+        subprocess.run(effective_push_command, check=True)
 
     if args.create_pr:
         gh = resolve_gh()

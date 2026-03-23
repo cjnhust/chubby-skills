@@ -116,29 +116,6 @@ def remote_branch_exists(repo: Path, branch: str) -> bool:
     raise SystemExit(f"could not verify whether origin/{branch} exists; check remote connectivity and authentication first")
 
 
-def ensure_remote_branch_ref(
-    repo: Path,
-    branch: str,
-    *,
-    skip_fetch: bool,
-    dry_run: bool,
-) -> str:
-    remote_branch_ref = f"refs/remotes/origin/{branch}"
-    if git_ref_exists(repo, remote_branch_ref):
-        return f"origin/{branch}"
-
-    if skip_fetch:
-        raise SystemExit(
-            f"origin/{branch} exists but is not available locally; rerun without --skip-fetch before using --reuse-branch"
-        )
-
-    git_run(repo, "fetch", "--prune", "origin", branch, dry_run=dry_run)
-    if git_ref_exists(repo, remote_branch_ref):
-        return f"origin/{branch}"
-
-    raise SystemExit(f"origin/{branch} exists but could not be fetched into the local remote-tracking refs")
-
-
 def resolve_publish_repo(args: argparse.Namespace, config: dict) -> Path:
     if args.publish_repo:
         return Path(args.publish_repo).expanduser().resolve()
@@ -271,23 +248,14 @@ def main() -> int:
             f"origin/{branch} already exists; pass --reuse-branch to continue on it or choose a new branch name"
         )
 
-    branch_start_ref = start_ref
-    if target_remote_branch_exists and args.reuse_branch:
-        branch_start_ref = ensure_remote_branch_ref(
-            publish_repo,
-            branch,
-            skip_fetch=args.skip_fetch,
-            dry_run=args.dry_run,
-        )
-
     if git_ref_exists(publish_repo, local_branch_ref):
         if not args.reuse_branch:
             raise SystemExit(
                 f"branch '{branch}' already exists; pass --reuse-branch to continue on it or choose a new branch name"
             )
-        git_run(publish_repo, "switch", "-C", branch, branch_start_ref, dry_run=args.dry_run)
+        git_run(publish_repo, "switch", "-C", branch, start_ref, dry_run=args.dry_run)
     else:
-        git_run(publish_repo, "switch", "-c", branch, branch_start_ref, dry_run=args.dry_run)
+        git_run(publish_repo, "switch", "-c", branch, start_ref, dry_run=args.dry_run)
 
     for src_root in src_roots:
         sync_one(
