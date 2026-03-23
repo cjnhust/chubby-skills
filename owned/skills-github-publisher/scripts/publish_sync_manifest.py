@@ -233,26 +233,34 @@ def build_manifest(
 
 def resolve_signing_key(explicit_signing_key: str | None) -> Path:
     if explicit_signing_key:
-        return Path(explicit_signing_key).expanduser().resolve()
+        candidate = Path(explicit_signing_key).expanduser().resolve()
+    else:
+        config = load_local_config()
+        signing_key = config.get("default_publish_signing_key")
+        if not isinstance(signing_key, str) or not signing_key:
+            raise SystemExit(
+                "publish signing key is not configured; set default_publish_signing_key in local config or pass --signing-key"
+            )
+        candidate = Path(signing_key).expanduser().resolve()
 
-    config = load_local_config()
-    signing_key = config.get("default_publish_signing_key")
-    if isinstance(signing_key, str) and signing_key:
-        return Path(signing_key).expanduser().resolve()
-
-    raise SystemExit(
-        "publish signing key is not configured; set default_publish_signing_key in local config or pass --signing-key"
-    )
+    if not candidate.exists():
+        raise SystemExit(f"publish signing key does not exist: {candidate}")
+    if not candidate.is_file():
+        raise SystemExit(f"publish signing key is not a file: {candidate}")
+    return candidate
 
 
 def resolve_signer_identity(explicit_signer_identity: str | None) -> str:
     if explicit_signer_identity:
-        return explicit_signer_identity
+        candidate = explicit_signer_identity.strip()
+        if not candidate:
+            raise SystemExit("publish signer identity must not be empty")
+        return candidate
 
     config = load_local_config()
     signer_identity = config.get("default_publish_signing_identity")
-    if isinstance(signer_identity, str) and signer_identity:
-        return signer_identity
+    if isinstance(signer_identity, str) and signer_identity.strip():
+        return signer_identity.strip()
     return DEFAULT_SIGNER_IDENTITY
 
 

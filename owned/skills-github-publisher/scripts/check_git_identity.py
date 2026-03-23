@@ -73,6 +73,16 @@ def safe_git_config(repo: Path, *args: str) -> str | None:
     return value or None
 
 
+def repo_has_commits(repo: Path) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "--verify", "HEAD"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
+
+
 def field_block_reason(value: str, forbidden_literals: list[str], forbidden_regexes: list[object]) -> str | None:
     literal = find_forbidden_literal(value, forbidden_literals)
     if literal:
@@ -138,18 +148,19 @@ def main() -> int:
         if reason:
             findings.append(f"{label}: {reason} in {value!r}")
 
-    log_output = git_output(repo, "log", "--format=%H%x09%an%x09%ae%x09%cn%x09%ce%x09%s")
-    for raw_line in log_output.splitlines():
-        sha, author_name, author_email, committer_name, committer_email, subject = raw_line.split("\t", 5)
-        for label, value in (
-            ("author name", author_name),
-            ("author email", author_email),
-            ("committer name", committer_name),
-            ("committer email", committer_email),
-        ):
-            reason = field_block_reason(value, forbidden_literals, forbidden_regexes)
-            if reason:
-                findings.append(f"{sha[:7]} {label}: {reason} in {value!r}; subject={subject!r}")
+    if repo_has_commits(repo):
+        log_output = git_output(repo, "log", "--format=%H%x09%an%x09%ae%x09%cn%x09%ce%x09%s")
+        for raw_line in log_output.splitlines():
+            sha, author_name, author_email, committer_name, committer_email, subject = raw_line.split("\t", 5)
+            for label, value in (
+                ("author name", author_name),
+                ("author email", author_email),
+                ("committer name", committer_name),
+                ("committer email", committer_email),
+            ):
+                reason = field_block_reason(value, forbidden_literals, forbidden_regexes)
+                if reason:
+                    findings.append(f"{sha[:7]} {label}: {reason} in {value!r}; subject={subject!r}")
 
     print(f"\n=== git identity audit: {repo} ===")
     if not findings:

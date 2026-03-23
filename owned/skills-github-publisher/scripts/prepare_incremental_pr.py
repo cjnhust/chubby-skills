@@ -14,7 +14,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 from preflight_scan import LOCAL_POLICY_FILE_ENV, default_local_policy_path
-from publish_sync_manifest import write_manifest
+from publish_sync_manifest import resolve_signer_identity, resolve_signing_key, write_manifest
 from sync_incremental_update import load_local_config, resolve_destination_root, sync_one
 
 
@@ -228,6 +228,12 @@ def main() -> int:
     if not args.skip_git_identity or not args.skip_preflight:
         local_policy_file = resolve_required_local_policy_file(config)
 
+    signing_key = None
+    signer_identity = None
+    if not args.dry_run:
+        signing_key = resolve_signing_key(None)
+        signer_identity = resolve_signer_identity(None)
+
     branch = resolve_branch_name(args, src_roots)
     start_ref = select_start_ref(publish_repo, args.base, args.skip_fetch, args.dry_run)
     local_branch_ref = f"refs/heads/{branch}"
@@ -265,7 +271,13 @@ def main() -> int:
             )
         )
     else:
-        manifest_path = write_manifest(publish_repo, start_ref, Path(".publish-sync/manifest.json"))
+        manifest_path = write_manifest(
+            publish_repo,
+            start_ref,
+            Path(".publish-sync/manifest.json"),
+            signing_key=signing_key,
+            signer_identity=signer_identity,
+        )
 
     if not args.skip_git_identity:
         run_local_check("check_git_identity.py", publish_repo, local_policy_file, ["--strict"], args.dry_run)
