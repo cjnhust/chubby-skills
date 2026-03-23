@@ -47,6 +47,18 @@
       "sha256": "230fa7ac9a63ca36003378764e6548e475a9116584b022474c6f76bd8a21e567"
     },
     {
+      "path": "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
+      "sha256": "959f0644e4aa8fbb855896c67430c87ac2bef69b209b097dfa048847247378ea"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/codex_review_common.cjs",
+      "sha256": "60f8a6989f3224fbf2e7e4fdee849780bb1463aeddc34fc1520991fbade89d87"
+    },
+    {
+      "path": "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
+      "sha256": "0627237a448881a9a8fe3432ce8f4b9e45600cbd2e6a396004e82e1ac3ef99c3"
+    },
+    {
       "path": "owned/skills-github-publisher/scripts/generate_export_docs.py",
       "sha256": "5252d07c397a8c69858cca867d2e107937e22cb7997a429f1073dc8a61831a59"
     },
