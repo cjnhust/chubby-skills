@@ -1,7 +1,7 @@
 name: Publish Sync Guard
 
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - reopened
@@ -17,32 +17,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          path: trusted
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: actions/checkout@v4
+        with:
           fetch-depth: 0
+          path: pr
+          persist-credentials: false
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.sha }}
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
+      - name: Fetch base commit into PR checkout
+        working-directory: pr
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BASE_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git remote add upstream "https://github.com/${BASE_REPOSITORY}.git"
+          git fetch --no-tags upstream "${BASE_REF}"
+          git cat-file -e "${BASE_SHA}^{commit}"
+
       - name: Materialize trusted allowed signers
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           PUBLISH_SYNC_ALLOWED_SIGNERS_B64: ${{ vars.PUBLISH_SYNC_ALLOWED_SIGNERS_B64 }}
           PR_AUTHOR_LOGIN: ${{ github.event.pull_request.user.login }}
           REPO_OWNER: ${{ github.repository_owner }}
           PR_HEAD_REPO_FULL_NAME: ${{ github.event.pull_request.head.repo.full_name }}
           REPO_FULL_NAME: ${{ github.repository }}
         run: |
-          trusted_signers_path=".publish-sync/.trusted-allowed-signers"
-          repo_variable_signers_path=".publish-sync/.repo-variable-allowed-signers"
-          base_signers_path=".publish-sync/.base-allowed-signers"
-          pr_signers_path=".publish-sync/allowed_signers"
+          trusted_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.trusted-allowed-signers"
+          repo_variable_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.repo-variable-allowed-signers"
+          base_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.base-allowed-signers"
+          trusted_base_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/allowed_signers"
+          pr_signers_path="$GITHUB_WORKSPACE/pr/.publish-sync/allowed_signers"
           mkdir -p "$(dirname "$trusted_signers_path")"
           if [ -n "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" ]; then
             printf '%s' "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" | base64 --decode > "$repo_variable_signers_path"
           fi
-          if git cat-file -e "${BASE_SHA}:.publish-sync/allowed_signers" 2>/dev/null; then
-            git show "${BASE_SHA}:.publish-sync/allowed_signers" > "$base_signers_path"
+          if [ -f "$trusted_base_signers_path" ]; then
+            cp "$trusted_base_signers_path" "$base_signers_path"
           fi
 
           if [ -f "$repo_variable_signers_path" ] && [ -f "$pr_signers_path" ] && cmp -s "$repo_variable_signers_path" "$pr_signers_path"; then
@@ -67,7 +86,7 @@ jobs:
           import os
           from pathlib import Path
 
-          manifest_path = Path(".publish-sync/manifest.json")
+          manifest_path = Path("pr/.publish-sync/manifest.json")
           signer_identity = "publish-sync"
           if manifest_path.exists():
             payload = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -81,9 +100,9 @@ jobs:
           PY
 
       - run: |
-          python3 owned/skills-github-publisher/scripts/verify_publish_sync.py \
-            --root . \
+          python3 trusted/owned/skills-github-publisher/scripts/verify_publish_sync.py \
+            --root pr \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
             --head-sha "${{ github.event.pull_request.head.sha }}" \
-            --allowed-signers-path .publish-sync/.trusted-allowed-signers \
+            --allowed-signers-path "$GITHUB_WORKSPACE/trusted/.publish-sync/.trusted-allowed-signers" \
             --signer-identity "${{ steps.signer_identity.outputs.signer_identity }}"
