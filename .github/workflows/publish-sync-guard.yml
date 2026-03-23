@@ -102,3 +102,27 @@ jobs:
             --head-sha "${{ github.event.pull_request.head.sha }}" \
             --allowed-signers-path "$GITHUB_WORKSPACE/trusted/.publish-sync/.trusted-allowed-signers" \
             --signer-identity "${{ steps.signer_identity.outputs.signer_identity }}"
+
+      - name: Exercise PR publish-sync verifier when it changes
+        if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        working-directory: pr
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SIGNER_IDENTITY: ${{ steps.signer_identity.outputs.signer_identity }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          if git diff --quiet "${BASE_SHA}" "${HEAD_SHA}" -- \
+            owned/skills-github-publisher/scripts/verify_publish_sync.py \
+            owned/skills-github-publisher/scripts/publish_sync_manifest.py; then
+            echo "PR publish-sync verifier is unchanged; trusted verifier run is sufficient."
+            exit 0
+          fi
+
+          python3 owned/skills-github-publisher/scripts/verify_publish_sync.py \
+            --root . \
+            --base-sha "${BASE_SHA}" \
+            --head-sha "${HEAD_SHA}" \
+            --allowed-signers-path "$GITHUB_WORKSPACE/trusted/.publish-sync/.trusted-allowed-signers" \
+            --signer-identity "${SIGNER_IDENTITY}"

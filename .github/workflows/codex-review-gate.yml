@@ -47,23 +47,16 @@ jobs:
           script: |
             const fs = require("fs");
             const path = require("path");
-            const trustedScriptPath = path.join(
-              process.env.GITHUB_WORKSPACE,
-              "trusted",
-              "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
-            );
-            const bootstrapScriptPath = path.join(
-              process.env.GITHUB_WORKSPACE,
-              "pr",
-              "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
-            );
-            let scriptPath = trustedScriptPath;
-            if (!fs.existsSync(scriptPath)) {
-              const pr = context.payload.pull_request;
-              if (!pr || pr.head?.repo?.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
-                core.setFailed("Trusted controller script is missing and bootstrap loading is only allowed for same-repo PRs.");
-                return;
-              }
+            async function pullRequestTouchesAnyFile(pr, pathsToMatch) {
+              const files = await github.paginate(github.rest.pulls.listFiles, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+                per_page: 100,
+              });
+              return files.some((file) => pathsToMatch.has(file.filename));
+            }
+            async function publishSyncGuardPassed(pr) {
               const owner = context.repo.owner;
               const repo = context.repo.repo;
               const [combined, checks] = await Promise.all([
@@ -85,8 +78,39 @@ jobs:
               const publishSyncCheck = checks.data.check_runs.find(
                 (checkRun) => checkRun.name === "publish-sync-guard" && checkRun.conclusion === "success"
               );
-              if (!publishSyncStatus && !publishSyncCheck) {
-                core.setFailed("Trusted controller script is missing and publish-sync-guard is not successful on the current head.");
+              return Boolean(publishSyncStatus || publishSyncCheck);
+            }
+            const trustedScriptPath = path.join(
+              process.env.GITHUB_WORKSPACE,
+              "trusted",
+              "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
+            );
+            const bootstrapScriptPath = path.join(
+              process.env.GITHUB_WORKSPACE,
+              "pr",
+              "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
+            );
+            const prControlledControllerPaths = new Set([
+              "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
+              "owned/skills-github-publisher/scripts/codex_review_common.cjs",
+            ]);
+            let scriptPath = trustedScriptPath;
+            const pr = context.payload.pull_request;
+            const sameRepoPr = pr && pr.head?.repo?.full_name === `${context.repo.owner}/${context.repo.repo}`;
+            const controllerChangedInPr = sameRepoPr
+              ? await pullRequestTouchesAnyFile(pr, prControlledControllerPaths)
+              : false;
+            if (!fs.existsSync(scriptPath) || controllerChangedInPr) {
+              if (!sameRepoPr) {
+                core.setFailed(
+                  "Trusted controller script is missing or PR-controlled controller changes were detected, but PR-side loading is only allowed for same-repo PRs.",
+                );
+                return;
+              }
+              if (!(await publishSyncGuardPassed(pr))) {
+                core.setFailed(
+                  "PR-side controller loading requires publish-sync-guard to be successful on the current head.",
+                );
                 return;
               }
               scriptPath = bootstrapScriptPath;
