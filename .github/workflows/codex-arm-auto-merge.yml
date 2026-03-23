@@ -1,6 +1,12 @@
 name: Codex Auto Merge Controller
 
 on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   pull_request_target:
     types:
       - reopened
@@ -27,6 +33,7 @@ env:
 
 jobs:
   codex-arm-auto-merge-controller:
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -126,3 +133,64 @@ jobs:
               core,
               trustedMaintainers: process.env.CODEX_TRUSTED_MAINTAINERS || "",
             });
+
+  codex-arm-auto-merge-wrapper-validation:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Validate auto-merge workflow wrapper invariants
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import tempfile
+          import yaml
+
+          workflow_path = Path(".github/workflows/codex-arm-auto-merge.yml")
+          workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+          triggers = workflow.get("on", {})
+          for event_name in ("pull_request", "pull_request_target", "pull_request_review"):
+            if event_name not in triggers:
+              raise SystemExit(f"{workflow_path} must trigger on {event_name}")
+
+          jobs = workflow.get("jobs", {})
+          controller_job = jobs.get("codex-arm-auto-merge-controller")
+          if not isinstance(controller_job, dict):
+            raise SystemExit("codex-arm-auto-merge-controller job is missing")
+          if controller_job.get("if") != "${{ github.event_name != 'pull_request' }}":
+            raise SystemExit("codex-arm-auto-merge-controller must not run on pull_request")
+
+          wrapper_job = jobs.get("codex-arm-auto-merge-wrapper-validation")
+          if not isinstance(wrapper_job, dict):
+            raise SystemExit("codex-arm-auto-merge-wrapper-validation job is missing")
+          if wrapper_job.get("if") != "${{ github.event_name == 'pull_request' }}":
+            raise SystemExit("codex-arm-auto-merge-wrapper-validation must stay limited to pull_request")
+
+          script = controller_job["steps"][-1]["with"]["script"]
+          required_snippets = [
+            "codex_arm_auto_merge_controller.cjs",
+            "codex_review_common.cjs",
+            "pullRequestTouchesAnyFile",
+            "publishSyncGuardPassed",
+          ]
+          for snippet in required_snippets:
+            if snippet not in script:
+              raise SystemExit(f"auto-merge wrapper is missing required snippet: {snippet}")
+
+          wrapped = "async function __wrapper(){\n" + script + "\n}\n"
+          with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as handle:
+            handle.write(wrapped)
+            temp_path = handle.name
+          try:
+            subprocess.run(["node", "--check", temp_path], check=True)
+          finally:
+            Path(temp_path).unlink(missing_ok=True)
+
+          print(f"wrapper_ok {workflow_path}")
+          PY
