@@ -125,6 +125,16 @@ jobs:
                 core.info(`Set codex-review-gate=failure on ${pr.head.sha} because the latest current-head Codex review was dismissed`);
                 return;
               }
+              if (latestCurrentHeadReviewState === "CHANGES_REQUESTED") {
+                await setStatus(
+                  pr.head.sha,
+                  "failure",
+                  "Latest current-head Codex review requested changes",
+                  latestCurrentHeadReview.html_url || pr.html_url,
+                );
+                core.info(`Set codex-review-gate=failure on ${pr.head.sha} because the latest current-head Codex review requested changes`);
+                return;
+              }
 
               await setStatus(
                 pr.head.sha,

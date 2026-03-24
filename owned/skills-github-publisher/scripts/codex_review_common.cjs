@@ -98,6 +98,13 @@ function buildRuntime({ github, context, core, trustedMaintainers, gateContext, 
         targetUrl: latestCurrentHeadReview.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
       };
     }
+    if (latestCurrentHeadReviewState === "CHANGES_REQUESTED") {
+      return {
+        acceptable: false,
+        description: "Latest current-head Codex review requested changes",
+        targetUrl: latestCurrentHeadReview.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
+      };
+    }
     return {
       acceptable: true,
       targetUrl: latestCurrentHeadReview.html_url || `https://github.com/${repoFullName}/pull/${pullNumber}`,
