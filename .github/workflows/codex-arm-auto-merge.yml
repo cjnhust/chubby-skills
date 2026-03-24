@@ -41,13 +41,6 @@ jobs:
           path: trusted
           persist-credentials: false
           ref: ${{ github.event.pull_request.base.sha }}
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          path: pr
-          persist-credentials: false
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.sha }}
       - uses: actions/github-script@v7
         with:
           script: |
@@ -58,31 +51,14 @@ jobs:
               "trusted",
               "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
             );
-            const prScriptPath = path.join(
-              process.env.GITHUB_WORKSPACE,
-              "pr",
-              "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
-            );
-            const isReviewEvent = context.eventName === "pull_request_review";
-            let scriptPath = trustedScriptPath;
-            if (isReviewEvent) {
-              scriptPath = prScriptPath;
-            }
-            if (!fs.existsSync(scriptPath)) {
-              if (isReviewEvent) {
-                core.setFailed(`PR auto-merge controller is missing: ${scriptPath}`);
-                return;
-              }
-              core.info(`Trusted auto-merge controller is not on the base branch yet: ${scriptPath}`);
-              core.info("Skipping privileged auto-merge evaluation; PR-side controller execution is covered by codex-arm-auto-merge-wrapper-validation.");
+            if (!fs.existsSync(trustedScriptPath)) {
+              core.info(`Trusted auto-merge controller is not on the base branch yet: ${trustedScriptPath}`);
+              core.info("Skipping privileged auto-merge evaluation until the trusted controller lands on the base branch.");
               return;
             }
-            core.info(
-              isReviewEvent
-                ? `Using PR auto-merge controller from ${scriptPath}`
-                : `Using trusted Codex auto-merge controller from ${scriptPath}`
-            );
-            const loadedScript = require(scriptPath);
+
+            core.info(`Using trusted Codex auto-merge controller from ${trustedScriptPath}`);
+            const loadedScript = require(trustedScriptPath);
             await loadedScript.run({
               github,
               context,
@@ -126,16 +102,15 @@ jobs:
           [
             "codex_arm_auto_merge_controller.cjs",
             "Using trusted Codex auto-merge controller",
-            "Using PR auto-merge controller",
-            "const prScriptPath = path.join(",
+            "Skipping privileged auto-merge evaluation until the trusted controller lands on the base branch.",
           ].each do |snippet|
             raise "auto-merge wrapper is missing required snippet: #{snippet}" unless script.include?(snippet)
           end
           [
-            "pullRequestTouchesAnyFile",
-            "publishSyncGuardPassed",
+            "Using PR auto-merge controller",
+            "const prScriptPath = path.join(",
           ].each do |snippet|
-            raise "auto-merge wrapper contains stale bootstrap logic: #{snippet}" if script.include?(snippet)
+            raise "auto-merge wrapper must not execute PR-controlled code in privileged context: #{snippet}" if script.include?(snippet)
           end
 
           Tempfile.create(["codex-arm-auto-merge", ".js"]) do |handle|
