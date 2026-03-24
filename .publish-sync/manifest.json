@@ -5,7 +5,7 @@
     {
       "git_mode": "100644",
       "path": "owned/skills-github-publisher/SKILL.md",
-      "sha256": "cc5c1df58c6f4963b8b25d0928834471d024286731384205362129f5377abcfb"
+      "sha256": "a6ee83227dc84133514fa823dca91ab48929e73010e2f29e4634428feb17a7ef"
     },
     {
       "git_mode": "100644",
@@ -25,12 +25,12 @@
     {
       "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/codex-github-maintenance.md",
-      "sha256": "1aa63d1102e6198caaa07c1976aeabfa5a3e4fb118344a5d84b74dd92145cf99"
+      "sha256": "c857889650cbc3ea5f609568406f4ea7c25159d0ccc07922a1f81a00b744f219"
     },
     {
       "git_mode": "100644",
       "path": "owned/skills-github-publisher/references/codex-github-smoke-test.md",
-      "sha256": "3cf2f463c15d7245f6e8f7701d274ef2f84a05a120328007d53d61072e9af915"
+      "sha256": "048710b11897f3cac402e67547f17a4d21a6c177ad2b2550fc579d4d5eb938ba"
     },
     {
       "git_mode": "100644",
@@ -60,22 +60,22 @@
     {
       "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/codex_arm_auto_merge_controller.cjs",
-      "sha256": "a6c2a48e4971e8de1969d276265695eceda8bcea727bf455d4ba82f3f8f832e7"
+      "sha256": "fd072f00bbaa20d70bd6722dee38ed1cb9dd1efa2301ccb0e5c76f2f435a69a7"
     },
     {
       "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/codex_review_common.cjs",
-      "sha256": "064b3f2544329dff330c1bbbee1806694effee245483bed82394c4c505b04a54"
+      "sha256": "0efc5395e985ce577b068f65a9a6f50efe229051766b44d85438a9cd8467c684"
     },
     {
       "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/codex_review_gate_controller.cjs",
-      "sha256": "9479ecbfee29aaf132e9f872a1418b8d07f0592509baeef0b70923f997e7af7b"
+      "sha256": "066c28f9f0b53c7c347a854d25a26383ed54100374fa6e3ed581387183cd2fb3"
     },
     {
       "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/generate_export_docs.py",
-      "sha256": "5252d07c397a8c69858cca867d2e107937e22cb7997a429f1073dc8a61831a59"
+      "sha256": "f8aedafe4876bcb6d735198b5793b8f78cc71a4cf249fafde63160eb01610140"
     },
     {
       "git_mode": "100644",

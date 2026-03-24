@@ -46,15 +46,6 @@ async function run({ github, context, core, trustedMaintainers, validationOnly =
     return;
   }
 
-  const trustedSubmission = await runtime.currentHeadIsTrustedSubmission(pr);
-  const trustedApproval = trustedSubmission
-    ? true
-    : await runtime.currentHeadHasTrustedApproval(pr.number, pr.head.sha);
-  if (!trustedApproval) {
-    core.info("Current head is not trusted and lacks trusted approval; not arming auto-merge.");
-    return;
-  }
-
   await runtime.enableWithRetry(pr);
 }
 

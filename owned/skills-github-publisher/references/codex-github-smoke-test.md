@@ -14,7 +14,7 @@ Prepare everything locally so the maintainer only needs to do the account-side G
 - If you later test Codex writeback, keep it to one trusted-maintainer-only follow-up on an already-public PR branch and require minimal patch scope.
 - Trigger Codex review only once per PR head. Use repository auto review or reviewer request when available, and keep one manual `@codex review` request as the fallback instead of stacking both.
 - Treat the resulting current-head Codex pull-request review as the gate input; a standalone issue comment is not enough to satisfy the merge gate.
-- If Codex leaves inline findings on the current head, resolve or fix them and then request one fresh current-head review; the gate does not clear from thread resolution alone.
+- If Codex leaves inline findings on the current head, fix them or resolve the threads. Only request one fresh current-head review when the head changes or the latest review was dismissed.
 
 ## Prepare In The Repo Before The User Clicks Anything
 
@@ -24,7 +24,7 @@ Prepare everything locally so the maintainer only needs to do the account-side G
   - the remaining manual account-side steps
   - the security posture for repository-scoped authorization
   - the first smoke-test procedure
-  - the trusted-maintainer rule for any Codex hard-gate auto-merge path
+  - the current-head review plus conversation-resolution gate rule for any Codex hard-gate path
 - If a smoke test is planned, make it a small docs-only pull request.
 - If browser-side troubleshooting is later needed, reuse the existing isolated-profile CDP pattern instead of touching the default browser profile.
 - If Codex leaves findings during the smoke test, keep any `@codex address that feedback` follow-up manual; do not configure an automatic fix loop.

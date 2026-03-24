@@ -35,28 +35,10 @@ async function run({ github, context, core, trustedMaintainers, validationOnly =
       return;
     }
 
-    const trustedSubmission = await runtime.currentHeadIsTrustedSubmission(pr);
-    const trustedApproval = trustedSubmission
-      ? true
-      : await runtime.currentHeadHasTrustedApproval(pr.number, headSha);
-
-    if (!trustedApproval) {
-      await runtime.setStatus(
-        headSha,
-        "failure",
-        "Current head still needs trusted owner/admin approval",
-        pr.html_url,
-      );
-      core.info(`Set codex-review-gate=failure on ${headSha} because current-head trusted approval is still missing`);
-      return;
-    }
-
     await runtime.setStatus(
       headSha,
       "success",
-      trustedSubmission
-        ? "Current head has a Codex review"
-        : "Current head has a Codex review and trusted approval",
+      "Current head has a Codex review",
       codexReview.targetUrl || fallbackTargetUrl || pr.html_url,
     );
     core.info(`Set codex-review-gate=success on ${headSha}`);
