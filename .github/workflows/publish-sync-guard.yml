@@ -1,0 +1,251 @@
+name: Publish Sync Guard
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  publish-sync-guard:
+    if: ${{ github.event_name == 'pull_request_target' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: trusted
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: pr
+          persist-credentials: false
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Fetch base commit into PR checkout
+        working-directory: pr
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BASE_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git remote add upstream "https://github.com/${BASE_REPOSITORY}.git"
+          git fetch --no-tags upstream "${BASE_REF}"
+          git cat-file -e "${BASE_SHA}^{commit}"
+
+      - name: Materialize trusted allowed signers
+        env:
+          PUBLISH_SYNC_ALLOWED_SIGNERS_B64: ${{ vars.PUBLISH_SYNC_ALLOWED_SIGNERS_B64 }}
+          PR_HEAD_REPO_FULL_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO_FULL_NAME: ${{ github.repository }}
+        run: |
+          trusted_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.trusted-allowed-signers"
+          repo_variable_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.repo-variable-allowed-signers"
+          base_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.base-allowed-signers"
+          trusted_base_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/allowed_signers"
+          pr_signers_path="$GITHUB_WORKSPACE/pr/.publish-sync/allowed_signers"
+          mkdir -p "$(dirname "$trusted_signers_path")"
+          if [ -n "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" ]; then
+            printf '%s' "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" | base64 --decode > "$repo_variable_signers_path"
+          fi
+          if [ -f "$trusted_base_signers_path" ]; then
+            cp "$trusted_base_signers_path" "$base_signers_path"
+          fi
+
+          if [ -f "$repo_variable_signers_path" ] && [ -f "$pr_signers_path" ] && cmp -s "$repo_variable_signers_path" "$pr_signers_path"; then
+            cp "$repo_variable_signers_path" "$trusted_signers_path"
+          elif [ -f "$base_signers_path" ]; then
+            cp "$base_signers_path" "$trusted_signers_path"
+          elif [ -f "$repo_variable_signers_path" ]; then
+            cp "$repo_variable_signers_path" "$trusted_signers_path"
+          else
+            echo "Missing trusted allowed signers in the base branch and PUBLISH_SYNC_ALLOWED_SIGNERS_B64 is unset." >&2
+            echo "Preseed PUBLISH_SYNC_ALLOWED_SIGNERS_B64 or merge a trusted base-branch signer set before enabling publish-sync-guard bootstrap." >&2
+            exit 1
+          fi
+
+      - name: Resolve manifest signer identity
+        id: signer_identity
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest_path = Path("pr/.publish-sync/manifest.json")
+          signer_identity = "publish-sync"
+          if manifest_path.exists():
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+            raw_identity = payload.get("signer_identity")
+            if not isinstance(raw_identity, str) or not raw_identity.strip():
+              raise SystemExit("publish sync manifest signer identity is missing")
+            signer_identity = raw_identity.strip()
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            handle.write(f"signer_identity={signer_identity}\n")
+          PY
+
+      - run: |
+          python3 trusted/owned/skills-github-publisher/scripts/verify_publish_sync.py \
+            --root pr \
+            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --allowed-signers-path "$GITHUB_WORKSPACE/trusted/.publish-sync/.trusted-allowed-signers" \
+            --signer-identity "${{ steps.signer_identity.outputs.signer_identity }}"
+
+  publish-sync-guard-wrapper-validation:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/checkout@v4
+        with:
+          path: trusted
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.base.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Fetch base commit into PR checkout
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          BASE_REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git remote add upstream "https://github.com/${BASE_REPOSITORY}.git"
+          git fetch --no-tags upstream "${BASE_REF}"
+          git cat-file -e "${BASE_SHA}^{commit}"
+      - name: Materialize trusted allowed signers
+        env:
+          PUBLISH_SYNC_ALLOWED_SIGNERS_B64: ${{ vars.PUBLISH_SYNC_ALLOWED_SIGNERS_B64 }}
+        run: |
+          trusted_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.trusted-allowed-signers"
+          repo_variable_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.repo-variable-allowed-signers"
+          base_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/.base-allowed-signers"
+          trusted_base_signers_path="$GITHUB_WORKSPACE/trusted/.publish-sync/allowed_signers"
+          pr_signers_path="$GITHUB_WORKSPACE/.publish-sync/allowed_signers"
+          mkdir -p "$(dirname "$trusted_signers_path")"
+          if [ -n "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" ]; then
+            printf '%s' "${PUBLISH_SYNC_ALLOWED_SIGNERS_B64}" | base64 --decode > "$repo_variable_signers_path"
+          fi
+          if [ -f "$trusted_base_signers_path" ]; then
+            cp "$trusted_base_signers_path" "$base_signers_path"
+          fi
+
+          if [ -f "$repo_variable_signers_path" ] && [ -f "$pr_signers_path" ] && cmp -s "$repo_variable_signers_path" "$pr_signers_path"; then
+            cp "$repo_variable_signers_path" "$trusted_signers_path"
+          elif [ -f "$base_signers_path" ]; then
+            cp "$base_signers_path" "$trusted_signers_path"
+          elif [ -f "$repo_variable_signers_path" ]; then
+            cp "$repo_variable_signers_path" "$trusted_signers_path"
+          else
+            echo "Missing trusted allowed signers in the base branch and PUBLISH_SYNC_ALLOWED_SIGNERS_B64 is unset." >&2
+            echo "Preseed PUBLISH_SYNC_ALLOWED_SIGNERS_B64 or merge a trusted base-branch signer set before enabling publish-sync-guard bootstrap." >&2
+            exit 1
+          fi
+      - name: Resolve manifest signer identity
+        id: signer_identity
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest_path = Path(".publish-sync/manifest.json")
+          signer_identity = "publish-sync"
+          if manifest_path.exists():
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+            raw_identity = payload.get("signer_identity")
+            if not isinstance(raw_identity, str) or not raw_identity.strip():
+              raise SystemExit("publish sync manifest signer identity is missing")
+            signer_identity = raw_identity.strip()
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+            handle.write(f"signer_identity={signer_identity}\n")
+          PY
+      - name: Validate publish-sync workflow wrapper invariants
+        run: |
+          ruby <<'RUBY'
+          require "yaml"
+
+          workflow_path = ".github/workflows/publish-sync-guard.yml"
+          raw = File.read(workflow_path)
+          workflow = YAML.safe_load(raw, permitted_classes: [], aliases: true)
+          triggers = workflow["on"] || workflow[true] || {}
+          %w[pull_request pull_request_target].each do |event_name|
+            raise "#{workflow_path} must trigger on #{event_name}" unless triggers.key?(event_name)
+          end
+
+          jobs = workflow["jobs"] || {}
+          main_job = jobs["publish-sync-guard"]
+          raise "publish-sync-guard job is missing" unless main_job.is_a?(Hash)
+          wrapper_job = jobs["publish-sync-guard-wrapper-validation"]
+          raise "publish-sync-guard-wrapper-validation job is missing" unless wrapper_job.is_a?(Hash)
+
+          expected_main_if = "${" + "{ github.event_name == 'pull_request_target' }}"
+          expected_wrapper_if = "${" + "{ github.event_name == 'pull_request' }}"
+          raise "publish-sync-guard job must stay limited to pull_request_target" unless raw.include?("publish-sync-guard:\n    if: #{expected_main_if}")
+          raise "publish-sync-guard-wrapper-validation must stay limited to pull_request" unless raw.include?("publish-sync-guard-wrapper-validation:\n    if: #{expected_wrapper_if}")
+
+          main_run_blocks = main_job.fetch("steps", []).filter_map { |step| step.is_a?(Hash) ? step["run"] : nil }.join("\n\n")
+          wrapper_run_blocks = wrapper_job.fetch("steps", []).filter_map { |step| step.is_a?(Hash) ? step["run"] : nil }.join("\n\n")
+          [
+            "trusted/owned/skills-github-publisher/scripts/verify_publish_sync.py",
+          ].each do |snippet|
+            raise "publish-sync-guard trusted job is missing required path: #{snippet}" unless main_run_blocks.include?(snippet)
+          end
+          raise "publish-sync-guard trusted job must not execute the PR verifier directly" if main_run_blocks.include?("python3 owned/skills-github-publisher/scripts/verify_publish_sync.py")
+          [
+            "owned/skills-github-publisher/scripts/verify_publish_sync.py",
+            "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
+            "owned/skills-github-publisher/scripts/sync_incremental_update.py",
+          ].each do |snippet|
+            raise "publish-sync-guard wrapper validation must exercise PR verifier inputs: #{snippet}" unless wrapper_run_blocks.include?(snippet)
+          end
+
+          puts "wrapper_ok #{workflow_path}"
+          RUBY
+      - name: Exercise PR publish-sync verifier when it changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SIGNER_IDENTITY: ${{ steps.signer_identity.outputs.signer_identity }}
+          GITHUB_TOKEN: ""
+          GH_TOKEN: ""
+        run: |
+          if git diff --quiet "${BASE_SHA}" "${HEAD_SHA}" -- \
+            owned/skills-github-publisher/scripts/verify_publish_sync.py \
+            owned/skills-github-publisher/scripts/publish_sync_manifest.py \
+            owned/skills-github-publisher/scripts/sync_incremental_update.py; then
+            echo "PR publish-sync verifier is unchanged; wrapper invariants are sufficient."
+            exit 0
+          fi
+
+          python3 owned/skills-github-publisher/scripts/verify_publish_sync.py \
+            --root . \
+            --base-sha "${BASE_SHA}" \
+            --head-sha "${HEAD_SHA}" \
+            --allowed-signers-path "$GITHUB_WORKSPACE/trusted/.publish-sync/.trusted-allowed-signers" \
+            --signer-identity "${SIGNER_IDENTITY}"

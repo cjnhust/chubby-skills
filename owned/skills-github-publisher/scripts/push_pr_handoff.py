@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import shlex
 import shutil
 import subprocess
 import sys
@@ -11,6 +12,8 @@ from pathlib import Path
 from urllib.parse import quote
 
 sys.dont_write_bytecode = True
+
+from sync_incremental_update import load_local_config
 
 
 def git_output(repo: Path, *args: str) -> str:
@@ -53,6 +56,60 @@ def remote_branch_exists(repo: Path, branch: str) -> bool:
     raise SystemExit(f"could not verify whether origin/{branch} exists; check remote connectivity and authentication first")
 
 
+def fetch_remote_branch_ref(repo: Path, branch: str) -> str:
+    subprocess.run(["git", "-C", str(repo), "fetch", "--no-tags", "origin", branch], check=True)
+    remote_ref = f"refs/remotes/origin/{branch}"
+    result = subprocess.run(
+        ["git", "-C", str(repo), "show-ref", "--verify", "--quiet", remote_ref],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise SystemExit(f"origin/{branch} exists but could not be fetched into the local remote-tracking refs")
+    return f"origin/{branch}"
+
+
+def branch_is_descendant(repo: Path, ancestor_ref: str, branch: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(repo), "merge-base", "--is-ancestor", ancestor_ref, branch],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    if result.returncode == 0:
+        return True
+    if result.returncode == 1:
+        return False
+    raise SystemExit(f"could not compare {branch} against {ancestor_ref}")
+
+
+def push_command(repo: Path, branch: str) -> list[str]:
+    return ["git", "-C", str(repo), "push", "-u", "origin", branch]
+
+
+def force_with_lease_required(repo: Path, branch: str) -> tuple[bool, list[str] | None]:
+    cmd = push_command(repo, branch)
+    if not remote_branch_exists(repo, branch):
+        return False, cmd
+
+    remote_ref = fetch_remote_branch_ref(repo, branch)
+    if branch_is_descendant(repo, remote_ref, branch):
+        return False, cmd
+
+    remote_oid = git_output(repo, "rev-parse", remote_ref)
+    return True, [
+        "git",
+        "-C",
+        str(repo),
+        "push",
+        f"--force-with-lease=refs/heads/{branch}:{remote_oid}",
+        "-u",
+        "origin",
+        branch,
+    ]
+
+
 def resolve_gh() -> str | None:
     candidate = shutil.which("gh")
     if candidate:
@@ -65,7 +122,10 @@ def resolve_gh() -> str | None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate and execute push/PR handoff for a publish repo.")
-    parser.add_argument("--root", required=True, help="Publish repo working copy.")
+    parser.add_argument(
+        "--root",
+        help="Publish repo working copy. Defaults to local default_publish_repo.",
+    )
     parser.add_argument("--base", default="main", help="PR base branch. Defaults to main.")
     parser.add_argument("--branch", help="PR branch. Defaults to the current branch.")
     parser.add_argument("--title", help="Optional PR title for gh pr create.")
@@ -73,12 +133,29 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--draft", action="store_true", help="Create the PR as a draft when using gh.")
     parser.add_argument("--push", action="store_true", help="Run git push -u origin <branch>.")
     parser.add_argument("--create-pr", action="store_true", help="Create the PR via gh after push.")
+    parser.add_argument(
+        "--force-with-lease",
+        action="store_true",
+        help="Allow force-with-lease when the remote PR branch diverged and you intend to replace it.",
+    )
     return parser.parse_args()
+
+
+def resolve_repo_root(explicit_root: str | None) -> Path:
+    if explicit_root:
+        return Path(explicit_root).expanduser().resolve()
+
+    config = load_local_config()
+    publish_repo = config.get("default_publish_repo")
+    if isinstance(publish_repo, str) and publish_repo:
+        return Path(publish_repo).expanduser().resolve()
+
+    raise SystemExit("publish repo is not configured; pass --root or set default_publish_repo in local config")
 
 
 def main() -> int:
     args = parse_args()
-    repo = Path(args.root).expanduser().resolve()
+    repo = resolve_repo_root(args.root)
     if not (repo / ".git").exists():
         raise SystemExit(f"not a git repo: {repo}")
 
@@ -96,6 +173,10 @@ def main() -> int:
     web_origin = normalize_origin_url(remote_url)
     base_branch_exists = remote_branch_exists(repo, args.base)
     bootstrap_base_push = branch == args.base and not base_branch_exists
+    requires_force_with_lease, force_with_lease_command = force_with_lease_required(repo, branch)
+    effective_push_command = push_command(repo, branch)
+    if requires_force_with_lease and force_with_lease_command is not None:
+        effective_push_command = force_with_lease_command if args.force_with_lease else ["git", "-C", str(repo), "push", "-u", "origin", branch]
 
     if branch == args.base and not bootstrap_base_push:
         raise SystemExit(f"refusing PR handoff from base branch '{args.base}'; create or switch to a PR branch first")
@@ -106,7 +187,10 @@ def main() -> int:
     print(f"branch: {branch}")
     print(f"base: {args.base}")
     print(f"origin: {remote_url}")
-    print(f"push_command: git -C {repo} push -u origin {branch}")
+    print(f"push_command: {shlex.join(effective_push_command)}")
+    if requires_force_with_lease and force_with_lease_command is not None:
+        print("push_requires_force_with_lease: true")
+        print(f"force_with_lease_command: {shlex.join(force_with_lease_command)}")
     if bootstrap_base_push:
         print("handoff_mode: bootstrap-base-push")
     if web_origin:
@@ -115,7 +199,12 @@ def main() -> int:
         print("compare_url: unavailable (non-GitHub remote or unsupported remote format)")
 
     if args.push:
-        subprocess.run(["git", "-C", str(repo), "push", "-u", "origin", branch], check=True)
+        if requires_force_with_lease and not args.force_with_lease:
+            raise SystemExit(
+                f"origin/{branch} contains commits that are not present locally; rerun with --force-with-lease only after "
+                "verifying you intend to replace the remote PR branch"
+            )
+        subprocess.run(effective_push_command, check=True)
 
     if args.create_pr:
         gh = resolve_gh()

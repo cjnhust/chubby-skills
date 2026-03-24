@@ -145,6 +145,32 @@ def is_review_required_root(src_root: Path) -> bool:
     return False
 
 
+def validate_sync_roots(src_roots: list[Path], allow_review_required: bool) -> None:
+    duplicate_destinations: dict[str, list[Path]] = {}
+
+    for src_root in src_roots:
+        if not (src_root / "SKILL.md").exists():
+            raise SystemExit(f"not a skill root: {src_root}")
+        if is_review_required_root(src_root) and not allow_review_required:
+            raise SystemExit(
+                f"refusing to sync review-required skill root by default: {src_root} "
+                "(pass --allow-review-required only after an explicit publication decision)"
+            )
+        duplicate_destinations.setdefault(src_root.name, []).append(src_root)
+
+    collisions = {
+        name: roots
+        for name, roots in duplicate_destinations.items()
+        if len(roots) > 1
+    }
+    if collisions:
+        details = "; ".join(
+            f"{name}: {', '.join(str(root) for root in roots)}"
+            for name, roots in sorted(collisions.items())
+        )
+        raise SystemExit(f"skill roots resolve to duplicate destination names; sync them separately: {details}")
+
+
 def sync_one(src_root: Path, dest_group_root: Path, dry_run: bool, allow_review_required: bool) -> None:
     if not (src_root / "SKILL.md").exists():
         raise SystemExit(f"not a skill root: {src_root}")
@@ -185,6 +211,7 @@ def main() -> None:
     args = parse_args()
     config = load_local_config()
     src_roots = [Path(raw_path).expanduser().resolve() for raw_path in args.skill_root]
+    validate_sync_roots(src_roots, args.allow_review_required)
     dest_group_root = resolve_destination_root(args, config, src_roots)
 
     for src_root in src_roots:
