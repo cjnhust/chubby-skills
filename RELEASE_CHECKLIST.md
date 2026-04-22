@@ -9,6 +9,7 @@ Use this checklist before creating the public GitHub repository or pushing from 
 - Keep `owned/` and `third-party/` boundaries explicit; do not fold imported skills into `owned/`.
 - Re-run the strict preflight scan from the repository root.
 - Verify the effective Git author identity is public-safe before committing or pushing.
+- If managed skill bundle files changed, regenerate the signed `.publish-sync/manifest.json` and `.publish-sync/manifest.json.sig` from the local sync flow before committing.
 - Keep maintainer-specific sensitive scan inputs only in a local private policy file, not in committed commands or repo docs.
 - Review `git status --short` and make sure ignored junk such as `node_modules/` is not part of the final handoff.
 - Verify `.system/` and `danger-*` skills are still excluded unless you intentionally reviewed them for publication.
@@ -19,6 +20,7 @@ Use this checklist before creating the public GitHub repository or pushing from 
 ```bash
 python3 owned/skills-github-publisher/scripts/preflight_scan.py --root . --strict --strict-provenance --local-policy-file "$CODEX_HOME/private/publish-policy.json"
 python3 owned/skills-github-publisher/scripts/check_git_identity.py --root . --strict --local-policy-file "$CODEX_HOME/private/publish-policy.json"
+python3 owned/skills-github-publisher/scripts/publish_sync_manifest.py --root . --base-ref origin/main  # only when using the low-level sync path instead of prepare_incremental_pr.py; signs the manifest with the configured local key
 git config user.name "<public-name>"  # if the effective identity is still private
 git config user.email "<public-email-or-github-noreply>"  # if the effective identity is still private
 git status --short
@@ -44,9 +46,9 @@ git ls-remote --heads origin codex/<change-name>
 - Prefer GitHub CLI login or another OS-keychain-backed HTTPS credential flow over typing PATs into terminal prompts.
 - Enable Secret Scanning and Push Protection before the first public push.
 - For normal updates to an already public repo, push a PR branch and merge through pull request review rather than pushing directly to `main`.
+- Treat `publish-sync-guard` as the source-of-truth gate for managed skill content, `codex-review-gate` as the review gate, and GitHub conversation resolution as the thread-resolution gate.
 - If `gh` is not installed locally, use the helper script's printed compare URL and open the PR in the browser manually.
 - Push only after the license decision, third-party manifests, and security scan are all in the expected state.
 - If push protection blocks the push, treat it as a real blocker and fix the flagged content before retrying.
 - If you later enable Codex on GitHub, start with PR review on the already public repository before allowing broader cloud-side edit flows.
 - If a trusted maintainer later wants Codex to write back to an existing public PR branch, make that a one-off explicit request instead of wiring an automatic fix loop.
-
