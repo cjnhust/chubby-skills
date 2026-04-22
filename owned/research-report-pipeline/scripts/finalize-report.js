@@ -20,6 +20,180 @@ const FINAL_VISUAL_STATES = new Set([
   "skipped",
 ]);
 
+const SOURCE_CAPTURE_STATUSES = new Set([
+  "artifacted",
+  "failed",
+  "not-required",
+]);
+
+const APPROVED_RENDER_LEAFS = new Set([
+  "baoyu-image-gen",
+  "baoyu-article-illustrator",
+  "baoyu-infographic",
+  "baoyu-cover-image",
+  "baoyu-xhs-images",
+  "baoyu-comic",
+  "baoyu-slide-deck",
+]);
+
+const VISUAL_COUNT_DECISION_SOURCES = new Set(["user", "planner"]);
+
+function isMeaningfulValue(value) {
+  if (value == null) return false;
+  const normalized = String(value).trim();
+  return (
+    normalized.length > 0 &&
+    normalized !== "TODO" &&
+    normalized !== "null" &&
+    normalized !== "pending" &&
+    normalized !== "not-required" &&
+    normalized !== '""' &&
+    normalized !== "''"
+  );
+}
+
+function parseIndentedBlocks(text, startRegex) {
+  const lines = text.split(/\r?\n/);
+  const blocks = [];
+  let current = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (startRegex.test(trimmed)) {
+      if (current) blocks.push(current);
+      current = { __header: trimmed };
+      continue;
+    }
+
+    if (!current) continue;
+    const fieldMatch = trimmed.match(/^- ([a-zA-Z0-9_-]+):\s*(.*)$/);
+    if (fieldMatch) {
+      current[fieldMatch[1]] = fieldMatch[2];
+    }
+  }
+
+  if (current) blocks.push(current);
+  return blocks;
+}
+
+function splitPathList(value) {
+  return String(value)
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function assertSourceScopeAndCaptureGates(workspace, sourceBriefPath, sourceCatalogPath) {
+  const sourceBrief = fs.existsSync(sourceBriefPath) ? readText(sourceBriefPath) : "";
+  if (!/^- scope_status:\s*confirmed$/m.test(sourceBrief)) {
+    throw new Error("scope gate not passed; update source/source.md with - scope_status: confirmed before finalizing");
+  }
+
+  if (!fs.existsSync(sourceCatalogPath)) return;
+  const sourceCatalog = readText(sourceCatalogPath);
+  const entries = parseIndentedBlocks(sourceCatalog, /^- S\d+\b/);
+  const urlEntries = entries.filter((entry) => /^https?:\/\//.test(entry.url || ""));
+
+  for (const entry of urlEntries) {
+    const captureStatus = String(entry.capture_status || "").trim();
+
+    if (!SOURCE_CAPTURE_STATUSES.has(captureStatus)) {
+      throw new Error(
+        `source capture gate not passed for ${entry.__header}; record capture_status in source/source-catalog.md before finalizing`
+      );
+    }
+
+    if (captureStatus === "artifacted") {
+      const hasArtifacts = [entry.raw_artifact, entry.normalized_artifact].some(isMeaningfulValue);
+      if (!hasArtifacts) {
+        throw new Error(
+          `source capture gate not passed for ${entry.__header}; artifacted URLs must record raw_artifact or normalized_artifact`
+        );
+      }
+    }
+
+    if (captureStatus === "failed" && !isMeaningfulValue(entry.capture_failure)) {
+      throw new Error(
+        `source capture gate not passed for ${entry.__header}; failed URL capture must record capture_failure`
+      );
+    }
+  }
+}
+
+function assertApprovedVisualProvenance(workspace, visualInventoryPath, options = {}) {
+  if (!fs.existsSync(visualInventoryPath)) return;
+  const visualInventory = readText(visualInventoryPath);
+  const entries = parseIndentedBlocks(visualInventory, /^- id:\s*.+$/);
+  const planningStatusMatch = visualInventory.match(/^- planning_status:\s*(.+)$/m);
+  const imageCountMatch = visualInventory.match(/^- image_count:\s*(.+)$/m);
+  const decisionSourceMatch = visualInventory.match(/^- count_decision_source:\s*(.+)$/m);
+  const countRationaleMatch = visualInventory.match(/^- count_rationale:\s*(.+)$/m);
+  const planningStatus = planningStatusMatch ? planningStatusMatch[1].trim() : "";
+  const imageCountRaw = imageCountMatch ? imageCountMatch[1].trim() : "";
+  const decisionSource = decisionSourceMatch ? decisionSourceMatch[1].trim() : "";
+  const countRationale = countRationaleMatch ? countRationaleMatch[1].trim() : "";
+  const skipPlanningGate = options.skipPlanningGate === true;
+
+  if (!skipPlanningGate) {
+    if (planningStatus !== "confirmed") {
+      throw new Error("visual planning gate not passed; set - planning_status: confirmed in notes/visual-inventory.md before finalizing");
+    }
+    if (!/^\d+$/.test(imageCountRaw) || Number(imageCountRaw) <= 0) {
+      throw new Error("visual planning gate not passed; set a positive integer image_count in notes/visual-inventory.md before finalizing");
+    }
+    if (!VISUAL_COUNT_DECISION_SOURCES.has(decisionSource)) {
+      throw new Error("visual planning gate not passed; set count_decision_source to user or planner in notes/visual-inventory.md before finalizing");
+    }
+    if (!isMeaningfulValue(countRationale)) {
+      throw new Error("visual planning gate not passed; record count_rationale in notes/visual-inventory.md before finalizing");
+    }
+    if (Number(imageCountRaw) !== entries.length) {
+      throw new Error(
+        `visual planning gate not passed; image_count (${imageCountRaw}) must match the number of planned visuals (${entries.length})`
+      );
+    }
+  }
+
+  for (const entry of entries) {
+    if (entry.status === "approved-inline-mermaid") {
+      if (entry.approval_source !== "user") {
+        throw new Error(
+          `${entry.__header} is approved-inline-mermaid without approval_source: user; do not self-upgrade visuals before export`
+        );
+      }
+    }
+
+    if (entry.status === "approved-rendered") {
+      if (!APPROVED_RENDER_LEAFS.has(entry.render_via || "")) {
+        throw new Error(
+          `${entry.__header} uses unsupported render_via for approved-rendered (${entry.render_via || "missing"}); only leaf visual skills may satisfy rendered approval`
+        );
+      }
+      if (!isMeaningfulValue(entry.rendered_path)) {
+        throw new Error(`${entry.__header} is approved-rendered without rendered_path`);
+      }
+      if (!isMeaningfulValue(entry.prompt_artifacts)) {
+        throw new Error(`${entry.__header} is approved-rendered without prompt_artifacts`);
+      }
+      if (entry.approval_source !== "user") {
+        throw new Error(`${entry.__header} is approved-rendered without approval_source: user`);
+      }
+
+      const renderedPath = path.resolve(workspace, entry.rendered_path);
+      if (!fs.existsSync(renderedPath)) {
+        throw new Error(`${entry.__header} rendered_path does not exist (${entry.rendered_path})`);
+      }
+
+      for (const artifactPath of splitPathList(entry.prompt_artifacts)) {
+        const resolvedArtifact = path.resolve(workspace, artifactPath);
+        if (!fs.existsSync(resolvedArtifact)) {
+          throw new Error(`${entry.__header} prompt_artifact does not exist (${artifactPath})`);
+        }
+      }
+    }
+  }
+}
+
 function assertNoAbsoluteFilesystemImageLinks(text) {
   const matches = [...text.matchAll(/!\[[^\]]*\]\((\/[^)\s]+)\)/g)].map((m) => m[1]);
   const offenders = matches.filter((target) => target.startsWith("/"));
@@ -87,13 +261,21 @@ function main() {
     usage();
   }
 
-  const draftPath = resolveAbsolute(args.draft) || path.join(workspace, "drafts/report.md");
+  const selectionBundlePath = path.join(workspace, "notes/selection-bundle.md");
+  const selectionBundle = fs.existsSync(selectionBundlePath) ? readText(selectionBundlePath) : "";
+  const annotatedDraftPath = path.join(workspace, "drafts/report-annotated.md");
+  const prefersAnnotatedDraft =
+    /^- report_edition:\s*annotated$/m.test(selectionBundle) && fs.existsSync(annotatedDraftPath);
+
+  const draftPath =
+    resolveAbsolute(args.draft) ||
+    (prefersAnnotatedDraft ? annotatedDraftPath : path.join(workspace, "drafts/report.md"));
   const outputPath = resolveAbsolute(args.output) || path.join(workspace, "exports/report-final.md");
   const diagramPath = path.join(workspace, "notes/diagram-structures.md");
   const factCheckPath = path.join(workspace, "notes/fact-check.md");
   const reportThesisPath = path.join(workspace, "notes/report-thesis.md");
-  const selectionBundlePath = path.join(workspace, "notes/selection-bundle.md");
   const sourceBriefPath = path.join(workspace, "source/source.md");
+  const sourceCatalogPath = path.join(workspace, "source/source-catalog.md");
   const codeVerificationPath = path.join(workspace, "notes/code-verification.md");
   const visualInventoryPath = path.join(workspace, "notes/visual-inventory.md");
   const flowClosurePath = path.join(workspace, "notes/flow-closure.md");
@@ -117,6 +299,8 @@ function main() {
   if (!fs.existsSync(reportThesisPath)) {
     throw new Error("notes/report-thesis.md is missing");
   }
+
+  assertSourceScopeAndCaptureGates(workspace, sourceBriefPath, sourceCatalogPath);
 
   const reportThesis = readText(reportThesisPath);
   for (const requiredPattern of [
@@ -183,6 +367,12 @@ function main() {
         "all planned visuals are marked skipped while visual strategy is not text-only-by-user; keep at least one approved visual or explicitly switch the bundle to text-only-by-user"
       );
     }
+
+    assertApprovedVisualProvenance(workspace, visualInventoryPath, {
+      skipPlanningGate: textOnlyByUser && skippedOnly,
+    });
+  } else {
+    assertApprovedVisualProvenance(workspace, visualInventoryPath);
   }
 
   writeText(outputPath, draft);

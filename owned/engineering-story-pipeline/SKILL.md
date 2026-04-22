@@ -36,6 +36,7 @@ This skill is the workspace-level orchestrator for the technical-story family. I
 Bridge skills such as `writing-theme-bridge` and `baoyu-style-bridge` are advisors or normalizers. Capability skills such as `baoyu-image-gen`, `baoyu-cover-image`, `baoyu-infographic`, and `baoyu-markdown-to-html` should consume explicit artifacts and should not own the shared bundle or overall sequencing.
 
 For isolated visual-only requests inside this family, prefer the request-level `baoyu-visual-pipeline` rather than dropping straight into a leaf renderer.
+Once a document-writing run is underway, if the user explicitly upgrades the task to rendered visuals, keep document-level ownership here but hand the current visual request to `baoyu-visual-pipeline` before invoking any leaf visual skill. Do not probe local Mermaid / diagram CLIs as a substitute for that handoff unless the user explicitly asked for Mermaid / SVG / local diagram export only.
 For isolated ingest/translate/format/export flows without larger narrative rewriting, prefer `baoyu-content-pipeline`.
 
 ## Working Directory Contract
@@ -90,6 +91,9 @@ For topic-based or URL-based research-report flows that need theme confirmation,
      - one theme
      - one writing posture
      - one visual profile
+     - one reader profile
+     - one explanation depth
+     - the augmentation modules that should appear inside the article
      - two or three viable alternatives
    - Present one unified recommendation and ask for one confirmation unless the user has already locked the choices.
    - Save the result to `notes/selection-bundle.md` because this pipeline owns writing behavior, downstream skill routing, and workspace-local baoyu config.
@@ -97,9 +101,20 @@ For topic-based or URL-based research-report flows that need theme confirmation,
    - Once the bundle is confirmed, call `baoyu-style-bridge` with explicit inputs from the bundle and explicit target artifacts. The pipeline decides whether any workspace-local `.baoyu-skills/.../EXTEND.md` materialization is needed.
    - Do not treat workspace-local `EXTEND.md` as mandatory. Keep request-scoped intent explicit unless stable reuse across later steps justifies local materialization.
 
-3. Stabilize the narrative.
+3. Build a reader-support plan before drafting when the article should become easier to understand than the original source.
+   - Use `notes/selection-bundle.md` as the authority for `reader_profile`, `explanation_depth`, and `augmentation_modules`.
+   - Create `notes/reader-support-plan.md` with a section-by-section map of:
+     - the concept or mechanism to clarify
+     - where the explanation should appear
+     - whether it needs background, concept explanation, example, best-practice extension, pitfall, or misconception handling
+     - which parts are source-derived and which are adjacent practice added for reader support
+   - Prefer local reader aids near the relevant section instead of a detached appendix.
+   - For talk-like sources, explicitly convert speaker shorthand into article-grade explanation before polishing the prose.
+
+4. Stabilize the narrative.
    - Start with `writing-theme-bridge`.
    - Use it to read `notes/selection-bundle.md` first and only recommend a posture separately if the bundle is missing or incomplete.
+   - Use `notes/reader-support-plan.md` when it exists.
    - Route the actual drafting through `engineering-practice-writer` or the selected posture behavior.
    - If the source is already a mature technical document, treat this as a bounded editorial pass by default:
      - preserve the original thesis and scope
@@ -113,13 +128,15 @@ For topic-based or URL-based research-report flows that need theme confirmation,
        - turn flat prose into tables or lists
        - split or merge nearby paragraphs inside the same review boundary
        - add adjacent Mermaid placeholders to clarify an existing image slot
+       - add adjacent concept clarification or best-practice notes when they stay local to the same section contract
    - Do not begin visual generation until the draft is structurally clear: scenario, problem, constraints, decision, tradeoffs, and outcome.
+   - Before drafting strong implementation claims such as `only`, `never`, `completely`, or `exclusive`, verify every relevant producer or branch in source code first. Do not let a negative claim enter the draft while branch verification is still partial.
    - If the source is rough notes, first turn it into a sectioned draft or talk track.
    - Keep one article draft in the workspace as the source of truth for all later visuals and deck work.
    - Working drafts may include minimal workflow-facing scaffolding while the article is under review, but treat that as temporary.
    - Separate rewriting from formatting. Content decisions happen here; typography and publish formatting happen later.
 
-4. Clean the article into a reader-facing deliverable before formal output.
+5. Clean the article into a reader-facing deliverable before formal output.
    - Do not treat the first completed text pass as a reader-facing final by default when this pipeline is still expected to continue into visual planning, deck work, or later article illustration.
    - In pipeline mode, the default review artifact is the working draft under `drafts/article.md`, not `exports/article-final.md`.
    - If likely visuals have not yet gone through visual inventory and placeholder insertion, keep the article in working-draft state and review that version with the user first.
@@ -127,8 +144,10 @@ For topic-based or URL-based research-report flows that need theme confirmation,
      - source-of-truth draft banners
      - local workspace paths
      - references to `notes/selection-bundle.md` or `notes/visual-inventory.md`
+     - references to `notes/reader-support-plan.md`
      - "if later you want images or deck" process hints
    - Preserve only reader-facing navigation that belongs in the article itself.
+   - Keep reader-facing background primers, concept explainers, and best-practice extensions that were intentionally inserted for comprehension. Do not strip them as if they were workflow notes.
    - Save the cleaned result as a reader-facing article, preferably under `exports/article-final.md`, or replace the working draft only after the user clearly wants the formal version to become canonical.
    - When accepted visuals are being integrated into the formal article:
      - remove review-only placeholder blocks and temporary review notes from the reader-facing version
@@ -136,7 +155,7 @@ For topic-based or URL-based research-report flows that need theme confirmation,
      - use article-relative markdown image paths such as `../illustrations/01-framework.png` or `../cover-image/cover.jpg`, not absolute filesystem paths
      - do not discard the approved Mermaid or node-edge source; preserve it under `notes/diagram-structures.md` or an equivalent saved artifact before cleaning the article
 
-5. Run a source-fidelity check before visuals or formal export.
+6. Run a source-fidelity check before visuals or formal export.
    - When the source started as a mature technical document, compare the current draft against `notes/source-contract.md`.
    - Save the check to `notes/source-fidelity-check.md`.
    - At minimum, verify:
@@ -145,10 +164,11 @@ For topic-based or URL-based research-report flows that need theme confirmation,
      - major section order and section boundaries were preserved unless the user asked for restructure
      - existing image anchors and figure positions were preserved or replaced only with adjacent placeholders
      - no new architecture claims, rollout constraints, or compatibility judgments were introduced unless traceable to source
+     - any reader-aid additions remain local explanations or adjacent practice notes rather than changing the document's argument map
      - any presentation-level reorganization still preserves the same review semantics and evidence flow
    - If the check fails, stop and revise the draft. Do not continue to visual generation, deck generation, or final export.
 
-6. Build the visual inventory.
+7. Build the visual inventory.
    - For each section, decide whether it needs: no visual, cover, infographic, flowchart, framework, comparison, timeline, comic, or slide-only visual.
    - Add visuals only where they clarify structure, sequence, tradeoffs, or metrics. Do not decorate.
    - For article-writing requests handled by this pipeline, do not skip this step just because the user has not yet explicitly asked to render images. If later visuals or deck work remain plausible, the first-pass draft should already expose where visuals would go.
@@ -173,8 +193,9 @@ For topic-based or URL-based research-report flows that need theme confirmation,
    - If `notes/selection-bundle.md` already fixes the visual profile, use it as the default authority. Revisit only when the user asks to change direction or a new deliverable requires a deliberate override.
    - Save the inventory in the workspace and reference the bundle rather than creating a second independent style decision.
    - If the user has only asked to start writing, stop here after saving the backlog.
+   - If the user later says "generate the diagrams", "make the images", or otherwise upgrades placeholders into a rendered-visual request, stop placeholder-only progress and route the current visual request through `baoyu-visual-pipeline` before touching any leaf visual skill or local diagram CLI.
 
-7. Materialize workspace-local baoyu config and shared visual rules.
+8. Materialize workspace-local baoyu config and shared visual rules.
    - Before creating any image or slide outline, read `references/visual-system.md`.
    - Also read `references/writing-mechanics.md` when the task includes ingestion, translation, formatting, or export.
    - Use Chinese in all visible content unless a proper noun or API name must stay in English.
@@ -189,18 +210,19 @@ For topic-based or URL-based research-report flows that need theme confirmation,
      - `baoyu-image-gen` when exact prompt control or reference-based redraw is needed
    - If an existing image is being kept only as a reference, preserve it under `source/` or `references/` and do not treat it as the final reader-facing visual.
 
-8. Draft and approve diagram placeholders before rendering them.
+9. Draft and approve diagram placeholders before rendering them.
    - For architecture diagrams, framework diagrams, request-path visuals, and flowcharts, also read `references/diagram-contract.md`.
    - First write a compact diagram spec with: purpose, source anchors, node groups, arrows, emphasis, and exclusions.
    - Also write a Mermaid block or equivalent node-edge list for logic checking.
    - Put that Mermaid block or placeholder back into the working article near the section it belongs to, or store it as a clearly linked workspace artifact if the article would become unreadable.
    - Keep that structural source as canonical through later rendering. If you later derive prompt files from it, those prompts are secondary artifacts rather than replacements for the approved structure source.
    - Review the priority visuals with the user one by one or in a small ordered batch before any image generation starts.
+   - Placeholder approval is not rendered-visual approval. Do not mark a pass as visually complete until a leaf renderer has produced first-pass images and the user either accepts them or explicitly stops at the placeholder stage.
    - Only after the structure is correct should you translate it into an illustrator prompt or image prompt.
    - Use `framework` for architecture, modules, and principles.
    - Use `flowchart` for lifecycle, pipelines, workflows, and request paths.
 
-9. Generate article assets.
+10. Generate article assets.
    - Choose the downstream skill family from the selected theme before generating:
      - structural diagrams, explainers, and technical assets -> `baoyu-article-illustrator`
      - editorial or data-dense summary visuals -> `baoyu-infographic`
@@ -227,7 +249,7 @@ For topic-based or URL-based research-report flows that need theme confirmation,
      - if multiple first-pass or revised variants exist, record which file became canonical for the article
      - replace outdated first-pass image references in the working draft before any formal export
 
-10. Generate the deck from the stabilized article.
+11. Generate the deck from the stabilized article.
    - Run `baoyu-slide-deck` only after the article and key visual decisions are stable.
    - Start with `--outline-only`.
    - Before drafting or editing the outline, read `references/deck-outline-contract.md`.
@@ -237,7 +259,7 @@ For topic-based or URL-based research-report flows that need theme confirmation,
    - Page 1 must be a cover page. Final page must be a designed ending, not a generic thanks or Q&A slide.
    - After the first image pass, review the deck visually before broad regeneration or final merge. Prefer targeted prompt fixes over regenerating the whole deck by reflex.
 
-11. Run a consistency pass.
+12. Run a consistency pass.
    - Check that article, diagrams, cover, comic, infographic, and deck share the same palette, contrast model, emphasis rules, and typographic posture where appropriate.
    - Keep visuals flat, precise, and high-contrast unless the selected theme intentionally softens them.
    - If the article is becoming a formal deliverable, verify that no workspace-facing copy remains in the final reader-facing version.
@@ -250,7 +272,7 @@ For topic-based or URL-based research-report flows that need theme confirmation,
    - If the user wants a shareable article page, optionally run `baoyu-markdown-to-html`.
    - If the article was translated, do a final language-consistency pass on text-heavy images, diagrams, covers, and screenshots. Remind the user about mismatched image language instead of silently editing those visuals.
 
-12. Close the current pipeline pass explicitly.
+13. Close the current pipeline pass explicitly.
    - Read `references/flow-closure.md`.
    - Save `notes/flow-closure.md` with:
      - current status: `completed`, `paused-for-review`, `paused-by-scope`, or `blocked`

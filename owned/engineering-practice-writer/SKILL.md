@@ -17,6 +17,8 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
    - For a rigorous architecture explanation, engine internals deep dive, or explicit serious-engineering exemplar request, read [references/serious-engineering-style.md](references/serious-engineering-style.md).
    - For a research report or evidence-led evaluation whose main job is to support understanding, adoption judgment, or a bounded recommendation, read [references/research-report-style.md](references/research-report-style.md).
    - For a technical blog, practice-sharing article, or explicit tech-blog exemplar request, read [references/meituan-tech-practice-style.md](references/meituan-tech-practice-style.md).
+   - For a document that should become easier to understand by adding local background, concept clarification, or best-practice notes near the relevant sections, read [references/inline-reader-aids.md](references/inline-reader-aids.md).
+   - For a document that should preserve the original chapter order and image positions while exposing all added help text as explicit annotations, read [references/annotation-mode.md](references/annotation-mode.md).
 3. Extract the content backbone before writing:
    - concrete object or system
    - research question or decision the document should support
@@ -27,24 +29,35 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
    - chosen action or position
    - why that choice fits better than the alternatives
    - outcome or intended outcome
-4. If an exemplar exists, extract its style backbone:
+4. Build a section-level reader-support map before drafting when the source contains concept jumps or speaker shorthand.
+   - Identify which terms, mechanisms, or assumptions are likely to be underexplained for the target reader.
+   - For each major section, decide whether it needs:
+     - a short background primer
+     - an inline concept explanation
+     - a concrete analogy or example
+     - a best-practice extension
+     - a misconception or boundary clarification
+   - Prefer adding support adjacent to the first relevant section rather than collecting all explanations in an appendix.
+   - Keep each added aid traceable either to the source text or to an explicit adjacent-practice expansion requested by the user.
+   - If the user asked to preserve the source structure, also record the exact insertion point and whether the aid should be a callout before the paragraph, after it, or near the image anchor.
+5. If an exemplar exists, extract its style backbone:
    - opening posture: whether it starts from business pressure, industry context, or practical usefulness
    - decomposition pattern: whether it defines or classifies the problem before giving judgment
    - explanation chain: whether it tends to move from concept -> mechanism -> example -> boundary
    - anchor density: how often it uses module names, interfaces, metrics, examples, or operational details to pin down claims
    - sentence rhythm: whether it prefers medium-to-long declarative sentences, short bridge sentences, or didactic transitions
    - what it avoids saying: empty praise, slogan language, generic conclusions, false symmetry
-5. Translate the exemplar into latent constraints on tone, pacing, paragraph density, argument order, and explanatory depth. Do not copy the exemplar's exact wording or force its section structure onto the new text.
-6. Strengthen the reasoning chain if the source is thin, but do not invent facts, metrics, results, or history.
-7. Rewrite so conclusions feel derived from analysis rather than announced in advance.
-8. Preserve the original information hierarchy unless the user asks for a larger restructure.
-9. If the piece is a technical sharing or personal practice retrospective:
+6. Translate the exemplar into latent constraints on tone, pacing, paragraph density, argument order, and explanatory depth. Do not copy the exemplar's exact wording or force its section structure onto the new text.
+7. Strengthen the reasoning chain if the source is thin, but do not invent facts, metrics, results, or history.
+8. Rewrite so conclusions feel derived from analysis rather than announced in advance.
+9. Preserve the original information hierarchy unless the user asks for a larger restructure.
+10. If the piece is a technical sharing or personal practice retrospective:
    - start from the concrete object and the pressure or complexity it encountered, not from "这篇文章不是..." or "我想分享..." style meta framing
    - let the main argument grow out of an evolution chain such as: local problem -> repeated friction -> abstraction into skill -> orchestration into pipeline
    - keep the article centered on the object being built or evolved, rather than turning it into a generic manifesto about methodology
    - allow the author's or team's practice viewpoint to appear, but keep the tone restrained and engineering-led instead of diary-like
    - if a title or opening line sounds too abstract, pull it back to the concrete system, workflow, or production chain being discussed
-10. If the source is already a mature, sectioned technical document, default to preservation mode:
+11. If the source is already a mature, sectioned technical document, default to preservation mode:
    - keep the original thesis and scope
    - keep the original section order and heading semantics
    - keep existing figure anchors and image positions conceptually stable
@@ -70,6 +83,48 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - When the user says the result should feel less like AI-generated writing, satisfy that indirectly by increasing scenario specificity, mechanism density, and credible engineering judgment. Do not turn the instruction into explicit anti-AI wording inside the prose.
 - If the exemplar is stronger than the source text, move the output closer to the exemplar's level of clarity and restraint without fabricating missing implementation facts.
 
+## Add Reader Aids Inline
+
+- Treat reader aids as local scaffolding, not as a separate appendix by default.
+- Put the explanation where the reader first needs it:
+  - before the main paragraph when the concept is a prerequisite
+  - immediately after the main paragraph when the concept becomes confusing only after the claim appears
+  - as a short dedicated subsection only when the concept would otherwise break the flow of the surrounding section
+- For mechanism terms such as `KV Cache`, `Prompt Cache`, `ReAct`, or `Harness Engineering`, prefer this expansion order when useful:
+  - one plain-language sentence for what it is
+  - one sentence for why it matters in this section
+  - one short mechanism explanation
+  - one concrete example, intuition, or contrast
+  - one boundary or misconception note
+- If the user explicitly wants "更好理解", "补充背景", "补概念解释", or "补最佳实践", materialize that as actual paragraphs in the draft instead of a hidden planning note.
+- When adding best-practice extensions, keep them adjacent to the section's object. Do not insert a floating checklist with no clear tie back to the current mechanism.
+- Mark implicit speaker shorthand for expansion. A slide-friendly phrase may need two or three grounded sentences in article form before it becomes self-contained.
+- If a concept can be explained in one parenthetical definition without loss, do that. If it needs mechanism and boundary, give it a compact block.
+- Keep reader aids bounded. They should reduce cognitive jumps, not turn every section into a mini encyclopedia.
+- If the source is a mature document and the task is a bounded editorial pass, inline reader aids are allowed only when they preserve the same thesis, section contract, and review boundary.
+
+## Annotation Mode
+
+- Use annotation mode when the user wants the source to remain recognizably the same document, with added explanations exposed as explicit notes rather than merged into the prose.
+- In annotation mode, preserve by default:
+  - chapter order
+  - heading wording
+  - figure or image positions
+  - the source paragraph's main claim and local role
+- Insert added content as clearly marked blocks such as:
+  - `AI 批注｜背景补充`
+  - `AI 批注｜概念理解`
+  - `AI 批注｜最佳实践`
+  - `AI 批注｜常见误解`
+- When a mechanism is easier to understand through flow or spatial layout, allow a lightweight image-backed annotation such as a Mermaid diagram, cropped screenshot, or focused redraw placed immediately next to the note.
+- Keep the annotation physically close to the sentence or paragraph it is explaining.
+- Do not silently rewrite source claims into stronger or broader claims just because the annotation adds context.
+- When a source paragraph already works, leave it intact and add only the minimal note needed.
+- If the task is a strict preservation pass, prefer note blocks over merging the explanation into the source paragraph.
+- In `AI 批注｜概念理解`, prefer a compact order such as: what it is -> useful analogy -> analogy boundary.
+- Prefer engineering-native analogies such as dynamic-programming cache, checkpoint / snapshot, repository-level system prompt, runbook, isolated worker, or syscall surface when they materially reduce abstraction cost.
+- If the concept is easy to over-extend, fold the analogy boundary into the same `AI 批注｜概念理解` block or keep a separate `AI 批注｜常见误解` only when needed.
+
 ## Write Tech Blogs And Practice-Sharing Articles
 
 - Treat a technical blog, technical sharing, or personal practice retrospective as an engineering reconstruction of one concrete object, workflow, or production chain.
@@ -80,6 +135,7 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - Keep the "personal" part in the choice of object, the evolution path, and the design judgment, not in diary-like self-expression.
 - Prefer chapter openings that name the current object, phase, or design question. Avoid a sequence of meta-level headings that all describe the article rather than the system or chain being discussed.
 - Reserve summary, takeaways, and later reflections for the back half or ending. Do not spend the opening paragraph on conclusions that have not been earned yet.
+- If a chapter introduces a dense mechanism, add one local clarification block before diving into consequences. In practice-sharing prose, the section should still feel like one continuous argument rather than a detached glossary.
 
 ## Write Serious Engineering Prose
 
@@ -88,6 +144,7 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - Let the article read as continuous prose with strong engineering explanation, even when it is highly structured.
 - Prefer object definition, mechanism expansion, and boundary clarification over storytelling and over RFC-style review scaffolding.
 - Prefer serious-engineering exemplars that explain one system, pipeline, or internal mechanism with stable terminology and layered decomposition.
+- When the mechanism name is likely to be unfamiliar, add a short contextual definition at first use instead of assuming the reader has already seen the term in prior talks or papers.
 
 ## Write Research Reports
 
@@ -133,6 +190,7 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - If the report is based on a narrow source set, say so through the writing itself. Do not let a narrow-source summary pretend to be a broad survey.
 - Prefer section openings that answer one research question or decision point at a time, rather than opening with essay-like abstractions.
 - Prefer self-contained section headings that make sense on their own. Avoid callback headings like “这个判断为什么成立” when an object-facing or question-facing title would be clearer.
+- In research and evaluation writing, avoid headings that themselves read like thesis verdicts or social-post claims, such as `X 强于 Y` or `A 与 B 并不匹配`. Prefer headings that name the evaluated dimension instead.
 - For research-report SOP sections, prefer reader-question headings such as “怎么开始试一轮 X”, “先怎么试起来”, or “第一步先做什么” over analysis-labeled headings like “最小验证路径：先验证什么最有意义” or half-abstract headings like “如果要试一轮，最短路径是什么”.
 - For open-source or source-available project research, treat implementation reading as part of the evaluation. The report should not stop at documentation summary when implementation shape materially affects the judgment.
 - For tool / platform / service research, keep the body product-facing before it becomes implementation-facing. Readers should first understand how they would encounter or use the thing, what surfaces it exposes, and what observations matter in practice.
@@ -184,6 +242,7 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - When opening a section or paragraph, usually state what the object is or why it matters before diving into details.
 - If a concept can be misunderstood, clarify the distinction first and then continue. Short analogies or parenthetical definitions are acceptable when they improve precision.
 - If the source supports it, derive one or two natural categories or stages from the problem instead of producing flat, generic paragraphs.
+- For concept-dense sections, prefer a local chain such as: local context -> term definition -> mechanism -> why it matters here -> best practice or pitfall.
 
 ## Keep the Tone Credible
 
@@ -207,6 +266,7 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - If the user supplies a reference article, keep the output close to its overall feel and argumentative rhythm without forcing the same outline.
 - If the task is a personal practice share or technical sharing draft, default to one strong version that foregrounds the concrete object and the evolution chain before giving any abstract method summary.
 - If the source text is short but the user wants a stronger technical-column feel, improve the opening sentence and the concept-to-mechanism transition first before adding any extra structure.
+- If the user wants the article to become easier to follow, default to inserting reader aids near the relevant sections instead of moving all help text to the opening summary or a final appendix.
 - If the input is important and ambiguous, provide two variants only when useful:
   - a steadier formal version
   - a slightly more conversational professional version
@@ -231,3 +291,4 @@ Rewrite or draft Chinese technical prose so it reads like mature engineering pra
 - Do not replace existing image anchors or diagram positions with new visuals unless the user asked for a restructure.
 - Do not expand "四个问题" into "五个问题", turn comparison evidence into a new diagram-first narrative, or otherwise restate the document as a different argument map during a bounded editorial pass.
 - Do allow surface-level cleanup when it improves readability but keeps the same thesis, section contract, evidence role, and review boundary.
+- Do not add generic background padding that is not clearly tied to the current section's object, mechanism, or decision.

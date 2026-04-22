@@ -4,6 +4,181 @@
   "files": [
     {
       "git_mode": "100644",
+      "path": "owned/codex-image-render/SKILL.md",
+      "sha256": "3db4c35fd59d1c7a896f3f72099217bfa36693fbb018013a0ad75453a27fb1b8"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-practice-writer/SKILL.md",
+      "sha256": "082e9b3bdc7065ae68d602e5bb3ffa07131d46c249ca9f9303eb799d4cbe7b7a"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-practice-writer/agents/openai.yaml",
+      "sha256": "bcbd58be992f13bb809d5cc4cfc00e11749192ec7fe2230be134fc9bd4a1b6b9"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-practice-writer/references/annotation-mode.md",
+      "sha256": "a82f03f7f78094ca6769f6efc312045e77eefbd7466d1520c36433e0b887aed1"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-practice-writer/references/inline-reader-aids.md",
+      "sha256": "d50101a47504f014fa1a93961b5ea8f25ff66c8f886212bd8107fca770b0c1af"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-practice-writer/references/meituan-tech-practice-style.md",
+      "sha256": "cef8c24de686b26b0b2a500e73de4f5146480e5d9cd295fe1f9c5df17745a7a1"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-practice-writer/references/research-report-style.md",
+      "sha256": "37f0af0d429580de6ca1ad5db6d014326e1004827ced01bee32f0ea6b429f1c6"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-practice-writer/references/rfc-document-style.md",
+      "sha256": "889416ad8f9652518bb5c1733a7591f4935dfdca0018e259f95656dbce6fd68b"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-practice-writer/references/serious-engineering-style.md",
+      "sha256": "357658f40ce24761b7cfdf7d29fd03ada9cc6796379f2a98b9b6fbf16d4e3ec2"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/SKILL.md",
+      "sha256": "09f20f8fbecb57f8975a0acad7ccf571334b8a62172458637d20dea040d9b77b"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/agents/openai.yaml",
+      "sha256": "35cacdc7c462bd58fbf7a1a450dcf5a52b4af70b2b9c81b23d43b550a94ae62e"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/deck-outline-contract.md",
+      "sha256": "cc69748bbb789a65171529dc1b7cd407ea412b66d6b478f59e409d6710a5b042"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/diagram-contract.md",
+      "sha256": "2dbc5a4581d3e0ade0e63eeccec9d2c4603db3c97499738958d1376858985d41"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/document-workspace.md",
+      "sha256": "f0a2a821580acc5852af12293ed9131f2ee844d7694e365962a68a69085a21f3"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/flow-closure.md",
+      "sha256": "3b3d8d2a583ce69e815e94a4acf1bfc5893ada25a66fd2df9550f9746cc70ec9"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/selection-bundle.md",
+      "sha256": "7b93550e5e95dabb01164d83d5446b69c3beaf7b6e506a14d302dcea1a70d2fc"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/source-fidelity-check.md",
+      "sha256": "2d0deeb7e4a76a4abe53af694f5b9210a2434a437e614fa9df35326432770647"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/theme-profiles.md",
+      "sha256": "93eca7b3f78bc72155943013849cd71e736ffa6e148704a9eb7d19830885971b"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/visual-system.md",
+      "sha256": "660ecc8887bd798348e617fa82e8df59368f400b0e61802656f256c1f99b2fe9"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/references/writing-mechanics.md",
+      "sha256": "96b0357efb7caf7b792061c2c2d72b8e49ae27de253e8ff09d689198bc520823"
+    },
+    {
+      "git_mode": "100755",
+      "path": "owned/engineering-story-pipeline/scripts/check-source-fidelity.js",
+      "sha256": "bced15f141cbf30d6cec8757ea7477bc4a3171884f45685be03c3400dc88c9a0"
+    },
+    {
+      "git_mode": "100755",
+      "path": "owned/engineering-story-pipeline/scripts/extract-source-contract.js",
+      "sha256": "b68df579f216a11f9273ed4cfc135c54cf47c7d87730436a54a969e832ea9a82"
+    },
+    {
+      "git_mode": "100755",
+      "path": "owned/engineering-story-pipeline/scripts/init-workspace.js",
+      "sha256": "adde9a15fd77fccee76770256dd566c7075d014f1bfa028aabd643d05abe5ab6"
+    },
+    {
+      "git_mode": "100755",
+      "path": "owned/engineering-story-pipeline/scripts/materialize-workspace-baoyu-config.js",
+      "sha256": "7a0ae2adce81da98808c4887bc1d67aaac19ae59430ef6336a81e245a6343002"
+    },
+    {
+      "git_mode": "100755",
+      "path": "owned/engineering-story-pipeline/scripts/utils.js",
+      "sha256": "295ee25d18f553fa26a9511ab6d273a42bd0c16541767f4c7be8d85b1e48955c"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/scripts/validate-reader-facing-links.js",
+      "sha256": "581014f0e7252e2a9b8cecb99bd75bf73f5a11f9910cdffbf43605744f04969c"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/engineering-story-pipeline/scripts/validate-style-propagation.js",
+      "sha256": "d2755bb7ac51cf236060d293b12f09b294e76604f307602ab79eed58d541f2f0"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/research-report-pipeline/SKILL.md",
+      "sha256": "1d3fccdaec4f9eb04f8fafefac011d113a27f75574273665f5c6c012420d9cf5"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/research-report-pipeline/references/diagram-contract.md",
+      "sha256": "57243ed107249153ae71ed550314dca383056d1c872eeb7a4c2de8cd6a3794a7"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/research-report-pipeline/references/research-annotation-mode.md",
+      "sha256": "16147e189c856c7cdfa9bce6b2abbf1a5741276da23e5a8ad9d566bd54d92d4a"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/research-report-pipeline/references/research-workspace.md",
+      "sha256": "2386d05fe1df5b323ae3669427a71659a6d5d09380e6632b9d12eaea5a40a9e1"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/research-report-pipeline/scripts/finalize-report.js",
+      "sha256": "2779eea336b51721c917ddbeb60133e92427b5155ef655fee416ee8e7d1c4744"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/research-report-pipeline/scripts/init-workspace.js",
+      "sha256": "e7271cd04711998933955d9fb3467b5f49b34b4396952fbc491a2da7db43e397"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/research-report-pipeline/scripts/materialize-visual-prompts.js",
+      "sha256": "2f143dfee9dce226cb3b206925f68b60413e005801e55380d5842e6baf6ecb57"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/research-report-pipeline/scripts/utils.js",
+      "sha256": "80604ddd704451526d8babf9f3a20cd5584085aee98acf7c9da21e3f6e9a3c48"
+    },
+    {
+      "git_mode": "100644",
       "path": "owned/skills-github-publisher/SKILL.md",
       "sha256": "a6ee83227dc84133514fa823dca91ab48929e73010e2f29e4634428feb17a7ef"
     },
@@ -116,6 +291,276 @@
       "git_mode": "100644",
       "path": "owned/skills-github-publisher/scripts/verify_publish_sync.py",
       "sha256": "421db0bf19cca767c3250694761e9e15de703acceffc1a109e83636b50c04267"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/writing-theme-bridge/SKILL.md",
+      "sha256": "aa5da87bfb8fb12ffcd99540d7ee67e08228dee3347bcc464dfed6c57c79309f"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/writing-theme-bridge/agents/openai.yaml",
+      "sha256": "6dafb820c0f20eb8132d8d87ce9e974adb9639037077f884308a2117cfa530ab"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/writing-theme-bridge/references/theme-mapping.md",
+      "sha256": "cde53388a7eb35daa078f3c18d1206001cad98b020eb95e8f4cc3fe400d0d3bd"
+    },
+    {
+      "git_mode": "100644",
+      "path": "owned/writing-theme-bridge/references/writing-postures.md",
+      "sha256": "c40689a1583c967d9d8df9e74e609417c190cded3c4bc4d3bcdf72998b06697e"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/SKILL.md",
+      "sha256": "6e05d7e13aa1e4fd0fb6906a23bd981c6a5a2d1ba342b39d103bff091c64ff1d"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/prompts/system.md",
+      "sha256": "2683c79386d20f2c26e720a4702773be4b1fabd97519b1e48e74bca6b53e3d3e"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/config/first-time-setup.md",
+      "sha256": "b247e6fd3fdd148dbd7f9412c8cf638f07873ae44a8f6ed424d0c199eac938eb"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/config/preferences-schema.md",
+      "sha256": "2a07d623ac262c9b5692523300256f1e53d6abfd28130ae8c48a77468aa27295"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/prompt-construction.md",
+      "sha256": "a977582547fee869265a3f9005f3315bf5eccd6152010810efd248efb0cd7157"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/style-presets.md",
+      "sha256": "83728770a2047532a38adb28c1457ea6dbcd93dbb472089bea23f561ca5da3f6"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/blueprint.md",
+      "sha256": "4836bdd8c4fcb17694b3010fd21c091e0b2234dca2aafe0ac5fd046d5fb24f67"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/chalkboard.md",
+      "sha256": "242f11f226016b388c4d69f1c950fff78a0462ebe47109150b8cfde53b793366"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/editorial.md",
+      "sha256": "ca096334d70ff7b96ab32ec7796e0c49d60eba1fdb934249559976c33daef008"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/elegant.md",
+      "sha256": "8bc8ad9a290646f806e2447af513f9c4df76befae6aa3ad777b02bb514b92cfc"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/fantasy-animation.md",
+      "sha256": "5bc59a1780be6682a21d211b9b4289056c7f44aeba8016560bd2ef7ddb454e3d"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/flat-doodle.md",
+      "sha256": "094beb61d541c2b2afc73a1162a1f4962e8ef6c4caa03f67c09c2f8637b52e24"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/flat.md",
+      "sha256": "999afbadd7a32138e6036ee13f23da9f199e82deca351dfec2f29ed9abced28c"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/intuition-machine.md",
+      "sha256": "7009797b135ef1d9752b81d9bf71d4035039207602edb18b74f8c6bd82413201"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/minimal.md",
+      "sha256": "9f45c7852e8b053e1083737a3ca79b175556121951792f814b47f9c596be6e1a"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/nature.md",
+      "sha256": "44302deb399cdd5856439b493ffb74925866f238c8bc6379094cab93b05ed631"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/notion.md",
+      "sha256": "52efbd2587c46104e2b47bf2e259a3a1bb8546ad5ed15b274a374d9af1a5b314"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/pixel-art.md",
+      "sha256": "3c6a7ce22957179e3a344c4ec8085793951ba2dbab59d8315fe1b5af24a19246"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/playful.md",
+      "sha256": "ea58b9791b4babd3eaeb2d7285fec44ad7e58d3416ec415e564d7207d00d0940"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/retro.md",
+      "sha256": "6f69883852c693f314f0f1dd3ab1f025aaf4bd4c6f0708dbeeaa74fe0c9066d7"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/scientific.md",
+      "sha256": "0d360a3ab10df6d6dd47c9cee76fa18e3a57fd805d52df84e0b7e24ce315befa"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/screen-print.md",
+      "sha256": "52faa0188b7beb71d118d6ef4e936891e615d02eadada8ccf8b79665f605a9f2"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/sketch-notes.md",
+      "sha256": "9fd928a3c49f9e371b4a2b9e9fc2b8ad678f8be7184e9f79f12c96b1ab1652a0"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/sketch.md",
+      "sha256": "e74cc5696fbeb7e52be9cf126784c4a8e58787a5810e3b84f2972cdc69689aae"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/vector-illustration.md",
+      "sha256": "9b28324319a29f82480401e092d513f9b212571d283bc43c6a8d029f829ed027"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/vintage.md",
+      "sha256": "b10f965bcdd7951927614a958159d1081aba3f841c97096c704f8ab2431642a6"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/warm.md",
+      "sha256": "bebcacbf585b7dd47939a58923a09708aec708afdd88b0c372efe3c1fe461394"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles/watercolor.md",
+      "sha256": "d66b08079ea4d99d80691fe2a0aef6075ad58ec7adcc1f8976d7ac0249804cb4"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/styles.md",
+      "sha256": "16295c68e71159f275e989e60003d1ba49f84d078bf2db8b3591ac119122db8f"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/usage.md",
+      "sha256": "7e2e870ff081b0339d4706a5d32ff20ede8660ff62fa2018e5d7c7496d1c5e70"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/references/workflow.md",
+      "sha256": "0245827a7c2584778dab77c4393c9d0e7b6a3d4fea1236d70d458b6699723b00"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-article-illustrator/scripts/build-batch.ts",
+      "sha256": "edd07bf093a10bcbc9e8fcc55d4daf4b3b24e12770a3e297b005ef3f797f173b"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/SKILL.md",
+      "sha256": "33f70ddf8061d36e181ac9f839c1c6989415b0a268e4751fb83a05d8af202011"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/references/config/first-time-setup.md",
+      "sha256": "f84f2c5984b715e68609c126a6972ff9fdd56fb8c9f927e80bc3279571fb88c6"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/references/config/preferences-schema.md",
+      "sha256": "e9ff515d30cf10db0bf3d3f15cf0770ceb296028cd5e779c3e51f039d4898769"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/main.test.ts",
+      "sha256": "97b1e0728678a63c7fa70f54985cd02b435503973b666d7c1905af0075370d2d"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/main.ts",
+      "sha256": "415de60434d4f364ef869067da2080b942bd347195a2e9caf88679154583751f"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/dashscope.test.ts",
+      "sha256": "ee9391ec92f564451a15f9fe7145399249aea0f72b29927a7e25ad329ac67876"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/dashscope.ts",
+      "sha256": "2753adcef7f5b2bee2e9085cdd5cf851e99d1a178620c6839e66683323e83646"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/google.test.ts",
+      "sha256": "8c75c7f84cd3e84a00634bd576b4a49b2a28a1f426f186a875f63e6f0fd3b2f0"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/google.ts",
+      "sha256": "159af653cc1db5ae256b4bae9439d17352746734b6c4fe823d480dd570d281b3"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/jimeng.ts",
+      "sha256": "bdd5664e82e315afc8a195c02de2c33e606be3766d6607d0e6b8b6587b02770b"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/openai.test.ts",
+      "sha256": "36cbc70712bd8d74a1beffbe11863621cd62326f68af2784a4bfd73b7a55652a"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/openai.ts",
+      "sha256": "581d9d318af8bb9730c1dd961cc0d59ec675f38a4765d09c17dd01fd2437064d"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/openrouter.ts",
+      "sha256": "785404ffa7bca8bb8a26cc2b61c5bc0f78609669bcb9c3effe32336a50ac8981"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/replicate.test.ts",
+      "sha256": "7e373a2d1064adb0d8a7d884338d2621ed624b8a7bd02cbc5f7f0f64fc721904"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/replicate.ts",
+      "sha256": "ba3767e05eefdb53df39e4c90b38b23569a4ad16725873c6c165813dcb38dd20"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/providers/seedream.ts",
+      "sha256": "d073b9a4fff1d63995faad69650d8af3e5729ec61381c7d1384e5f66ef90f381"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-image-gen/scripts/types.ts",
+      "sha256": "a2eedad4f3302b9a9f22ff75a30a6f0103020d0f0e5e33328b165197d50597b2"
+    },
+    {
+      "git_mode": "100644",
+      "path": "third-party/baoyu-visual-pipeline/SKILL.md",
+      "sha256": "0dbac9857b251fd9270355e68e98b20f997459a23c811cda4a45b1929d69bed3"
     }
   ],
   "generator": "owned/skills-github-publisher/scripts/publish_sync_manifest.py",
@@ -123,6 +568,14 @@
   "schema_version": 2,
   "signer_identity": "publish-sync",
   "synchronized_skill_roots": [
-    "owned/skills-github-publisher"
+    "owned/codex-image-render",
+    "owned/engineering-practice-writer",
+    "owned/engineering-story-pipeline",
+    "owned/research-report-pipeline",
+    "owned/skills-github-publisher",
+    "owned/writing-theme-bridge",
+    "third-party/baoyu-article-illustrator",
+    "third-party/baoyu-image-gen",
+    "third-party/baoyu-visual-pipeline"
   ]
 }

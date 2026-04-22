@@ -1,6 +1,6 @@
 ---
 name: baoyu-image-gen
-description: AI image generation with OpenAI, Google, OpenRouter, DashScope, Jimeng, Seedream and Replicate APIs. Supports text-to-image, reference images, aspect ratios, and batch generation from saved prompt files. Sequential by default; use batch parallel generation when the user already has multiple prompts or wants stable multi-image throughput. Use for direct rendering when the request is already a final-prompt or leaf image task, or when a higher-level visual orchestration skill has already prepared the saved prompt artifacts.
+description: Unified image rendering entrypoint for the visual family. In Codex, routes to built-in image generation by default when the built-in tool is available; otherwise uses OpenAI, Google, OpenRouter, DashScope, Jimeng, Seedream and Replicate APIs. Supports text-to-image, reference images, aspect ratios, and batch generation from saved prompt files on the API path.
 version: 1.56.3
 metadata:
   openclaw:
@@ -13,11 +13,34 @@ metadata:
 
 # Image Generation (AI SDK)
 
-Official API-based image generation. Supports OpenAI, Google, OpenRouter, DashScope (阿里通义万象), Jimeng (即梦), Seedream (豆包) and Replicate providers.
+Unified image rendering entrypoint for the visual family. In Codex, this skill routes to `codex-image-render` when the built-in `image_gen` tool is clearly available in the current turn. Otherwise it uses the existing API-based image generation path with OpenAI, Google, OpenRouter, DashScope (阿里通义万象), Jimeng (即梦), Seedream (豆包) and Replicate providers.
 
 Also read [../../owned/shared/references/family-orchestration-contract.md](../../owned/shared/references/family-orchestration-contract.md).
 Also read [../../owned/shared/references/extend-ownership-contract.md](../../owned/shared/references/extend-ownership-contract.md).
 Also read [../../owned/shared/references/visual-source-preservation-contract.md](../../owned/shared/references/visual-source-preservation-contract.md).
+Also read [../../owned/codex-image-render/SKILL.md](../../owned/codex-image-render/SKILL.md) when the current turn clearly exposes the built-in `image_gen` tool.
+
+## Step -1: Resolve Renderer Path
+
+This skill stays the renderer entrypoint for higher-level visual workflows, but it has two execution paths:
+
+- **Codex built-in path:** route to `codex-image-render`
+- **API/CLI path:** keep using the existing `scripts/main.ts` renderer path documented below
+
+Default decision rules:
+
+1. If the user explicitly asks for `provider`, `model`, `API`, `CLI`, `batchfile`, `jobs`, `json`, or the existing `baoyu-image-gen` script path, stay on the API/CLI path.
+2. Otherwise, if the current turn clearly exposes the built-in `image_gen` tool, route to `codex-image-render`.
+3. Otherwise, if built-in `image_gen` is unavailable or uncertain, stay on the API/CLI path.
+
+Built-in-path rules:
+
+- Treat prompt files, raw prompts, reference images, and output paths as the explicit inputs passed to `codex-image-render`.
+- Treat reference-image generation as capability-equivalent on the built-in path. Do not require CLI `--ref` terminology there.
+- Do not promise CLI/API-specific `provider`, `model`, `batchfile`, `jobs`, `json`, or session semantics on the built-in path.
+- Do not run the API/CLI preference setup when the built-in path was selected.
+
+If this step selects `codex-image-render`, stop here and follow that skill. The rest of this document describes the existing API/CLI path.
 
 ## Script Directory
 
@@ -30,7 +53,7 @@ Also read [../../owned/shared/references/visual-source-preservation-contract.md]
    - else ask to install `bun`, install it, and continue
 4. Do not silently replace this skill with ad hoc image-generation commands while still claiming the skill ran
 
-## Step 0: Load Preferences ⛔ BLOCKING
+## Step 0: Load Preferences ⛔ BLOCKING (API/CLI path only)
 
 **CRITICAL**: This step MUST complete BEFORE any image generation. Do NOT skip or defer.
 
@@ -115,6 +138,8 @@ This skill is a rendering capability.
 - If the request needs target-skill routing, prompt-artifact staging, or a first-pass review loop, prefer `baoyu-visual-pipeline` as the entrypoint instead of using this skill as the first stop.
 
 ## Usage
+
+The examples below are API/CLI path examples. When Step -1 routes to `codex-image-render`, keep the same saved prompt and output artifacts, but do not force them through `scripts/main.ts`.
 
 ```bash
 # Basic

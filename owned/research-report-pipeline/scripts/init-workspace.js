@@ -26,6 +26,7 @@ function sourceTemplate(topic) {
     "",
     `<!-- ${GENERATED_MARKER} -->`,
     `- report_topic: ${topic || "TODO"}`,
+    "- scope_status: ambiguous | confirmed",
     "- confirmed_scope: TODO",
     "- source_availability: unknown",
     "- code_verification_required: unknown",
@@ -57,6 +58,11 @@ function sourceCatalogTemplate() {
     "  - type: TODO",
     "  - role: TODO",
     "  - role_in_judgment: seed | baseline | mechanism-evidence | case-study | counterexample | supporting",
+    "  - capture_status: artifacted | failed | not-required",
+    "  - raw_artifact: TODO",
+    "  - normalized_artifact: TODO",
+    "  - evidence_bearing_source: TODO",
+    "  - capture_failure: null",
     "",
   ].join("\n");
 }
@@ -119,7 +125,7 @@ function codeVerificationTemplate() {
     "# Code Verification",
     "",
     `<!-- ${GENERATED_MARKER} -->`,
-    "- overall_result: pending",
+    "- overall_result: pending | pass",
     "- verification_scope: TODO",
     "",
     "## When To Use",
@@ -146,13 +152,32 @@ function factCheckTemplate() {
     "# Fact Check",
     "",
     `<!-- ${GENERATED_MARKER} -->`,
-    "- overall_result: pending",
+    "- overall_result: pending | pass",
     "",
     "## Claims Reviewed",
     "",
     "- claim: TODO",
     "  - status: confirmed | softened | removed | pending",
     "  - source_refs: TODO",
+    "  - note: TODO",
+    "",
+  ].join("\n");
+}
+
+function annotationPlanTemplate() {
+  return [
+    "# Annotation Plan",
+    "",
+    `<!-- ${GENERATED_MARKER} -->`,
+    "- report_edition: standard | annotated",
+    "- overall_need: TODO",
+    "",
+    "## Sections",
+    "",
+    "- section: TODO",
+    "  - why_hard_to_read: TODO",
+    "  - annotation_type: concept-understanding | background | fit-boundary | best-practice | misconception",
+    "  - needs_annotation_figure: yes | no",
     "  - note: TODO",
     "",
   ].join("\n");
@@ -167,6 +192,10 @@ function selectionBundleTemplate() {
     "- writing_posture: research-report",
     "- visual_profile: serious-engineering",
     "- visual_strategy: auto-plan-and-review",
+    "- report_edition: standard",
+    "- annotation_mode: none",
+    "- annotation_visuals: none",
+    "- reader_profile: practitioner",
     "- text_only_evidence: null",
     "- visual_style_override: null",
     "- confirmed: false",
@@ -190,6 +219,11 @@ function visualInventoryTemplate() {
     "# Visual Inventory",
     "",
     `<!-- ${GENERATED_MARKER} -->`,
+    "- planning_status: pending | confirmed",
+    "- image_count: TODO",
+    "- count_decision_source: user | planner",
+    "- count_rationale: TODO",
+    "",
     "## Status Rules",
     "",
     "- `pending`: not prepared yet",
@@ -197,7 +231,7 @@ function visualInventoryTemplate() {
     "- `draft-inline-mermaid`: inserted into `drafts/report.md`, waiting for user confirmation",
     "- `draft-rendered`: rendered first pass exists, waiting for user confirmation",
     "- `approved-inline-mermaid`: user accepted the Mermaid diagram",
-    "- `approved-rendered`: user accepted the rendered visual",
+    "- `approved-rendered`: user accepted a leaf-skill rendered visual",
     "- `skipped`: user explicitly chose not to include this visual",
     "",
     "## Planned Visuals",
@@ -207,6 +241,9 @@ function visualInventoryTemplate() {
     "  - draft_anchor_heading: TODO",
     "  - visual_type: framework",
     "  - render_via: baoyu-article-illustrator",
+    "  - rendered_path: null",
+    "  - prompt_artifacts: null",
+    "  - approval_source: pending",
     "  - source_anchor: TODO",
     "  - purpose: 说明项目或技术的整体定位与结构",
     "  - status: pending",
@@ -216,6 +253,9 @@ function visualInventoryTemplate() {
     "  - draft_anchor_heading: TODO",
     "  - visual_type: flowchart",
     "  - render_via: baoyu-article-illustrator",
+    "  - rendered_path: null",
+    "  - prompt_artifacts: null",
+    "  - approval_source: pending",
     "  - source_anchor: TODO",
     "  - purpose: 收拢 quickstart 或 first-pass 验证路径",
     "  - status: pending",
@@ -225,6 +265,9 @@ function visualInventoryTemplate() {
     "  - draft_anchor_heading: TODO",
     "  - visual_type: framework | comparison",
     "  - render_via: baoyu-article-illustrator | baoyu-infographic",
+    "  - rendered_path: null",
+    "  - prompt_artifacts: null",
+    "  - approval_source: pending",
     "  - source_anchor: TODO",
     "  - purpose: 说明主要模块、能力面或边界分层",
     "  - status: pending",
@@ -234,6 +277,9 @@ function visualInventoryTemplate() {
     "  - draft_anchor_heading: TODO",
     "  - visual_type: comparison | infographic",
     "  - render_via: baoyu-infographic | baoyu-image-gen",
+    "  - rendered_path: null",
+    "  - prompt_artifacts: null",
+    "  - approval_source: pending",
     "  - source_anchor: TODO",
     "  - purpose: 压缩 fit / unfit scenarios、主要坑和建议动作",
     "  - status: pending",
@@ -267,6 +313,26 @@ function draftTemplate(topic) {
     "## 1. 调研范围与结论摘要",
     "",
     "TODO",
+    "",
+    "## 2. 主线判断",
+    "",
+    "TODO",
+    "",
+  ].join("\n");
+}
+
+function annotatedDraftTemplate(topic) {
+  return [
+    `# ${topic || "调研报告"}（批注版草稿）`,
+    "",
+    `<!-- ${GENERATED_MARKER} -->`,
+    "## 1. 调研范围与结论摘要",
+    "",
+    "TODO",
+    "",
+    "> [!NOTE]",
+    "> AI 批注｜概念理解",
+    "> TODO",
     "",
     "## 2. 主线判断",
     "",
@@ -339,11 +405,13 @@ function main() {
   maybeWriteText(path.join(workspace, "notes/report-thesis.md"), reportThesisTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/code-verification.md"), codeVerificationTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/fact-check.md"), factCheckTemplate(), { force, marker });
+  maybeWriteText(path.join(workspace, "notes/annotation-plan.md"), annotationPlanTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/selection-bundle.md"), selectionBundleTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/visual-inventory.md"), visualInventoryTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/diagram-structures.md"), diagramStructuresTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "notes/flow-closure.md"), flowClosureTemplate(), { force, marker });
   maybeWriteText(path.join(workspace, "drafts/report.md"), draftTemplate(topic), { force, marker });
+  maybeWriteText(path.join(workspace, "drafts/report-annotated.md"), annotatedDraftTemplate(topic), { force, marker });
 
   console.log(workspace);
 }

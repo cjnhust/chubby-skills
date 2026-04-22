@@ -25,6 +25,8 @@ If this bridge will persist artifacts for a multi-step flow, also read [../share
      - explanatory vs argumentative balance
      - whether the piece teaches, argues, launches, analyzes, or dramatizes
      - whether the article should feel restrained, spec-like, practice-led, staged, teacherly, editorial, or scene-based
+     - whether dense concepts need local explanation at the point of use
+     - whether the user wants adjacent best practices, pitfalls, or misconceptions added around key sections
 
 2. Recommend a writing posture.
    - Read `references/writing-postures.md`.
@@ -32,6 +34,8 @@ If this bridge will persist artifacts for a multi-step flow, also read [../share
    - If the caller already selected a theme, use that theme as the primary signal.
    - Produce:
      - one recommended posture
+     - one recommended reader-support mode
+     - one recommendation for whether the source should stay as preserved structure plus annotations
      - two or three alternatives
      - one-sentence rationale for each
    - When this skill runs standalone, ask the user to confirm unless the user has explicitly locked the posture or theme.
@@ -47,6 +51,12 @@ If this bridge will persist artifacts for a multi-step flow, also read [../share
    - `lively-explainer` -> use `engineering-practice-writer` as the base engine, then make the article more teacherly and cognitively lighter.
    - `editorial-analytic` -> use `engineering-practice-writer` as the base engine, then strengthen analysis framing and evidence-commentary balance.
    - `comic-teaching` -> use `engineering-practice-writer` as the base engine, then restructure into scene-ready, beat-sized teaching units.
+   - If the piece is still fundamentally `serious-engineering`, `practice-sharing`, or `research-report` but some sections contain concept jumps, prefer inline reader aids over switching the whole draft to `lively-explainer`.
+   - Recommended reader-support modes:
+     - `minimal` -> keep definitions terse and only clarify blocking terms.
+     - `inline-expanded` -> insert short background, concept clarification, and best-practice paragraphs near the first relevant section.
+     - `section-expanded` -> allow short dedicated subsections for concepts that would otherwise overload the main section.
+   - If the user wants the source to behave like an annotated edition rather than a rewrite, preserve the original chapter order and insert explicit labeled callouts for added explanations.
 
 4. Preserve writing boundaries.
    - Do not invent facts, metrics, results, or historical context.
@@ -61,6 +71,8 @@ If this bridge will persist artifacts for a multi-step flow, also read [../share
 - Under the `serious-engineering` theme, prefer `research-report` when the source is an evidence-led evaluation whose main job is to help the reader understand, assess, try, or adopt a technology under an explicit source boundary.
 - Under the `serious-engineering` theme, prefer `practice-sharing` instead of plain `serious-engineering` when the source is a personal or team practice retrospective, a technical blog, a technical sharing draft, or an evolution story centered on one concrete workflow or system object.
 - Under the `editorial-analytic` theme, prefer `research-report` when the output should behave like a bounded evaluation memo with explicit evidence scope, first-pass validation guidance, fit boundaries, and recommendation rather than open-ended commentary.
+- For concept-dense sharing drafts, do not switch to `lively-explainer` unless the user wants the entire document to become tutorial-like. Keep the stronger posture and add reader aids locally.
+- If the user explicitly wants something closer to an annotation system, preserve headings, section order, and figure anchors first, then add reader aids as visibly marked additions.
 - If a caller-provided posture artifact or shared bundle already exists, reuse it before asking the user again.
 - `engineering-practice-writer` remains the default writer for serious engineering prose and the base engine for other postures.
 - If the user gives a strong reference article, merge its style cues with the chosen posture instead of replacing the posture entirely.

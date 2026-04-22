@@ -16,6 +16,7 @@ Also read [../../owned/shared/references/extend-ownership-contract.md](../../own
 Also read [../../owned/shared/references/visual-source-preservation-contract.md](../../owned/shared/references/visual-source-preservation-contract.md).
 
 This skill is a deliverable-specific leaf in the visual family. If the request includes routing, style-bridge preparation, references, multiple variants, or first-pass review, prefer `baoyu-visual-pipeline` as the entrypoint.
+If you are already inside a document workspace and the request involves more than one image, Mermaid or diagram-spec sources, style-bridge preparation, or an explicit keep / regenerate review loop, stop and hand the request to `baoyu-visual-pipeline`. This skill may still be the chosen leaf after that routing.
 
 ## Two Dimensions
 
@@ -105,7 +106,25 @@ Full procedures: [references/workflow.md](references/workflow.md#step-2-setup--a
 
 ### Step 3: Confirm Settings ⚠️
 
-**ONE AskUserQuestion, max 4 Qs. Q1-Q2 REQUIRED. Q3 required unless preset chosen.**
+**ONE AskUserQuestion, max 4 Qs. Q1-Q2 REQUIRED. Q3 required unless preset chosen, except for the single-technical-figure fast path below.**
+If an upstream orchestrator has already fixed image count, style authority, or review policy in saved artifacts, reuse those saved decisions instead of re-inferring them locally.
+
+**Single technical figure fast path**:
+- Use this exception only when ALL of the following are already true:
+  - the deliverable is one technical figure inside a research / engineering report
+  - the single-figure scope is explicit because either the user asked for one image or an upstream plan / working artifact already fixed `image_count: 1`
+  - there is no explicit style brief or reference image
+  - asking multiple setup questions would add more friction than value
+- Then default to:
+  - `type: framework`
+  - `density: minimal`
+  - `style: blueprint`
+  - `language: match article`
+- Save those defaults in `outline.md` and continue to prompt construction.
+- This fast path may skip low-value setup questions, but it may not decide image count on its own.
+- If image count is still undecided, stay in normal planning / settings flow and resolve count before using this exception.
+- Treat this as a low-ceremony exception for already-scoped one-image technical reports, not as a general bypass for multi-image illustration work.
+- Never use this fast path for multi-image article batches or document-level visual review loops.
 
 | Q | Options |
 |---|---------|
@@ -145,6 +164,9 @@ Full template: [references/workflow.md](references/workflow.md#step-4-generate-o
 7. Apply watermark if EXTEND.md enabled
 8. Generate from saved prompt files; retry once on failure
 9. After the first successful batch or representative first-pass image, summarize visible deviations in style, structure, and readability before optional regeneration. Prefer targeted prompt fixes over blindly regenerating the whole batch.
+10. When this skill is being used as a leaf under an orchestrator, hand the first-pass outputs back to that orchestrator for keep / regenerate review instead of treating leaf execution as overall completion.
+
+If the user asked to generate images, do not fulfill the request with Mermaid-only or SVG-only output unless they explicitly asked for direct Mermaid / SVG export. Local diagrams may inform prompts, but they do not replace the rendering step.
 
 Full procedures: [references/workflow.md](references/workflow.md#step-5-generate-images)
 
