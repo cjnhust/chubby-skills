@@ -33,7 +33,7 @@ The goal is to keep the first Codex-on-GitHub use limited to review on public pu
 
 - Use a small docs-only pull request.
 - Keep the `codex-review-gate` workflow green; that gate should only require a current-head Codex review on the latest PR head.
-- Keep GitHub's native conversation-resolution rule enabled so unresolved review threads still block merge.
+- Keep GitHub conversation resolution enabled so unresolved review threads still block merge.
 - Let GitHub auto-merge the PR after the gate succeeds instead of merging manually.
 - If you are introducing the hard-gate workflows for the first time, keep the bootstrap PR same-repo and trigger one current-head Codex review so the required status gets stamped on that head.
 - Trigger Codex review through exactly one supported GitHub flow for each head: repository auto review, reviewer request, or one manual `@codex review` request. Do not stack multiple trigger paths on the same head.
@@ -65,3 +65,4 @@ Focus on secret leakage, local path regressions, internal-only content, and owne
 - Do not use Codex GitHub flows on unpublished branches that still carry local-only policy values.
 - Do not authorize internal repositories from this public-repo setup path.
 - If the first review asks for local private files or ignores the public boundary, disable the GitHub-side flow and keep Codex local-only.
+

@@ -2,6 +2,13 @@
 
 Choose the writing posture from article content and communication intent before drafting.
 
+## Reader Aids Are Orthogonal
+
+- Do not switch to `lively-explainer` by reflex just because a sharing draft contains dense concepts such as `KV Cache`, `Prompt Cache`, `ReAct`, or `Harness Engineering`.
+- If the core article should still read like `serious-engineering`, `practice-sharing`, or `research-report`, keep that posture and add inline reader aids instead.
+- Use inline reader aids when the reader needs local concept scaffolding at the point of use: short background, term clarification, a concrete example, best-practice extension, or a common misconception.
+- Choose `lively-explainer` only when the whole piece should run at a lower cognitive load from start to finish, not merely because a few sections need extra explanation.
+
 ## `serious-engineering`
 
 Use when:
@@ -19,6 +26,7 @@ Drafting behavior:
 - minimal rhetorical flourish
 - keep prose continuity; do not force RFC template sections
 - keep explanation first; do not lean on personal retrospective framing
+- allow inline concept clarification when dense terms would otherwise create a context jump
 
 Boundary:
 
@@ -91,6 +99,7 @@ Drafting behavior:
 - preserve engineering detail, tradeoffs, and boundary conditions
 - keep section openings attached to the object, phase, or design question being discussed
 - move summary and methodology extraction behind the concrete chain rather than in front of it
+- prefer local concept expansion near the first relevant section instead of moving all explanations to the front or the appendix
 
 ## `launch-narrative`
 

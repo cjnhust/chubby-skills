@@ -30,6 +30,7 @@ It keeps user-owned skills and third-party skills under separate top-level bound
 
 ## Included Owned Skills
 
+- `codex-image-render`: Execute image rendering through Codex's built-in image_gen tool inside a Codex session. Consumes saved prompt files, raw prompts, reference images, and explicit output paths; re...
 - `engineering-practice-writer`: Rewrite or draft Chinese technical prose in a mature engineering-practice style.
 - `engineering-story-pipeline`: Chain Chinese technical writing, diagrams, and slide-deck work into one pipeline by combining engineering-practice-writer with baoyu skills such as baoyu-format-markdown, baoyu-...
 - `research-report-pipeline`: Orchestrate topic-based or URL-based Chinese technical research reports by confirming scope before expansion, collecting primary sources, building a source catalog and evidence...
@@ -38,21 +39,21 @@ It keeps user-owned skills and third-party skills under separate top-level bound
 
 ## Included Third-Party Skills
 
-- `baoyu-article-illustrator`: Analyzes article structure, identifies positions requiring visual aids, generates illustrations with Type × Style two-dimension approach. Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-article-illustrator).
-- `baoyu-comic`: Knowledge comic creator supporting multiple art styles and tones. Creates original educational comics with detailed panel layouts and sequential image generation. Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-comic).
-- `baoyu-compress-image`: Compresses images to WebP (default) or PNG with automatic tool selection. Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-compress-image).
+- `baoyu-article-illustrator`: Analyzes article structure, identifies positions requiring visual aids, generates illustrations with Type × Style two-dimension approach. Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-article-illustrator).
+- `baoyu-comic`: Knowledge comic creator supporting multiple art styles and tones. Creates original educational comics with detailed panel layouts and sequential image generation. Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-comic).
+- `baoyu-compress-image`: Compresses images to WebP (default) or PNG with automatic tool selection. Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-compress-image).
 - `baoyu-content-pipeline`: Orchestrate non-trivial content ingestion and transformation requests by routing between webpage capture, X capture, translation, markdown cleanup, and HTML export while persist... inferred source family: [Baoyu inferred family extensions](https://github.com/JimLiu/baoyu-skills).
 - `baoyu-cover-image`: Generates article cover images with 5 dimensions (type, palette, rendering, text, mood) combining 10 color palettes and 7 rendering styles. Supports cinematic (2.35:1), widescre... Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-cover-image).
-- `baoyu-format-markdown`: Formats plain text or markdown files with frontmatter, titles, summaries, headings, bold, lists, and code blocks. Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-format-markdown).
-- `baoyu-image-gen`: AI image generation with OpenAI, Google, OpenRouter, DashScope, Jimeng, Seedream and Replicate APIs. Supports text-to-image, reference images, aspect ratios, and batch generatio... Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-image-gen).
-- `baoyu-infographic`: Generates professional infographics with 21 layout types and 20 visual styles. Analyzes content, recommends layout×style combinations, and generates publication-ready infographics. Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-infographic).
-- `baoyu-markdown-to-html`: Converts Markdown to styled HTML with WeChat-compatible themes. Supports code highlighting, math, PlantUML, footnotes, alerts, infographics, and optional bottom citations for ex... Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-markdown-to-html).
-- `baoyu-slide-deck`: Generates professional slide deck images from content. Creates outlines with style instructions, then generates individual slide images. Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-slide-deck).
+- `baoyu-format-markdown`: Formats plain text or markdown files with frontmatter, titles, summaries, headings, bold, lists, and code blocks. Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-format-markdown).
+- `baoyu-image-gen`: Unified image rendering entrypoint for the visual family. In Codex, routes to built-in image generation by default when the built-in tool is available; otherwise uses OpenAI, Go... Current imported version marker: `1.56.3`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-image-gen).
+- `baoyu-infographic`: Generates professional infographics with 21 layout types and 20 visual styles. Analyzes content, recommends layout×style combinations, and generates publication-ready infographics. Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-infographic).
+- `baoyu-markdown-to-html`: Converts Markdown to styled HTML with WeChat-compatible themes. Supports code highlighting, math, PlantUML, footnotes, alerts, infographics, and optional bottom citations for ex... Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-markdown-to-html).
+- `baoyu-slide-deck`: Generates professional slide deck images from content. Creates outlines with style instructions, then generates individual slide images. Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-slide-deck).
 - `baoyu-style-bridge`: Normalize a visual style brief or visual profile into explicit style artifacts by patching saved outline.md files, STYLE INSTRUCTIONS blocks, prompt files, or targeted workspace... inferred source family: [Baoyu inferred family extensions](https://github.com/JimLiu/baoyu-skills).
-- `baoyu-translate`: Translates articles and documents between languages with three modes - quick (direct), normal (analyze then translate), and refined (analyze, translate, review, polish). Support... Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-translate).
-- `baoyu-url-to-markdown`: Fetch any URL and convert to markdown using Chrome CDP. Saves the rendered HTML snapshot alongside the markdown, uses an upgraded Defuddle pipeline with better web-component han... Current imported version marker: `1.58.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-url-to-markdown).
+- `baoyu-translate`: Translates articles and documents between languages with three modes - quick (direct), normal (analyze then translate), and refined (analyze, translate, review, polish). Support... Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-translate).
+- `baoyu-url-to-markdown`: Fetch any URL and convert to markdown using Chrome CDP. Saves the rendered HTML snapshot alongside the markdown, uses an upgraded Defuddle pipeline with better web-component han... Current imported version marker: `1.58.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-url-to-markdown).
 - `baoyu-visual-pipeline`: Orchestrate non-trivial visual generation requests by choosing the right visual deliverable skill, normalizing style through baoyu-style-bridge when needed, materializing prompt... inferred source family: [Baoyu inferred family extensions](https://github.com/JimLiu/baoyu-skills).
-- `baoyu-xhs-images`: Generates Xiaohongshu (Little Red Book) infographic series with 11 visual styles and 8 layouts. Breaks content into 1-10 cartoon-style images optimized for XHS engagement. Current imported version marker: `1.56.1`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-xhs-images).
+- `baoyu-xhs-images`: Generates Xiaohongshu (Little Red Book) infographic series with 11 visual styles and 8 layouts. Breaks content into 1-10 cartoon-style images optimized for XHS engagement. Current imported version marker: `1.56.2`. [source](https://github.com/JimLiu/baoyu-skills#baoyu-xhs-images).
 
 ## Example Prompts
 
@@ -65,6 +66,7 @@ It keeps user-owned skills and third-party skills under separate top-level bound
 
 ## Third-Party Skills Used By Owned Workflows
 
+- `codex-image-render` currently references these third-party skills: `baoyu-image-gen`.
 - `engineering-story-pipeline` currently references these third-party skills: `baoyu-article-illustrator`, `baoyu-comic`, `baoyu-content-pipeline`, `baoyu-cover-image`, `baoyu-format-markdown`, `baoyu-image-gen`, `baoyu-infographic`, `baoyu-markdown-to-html`, `baoyu-slide-deck`, `baoyu-style-bridge`, `baoyu-translate`, `baoyu-url-to-markdown`, `baoyu-visual-pipeline`.
 - `research-report-pipeline` currently references these third-party skills: `baoyu-article-illustrator`, `baoyu-content-pipeline`, `baoyu-cover-image`, `baoyu-image-gen`, `baoyu-infographic`, `baoyu-url-to-markdown`.
 
@@ -82,19 +84,6 @@ See [`THIRD_PARTY_ACKNOWLEDGEMENTS.md`](THIRD_PARTY_ACKNOWLEDGEMENTS.md) for the
 
 - Keep the initial sanitization and first public release local-first.
 - If you later want Codex on GitHub, prefer PR review on this already public repository before broader cloud-side edit flows.
-- Trigger Codex review exactly once per PR head: use repository auto review or reviewer request when available, and keep one manual `@codex review` request as the fallback instead of stacking both.
-- Treat the resulting current-head Codex pull-request review as the gate input; a standalone issue comment is not enough to satisfy the merge gate.
-- If Codex leaves inline findings on the current head, fix them or resolve the threads. If the head changes after that review, request one fresh current-head review; if the head stays the same, GitHub conversation resolution is enough to unblock merge.
-- Keep GitHub conversation resolution enabled so unresolved review threads block merge; if the head changes, wait for a fresh current-head review rather than relying on an older review result.
 - If a trusted maintainer later wants Codex to write back to an existing PR branch, make that an explicit minimal-scope request on an already public PR branch rather than an automatic workflow loop.
 - Do not use Codex GitHub maintenance for unpublished branches, internal-only content, or local private policy files.
 
-## Maintainer Incremental Flow
-
-- Pin one local publish working copy through the private `default_publish_repo` config and reuse that repo instead of creating a new staging directory for each update.
-- Treat this repository as the publish mirror, not the authoring source of truth for skill bundles.
-- Do not hand-edit files under `owned/<skill>/` or `third-party/<skill>/` in this repo. Make the change in the local source skill, then sync it out.
-- Start repeated syncs with `python3 owned/skills-github-publisher/scripts/prepare_incremental_pr.py --skill-root /absolute/path/to/skill`, which refreshes the base branch, creates or reuses a PR branch, syncs the skill roots, writes a signed `.publish-sync/manifest.json` plus `.publish-sync/manifest.json.sig`, and reruns local checks.
-- After reviewing and committing, use `python3 owned/skills-github-publisher/scripts/push_pr_handoff.py --base main` to inspect the push and PR handoff from the same fixed publish repo.
-- PRs that change managed skill content now have to pass `publish-sync-guard`, which rejects direct edits that do not match the recorded signed sync manifest.
-- If you rotate the publish-sync signing key, update both `.publish-sync/allowed_signers` and the repository-level `PUBLISH_SYNC_ALLOWED_SIGNERS_B64` variable before relying on the guard.

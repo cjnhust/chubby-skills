@@ -166,7 +166,26 @@ For each reference image:
 
 ## Step 3: Confirm Settings ⚠️
 
-**Do NOT skip.** Use ONE AskUserQuestion call with max 4 questions. **Q1, Q2, Q3 are ALL REQUIRED.**
+**Do NOT skip.** Use ONE AskUserQuestion call with max 4 questions. **Q1, Q2, Q3 are ALL REQUIRED unless the single-technical-figure fast path applies.**
+
+### Single Technical Figure Fast Path
+
+Use this exception only when ALL of the following are true:
+
+- the deliverable is exactly one technical figure for a research / engineering report
+- the single-figure scope is explicit because either the user asked for one image or an upstream plan / working artifact already fixed `image_count: 1`
+- there is no explicit style brief
+- there are no saved reference images to reconcile
+- asking multiple setup questions would add more friction than value
+
+Defaults:
+
+- `type: framework`
+- `density: minimal`
+- `style: blueprint`
+- `language: article language`
+
+Record these defaults in `outline.md` and proceed to prompt generation. This fast path may skip low-value setup questions, but it may not decide image count on its own. If image count is still undecided, stay in the normal planning flow first. If the user later asks for a different visual direction, regenerate from updated prompt files instead of treating the fast path as permanent.
 
 ### Q1: Preset or Type ⚠️ REQUIRED
 
@@ -314,6 +333,8 @@ Prompt Files:
 ```
 
 **DO NOT** pass ad-hoc inline text to `--prompt` without first saving prompt files. The generation command should either use `--promptfiles prompts/NN-{type}-{slug}.md` or read the saved file content for `--prompt`.
+
+**DO NOT** replace the rendering stage with a Mermaid-only or SVG-only local diagram when the user asked to generate an image. Local structural diagrams may be used as source artifacts or prompt aids, but not as the final rendered illustration unless the user explicitly asked for direct Mermaid / SVG output.
 
 **Execution choice**:
 - If multiple illustrations already have saved prompt files and the task is now plain generation, prefer `baoyu-image-gen` batch mode (`build-batch.ts` -> `main.ts --batchfile`)
